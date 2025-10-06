@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Sale {
+  id            Int        @id @default(autoincrement()) @map("sale_id")
+  date          DateTime   @default(now()) @map("sale_date")
+  userId        Int        @map("user_id")
+  customerId    Int?       @map("customer_id")
+  totalAmount   Int        @map("total_amount")
+  taxAmount     Int        @default(0) @map("tax_amount")
+  paymentMethod String     @map("payment_method")
+  discountAmount Decimal   @default(0) @map("discount_amount") 
+  delivery      Delivery?
+  invoice       Invoice?
+  items         SaleItem[]
+  customer      Customer?  @relation(fields: [customerId], references: [id])
+  user          User       @relation(fields: [userId], references: [id])
+
+  @@index([customerId], map: "sales_customer_id_fkey")
+  @@index([userId], map: "sales_user_id_fkey")
+  @@map("sales")
+}
+
+model SaleItem {
+  id        Int     @id @default(autoincrement()) @map("sale_item_id")
+  saleId    Int     @map("sale_id")
+  productId Int     @map("product_id")
+  quantity  Int
+  unitPrice Int     @map("unit_price")
+  discount  Int     @default(0)
+  subtotal  Int     @map("subtotal")
+  product   Product @relation(fields: [productId], references: [id])
+  sale      Sale    @relation(fields: [saleId], references: [id])
+
+  @@index([productId], map: "sale_items_product_id_fkey")
+  @@index([saleId], map: "sale_items_sale_id_fkey")
+  @@map("sale_items")
+}
+
+model Product {
+  id            Int        @id @default(autoincrement()) @map("product_id")
+  name          String     @map("product_name")
+  barcode       String?    @unique
+  categoryId    Int        @map("category_id")
+  supplierId    Int        @map("supplier_id")
+  price         Int        @map("price")
+  costPrice     Int        @map("cost_price")
+  stockQuantity Int        @map("stock_quantity")
+  expiryDate    DateTime?  @map("expiry_date")
+  status        String     @default("ACTIVE")
+  isDeleted     Boolean    @default(false)
+  category      Category   @relation(fields: [categoryId], references: [id])
+  supplier      Supplier   @relation(fields: [supplierId], references: [id])
+  saleItems     SaleItem[]
+
+  @@index([categoryId], map: "products_category_id_fkey")
+  @@index([supplierId], map: "products_supplier_id_fkey")
+  @@map("products")
+}
+
+model Category {
+  id       Int       @id @default(autoincrement()) @map("category_id")
+  name     String    @unique @map("category_name")
+  status   String    @default("ACTIVE")
+  products Product[]
+
+  @@map("categories")
+}
+
+model Supplier {
+  id            Int       @id @default(autoincrement()) @map("supplier_id")
+  name          String    @unique @map("supplier_name")
+  contactPerson String?   @map("contact_person")
+  phone         String?
+  email         String?
+  address       String?
+  status        String    @default("ACTIVE")
+  products      Product[]
+
+  @@map("suppliers")
+}
+
+model User {
+  id       Int    @id @default(autoincrement()) @map("user_id")
+  username String @unique
+  password String @map("password_hash")
+  fullName String @map("full_name")
+  roleId   Int    @map("role_id")
+  status   String @default("ACTIVE")
+  sales    Sale[]
+  role     Role   @relation(fields: [roleId], references: [id])
+
+  @@index([roleId], map: "users_role_id_fkey")
+  @@map("users")
+}
+
+model Role {
+  id          Int     @id @default(autoincrement()) @map("role_id")
+  name        String  @unique @map("role_name")
+  permissions String? @db.LongText
+  users       User[]
+
+  @@map("roles")
+}
+
+model Customer {
+  id         Int        @id @default(autoincrement()) @map("customer_id")
+  name       String
+  phone      String?    @unique
+  email      String?    @unique
+  address    String?
+  createdAt  DateTime   @default(now()) @map("created_at")
+  status     String     @default("ACTIVE")
+  deliveries Delivery[]
+  sales      Sale[]
+
+  @@map("customers")
+}
+
+model Invoice {
+  id            Int      @id @default(autoincrement()) @map("invoice_id")
+  saleId        Int      @unique @map("sale_id")
+  invoiceNumber String   @unique @map("invoice_number")
+  issueDate     DateTime @default(now()) @map("issue_date")
+  sale          Sale     @relation(fields: [saleId], references: [id])
+
+  @@map("invoices")
+}
+
+model DeliveryDriver {
+  id         Int        @id @default(autoincrement()) @map("driver_id")
+  name       String
+  phone      String     @unique
+  joinDate   DateTime   @default(now()) @map("join_date")
+  isDeleted Boolean @default(false)
+  deliveries Delivery[]
+
+  @@map("delivery_drivers")
+}
+
+model Delivery {
+  id              Int             @id @default(autoincrement()) @map("delivery_id")
+  saleId          Int             @unique @map("sale_id")
+  customerId      Int             @map("customer_id")
+  deliveryAddress String          @map("delivery_address")
+  deliveryDate    DateTime?       @map("delivery_date")
+  status          String          @default("pending") @map("delivery_status")
+  driverId        Int?            @map("driver_id")
+
+  deleted         Boolean         @default(false) @map("is_deleted") 
+
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  driver          DeliveryDriver? @relation(fields: [driverId], references: [id])
+  sale            Sale            @relation(fields: [saleId], references: [id])
+
+  @@index([customerId], map: "deliveries_customer_id_fkey")
+  @@index([driverId], map: "deliveries_driver_id_fkey")
+  @@map("deliveries")
+}
