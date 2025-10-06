@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import DashboradImage from "@/assets/dashboard_bg.png";
+import logo from "@/assets/logo.png";
 import { useRouter } from "next/navigation";
 
 export default function RoleSelectionPage() {
@@ -45,7 +46,7 @@ export default function RoleSelectionPage() {
         <div className="flex justify-center -mt-12">
           <div className="flex h-16 w-16 items-center justify-center rounded-full shadow-lg">
             <Image
-              src="/logo.png"
+              src={logo}
               alt="Logo"
               width={90}
               height={90}
