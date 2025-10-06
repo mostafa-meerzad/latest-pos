@@ -130,6 +130,7 @@ CREATE TABLE `delivery_drivers` (
     `name` VARCHAR(191) NOT NULL,
     `phone` VARCHAR(191) NOT NULL,
     `join_date` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `isDeleted` BOOLEAN NOT NULL DEFAULT false,
 
     UNIQUE INDEX `delivery_drivers_phone_key`(`phone`),
     PRIMARY KEY (`driver_id`)
@@ -144,6 +145,7 @@ CREATE TABLE `deliveries` (
     `delivery_date` DATETIME(3) NULL,
     `delivery_status` VARCHAR(191) NOT NULL DEFAULT 'pending',
     `driver_id` INTEGER NULL,
+    `is_deleted` BOOLEAN NOT NULL DEFAULT false,
 
     UNIQUE INDEX `deliveries_sale_id_key`(`sale_id`),
     INDEX `deliveries_customer_id_fkey`(`customer_id`),
