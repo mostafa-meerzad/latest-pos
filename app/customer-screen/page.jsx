@@ -49,8 +49,8 @@ export default function CustomersPage() {
           </div>
         </div>
 
-        <CardContent className="pt-20">
-          <h1 className="text-5xl font-extrabold text-white mb-6 tracking-wide">
+        <CardContent className="pt-10">
+          <h1 className="text-5xl font-extrabold text-white mb-15 tracking-wide">
             Welcome to AfghanPet
           </h1>
           <p className="text-2xl   text-gray-200">Pet Food &amp; Supplies</p>

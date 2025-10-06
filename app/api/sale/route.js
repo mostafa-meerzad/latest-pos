@@ -55,7 +55,7 @@ export async function POST(req) {
         totalDiscount += discountPerItem * qty;
       }
 
-     discountAmount = new Prisma.Decimal(totalDiscount.toString());
+     discountAmount = totalDiscount?.toString() || "0";
 
     const result = await prisma.$transaction(async (tx) => {
       // Handle walk-in if no customerId or invalid id

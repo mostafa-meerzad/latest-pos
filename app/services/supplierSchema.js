@@ -14,7 +14,8 @@ const supplierSchema = z.object({
   phone: z
     .string("Phone number is required")
     .min(10, "Phone number must be at least 10 digits.")
-    .max(10, "Phone number must be exactly 10 digits."),
+    .max(10, "Phone number must be exactly 10 digits.")
+    .regex(/^[0-9]+$/, "Phone number must contain digits only (no + sign or symbols)"),
 
   email: z.string().email("Invalid email format").optional(),
 

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableHeader,
@@ -40,8 +42,12 @@ export default function SaleDetailsPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Sale #{sale.id}</h1>
-
+      <div className="flex justify-between">
+        <h1 className="text-2xl font-bold mb-6">Sale #{sale.id}</h1>
+        <Link href="/sales">
+          <Button variant="outline">Back to Sales</Button>
+        </Link>
+      </div>
       <Card className="min-w-2/3">
         <CardContent className="p-6">
           <h2 className="text-xl font-semibold mb-4">Sale Details</h2>
