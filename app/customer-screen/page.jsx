@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import DashboradImage from "@/assets/dashboard_bg.png";
+import LogoImage from "@/assets/logo.png";
 import { useRouter } from "next/navigation";
 import useSaleStore from "@/components/saleStore";
 
@@ -39,7 +40,7 @@ export default function CustomersPage() {
         <div className="flex justify-center -mt-12">
           <div className="flex h-16 w-16 items-center justify-center rounded-full shadow-lg">
             <Image
-              src="/logo.png"
+              src={LogoImage}
               alt="Logo"
               width={90}
               height={90}
@@ -53,11 +54,6 @@ export default function CustomersPage() {
             Welcome to AfghanPet
           </h1>
           <p className="text-2xl   text-gray-200">Pet Food &amp; Supplies</p>
-          {/* <Link href="/customer-screen/purchase-detail">
-            <Button className=" border-orange-500/70 bg-white/10 backdrop-blur-md text-center shadow-xl mt-10">
-              Purchase Details
-            </Button>
-          </Link> */}
         </CardContent>
       </Card>
     </div>
