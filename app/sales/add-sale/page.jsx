@@ -151,6 +151,7 @@ export default function AddSalePage() {
       quantity,
       discount,
       subtotal: +subtotal.toFixed(2),
+      expiryDate: selectedProduct.expiryDate || null,
     };
 
     addItem(item);

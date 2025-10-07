@@ -1,9 +1,5 @@
 "use client";
 
-import React, { useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -12,6 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo } from "react";
 
 import useSaleStore from "@/components/saleStore";
 
@@ -54,9 +52,6 @@ export default function PurchaseDetailPage() {
         <h1 className="text-4xl font-bold text-orange-600 mb-6">
           Purchase Details
         </h1>
-        <Link href="/customer-screen">
-          <Button variant="outline">Purchase Completed</Button>
-        </Link>
       </div>
       <Table>
         <TableHeader>
@@ -83,7 +78,13 @@ export default function PurchaseDetailPage() {
                 <TableCell>{item.qty}</TableCell>
                 <TableCell>AFN {item.price.toFixed(2)}</TableCell>
                 <TableCell>AFN {item.subtotal.toFixed(2)}</TableCell>
-                <TableCell>{item.expiryDate ?? "-"}</TableCell>
+                <TableCell>{item.expiryDate
+                    ? new Date(item.expiryDate).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "-"}</TableCell>
               </TableRow>
             ))
           )}

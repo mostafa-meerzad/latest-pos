@@ -50,7 +50,7 @@ export async function middleware(req) {
   const token = jwtToken ? await verifySessionToken(jwtToken) : null;
   // const token =  await verifySessionToken(jwtToken) ;
 
-    console.log("token ", token)
+    // console.log("token ", token)
     // console.log("cookie ", cookie)
     // console.log("jwt token ", jwtToken)
     // console.log("pathname ", pathname)
