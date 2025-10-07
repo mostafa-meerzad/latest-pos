@@ -55,12 +55,13 @@ export default function CreateCategoryPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Category</h1>
         <Link href="/products">
-          <Button variant="outline">Back to products</Button>
+          <Button variant="outline" className={"drop-shadow-2xl"}>Back to products</Button>
         </Link>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="max-w-lg">
+      <div className="flex justify-center drop-shadow-2xl">
+      <form onSubmit={handleSubmit} className="min-w-lg">
         <Card>
           <CardContent>
             <div className="grid grid-cols-1 gap-4 mt-4">
@@ -94,6 +95,7 @@ export default function CreateCategoryPage() {
           </CardContent>
         </Card>
       </form>
+    </div>
     </div>
   );
 }

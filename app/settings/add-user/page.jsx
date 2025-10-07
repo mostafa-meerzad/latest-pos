@@ -31,7 +31,12 @@ export default function AddUserPage() {
     e.preventDefault();
     setError(null);
 
-    if (!username.trim() || !password.trim() || !fullName.trim() || !role.trim()) {
+    if (
+      !username.trim() ||
+      !password.trim() ||
+      !fullName.trim() ||
+      !role.trim()
+    ) {
       return setError("All fields are required.");
     }
 
@@ -52,7 +57,7 @@ export default function AddUserPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        router.push("/settings"); 
+        router.push("/settings");
       } else {
         const msg =
           data?.error?.message ||
@@ -74,17 +79,19 @@ export default function AddUserPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add User</h1>
         <Link href="/settings">
-          <Button variant="outline">Back to Users</Button>
+          <Button variant="outline" className={"drop-shadow-2xl"}>Back to Users</Button>
         </Link>
       </div>
-
-      <form onSubmit={handleSubmit} className="max-w-3xl">
+    <div className="flex justify-center drop-shadow-2xl">
+      <form onSubmit={handleSubmit} className="min-w-3xl">
         <Card>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Full Name */}
               <div>
-                <label className="text-sm font-medium block mb-1">Full Name</label>
+                <label className="text-sm font-medium block mb-1">
+                  Full Name
+                </label>
                 <Input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
@@ -95,7 +102,9 @@ export default function AddUserPage() {
 
               {/* Username */}
               <div>
-                <label className="text-sm font-medium block mb-1">Username</label>
+                <label className="text-sm font-medium block mb-1">
+                  Username
+                </label>
                 <Input
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -106,7 +115,9 @@ export default function AddUserPage() {
 
               {/* Password */}
               <div>
-                <label className="text-sm font-medium block mb-1">Password</label>
+                <label className="text-sm font-medium block mb-1">
+                  Password
+                </label>
                 <Input
                   type="password"
                   value={password}
@@ -119,7 +130,11 @@ export default function AddUserPage() {
               {/* Role */}
               <div>
                 <label className="text-sm font-medium block mb-1">Role</label>
-                <Select value={role} onValueChange={(val) => setRole(val)} required>
+                <Select
+                  value={role}
+                  onValueChange={(val) => setRole(val)}
+                  required
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
@@ -128,7 +143,9 @@ export default function AddUserPage() {
                     <SelectItem value="MANAGER">MANAGER</SelectItem>
                     <SelectItem value="CASHIER">CASHIER</SelectItem>
                     <SelectItem value="STOCK_MANAGER">STOCK_MANAGER</SelectItem>
-                    <SelectItem value="DELIVERY_DRIVER">DELIVERY_DRIVER</SelectItem>
+                    <SelectItem value="DELIVERY_DRIVER">
+                      DELIVERY_DRIVER
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -136,18 +153,25 @@ export default function AddUserPage() {
 
             {/* form actions */}
             <div className="mt-6 flex items-center gap-3">
-              <Button type="submit" className="bg-orange-500" disabled={submitting}>
+              <Button
+                type="submit"
+                className="bg-orange-500"
+                disabled={submitting}
+              >
                 {submitting ? "Saving..." : "Create User"}
               </Button>
               <Button variant="ghost" onClick={() => router.push("/users")}>
                 Cancel
               </Button>
 
-              {error && <div className="ml-4 text-sm text-red-600">{String(error)}</div>}
+              {error && (
+                <div className="ml-4 text-sm text-red-600">{String(error)}</div>
+              )}
             </div>
           </CardContent>
         </Card>
       </form>
+    </div>
     </div>
   );
 }

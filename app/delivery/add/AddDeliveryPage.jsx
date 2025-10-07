@@ -128,11 +128,11 @@ useEffect(() => {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Delivery</h1>
         <Link href="/delivery">
-          <Button variant="outline">Back to Deliveries</Button>
+          <Button variant="outline" className={"drop-shadow-2xl"}>Back to Deliveries</Button>
         </Link>
       </div>
-
-      <form onSubmit={handleSubmit} className="max-w-3xl relative">
+       <div className="flex justify-center drop-shadow-2xl ">
+      <form onSubmit={handleSubmit} className="min-w-3xl relative">
         <Card>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -284,6 +284,7 @@ useEffect(() => {
           </CardContent>
         </Card>
       </form>
+    </div>
     </div>
   );
 }

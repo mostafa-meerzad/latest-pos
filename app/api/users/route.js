@@ -5,9 +5,10 @@ import { NextResponse } from "next/server";
 
 export const GET = async () => {
   try {
-    const users = await prisma.user.findMany({ 
-      where: {status: "ACTIVE"},
-      include: { role: true } });
+    const users = await prisma.user.findMany({
+      where: { status: "ACTIVE" },
+      include: { role: true },
+    });
     return NextResponse.json({ success: true, data: users }, { status: 200 });
   } catch (error) {
     return NextResponse.json(
@@ -36,21 +37,37 @@ export const POST = async (request) => {
       );
     }
 
-    const validation = createUserSchema.safeParse(body);
+    // ✅ Validate with Zod
 
-    if (!validation.success)
+    console.log("Body before validation:", body);
+    const validation = createUserSchema.safeParse(body);
+    console.log("Validation result:", validation);
+
+    if (!validation.success) {
+      const errors = validation.error?.errors;
+
+      // Handle case if errors array doesn't exist
+      const errorMessages = Array.isArray(errors)
+        ? errors.map((err) => `${err.path.join(".")}: ${err.message}`)
+        : ["Invalid input data"];
+
       return NextResponse.json(
-        { success: false, error: validation.error.format() },
+        {
+          success: false,
+          error: errorMessages.join(", "),
+          details: errors || validation.error, // optional full info
+        },
         { status: 400 }
       );
+    }
 
     const { username, password, fullName, role } = validation.data;
 
     const user = await prisma.user.findFirst({ where: { username } });
     if (user)
       return NextResponse.json(
-        { success: false, error: "username already in use" },
-        { status: 409}
+        { success: false, error: "Username already in use" },
+        { status: 409 }
       );
 
     const dbRole = await prisma.role.findFirst({ where: { name: role } });
