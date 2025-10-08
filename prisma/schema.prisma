@@ -69,6 +69,7 @@ model Category {
   id       Int       @id @default(autoincrement()) @map("category_id")
   name     String    @unique @map("category_name")
   status   String    @default("ACTIVE")
+  is_deleted Boolean  @default(false)
   products Product[]
 
   @@map("categories")

@@ -209,12 +209,12 @@ export default function ProductsPage() {
               Add Product
             </Button>
           </Link>
-          <Link href="/products/add-category">
+          <Link href="/products/categories">
             <Button className="bg-yellow-500 hover:bg-yellow-600 text-md">
-              Add Category
+               Categories
             </Button>
           </Link>
-          <Link href="/products/add-supplier">
+          <Link href="/suppliers/add-supplier">
             <Button className="bg-amber-500 hover:bg-amber-600 text-md">
               Add Supplier
             </Button>
