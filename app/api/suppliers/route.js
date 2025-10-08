@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 export const GET = async () => {
   try {
     const suppliers = await prisma.supplier.findMany({
+      where: {status: "ACTIVE"},
       include: { products: true },
     });
 

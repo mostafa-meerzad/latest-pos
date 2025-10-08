@@ -35,7 +35,7 @@ export const PUT = async (request, { params }) => {
     let body;
     try {
       body = await request.json();
-      console.log("Incoming body:", body);
+      //console.log("Incoming body:", body);
     } catch (e) {
       return NextResponse.json(
         { success: false, error: "Invalid or empty JSON payload" },

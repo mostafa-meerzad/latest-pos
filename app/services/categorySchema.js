@@ -6,7 +6,7 @@ const categorySchema = z.object({
     .string("Category name is required")
     .min(1, "Category name cannot be empty")
     .max(100, "Category name too long"),
-  status: z.enum(Object.values(STATUS), "Status is required").default(STATUS.ACTIVE),
+  status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
 });
 
 // Create schema (all fields required)

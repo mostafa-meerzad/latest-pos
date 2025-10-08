@@ -39,7 +39,14 @@ export const GET = async (request, { params }) => {
 
 export const PUT = async (request, { params }) => {
   try {
-    const { id } = await params;
+    const { id } = await params; 
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid supplier ID" },
+        { status: 400 }
+      );
+    }
 
     let body;
     try {
@@ -54,12 +61,6 @@ export const PUT = async (request, { params }) => {
     if (Object.keys(body).length === 0) {
       return NextResponse.json(
         { success: false, error: "Request body cannot be empty" },
-        { status: 400 }
-      );
-    }
-    if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid supplier ID" },
         { status: 400 }
       );
     }
@@ -87,12 +88,14 @@ export const PUT = async (request, { params }) => {
         { status: 404 }
       );
 
+    // Use typeof !== 'undefined' so falsy-but-valid values (like empty strings) aren't skipped
     const updateData = {};
-    if (name) updateData.name = name;
-    if (email) updateData.email = email;
-    if (phone) updateData.phone = phone;
-    if (address) updateData.address = address;
-    if (contactPerson) updateData.phone = phone;
+    if (typeof name !== "undefined") updateData.name = name;
+    if (typeof email !== "undefined") updateData.email = email;
+    if (typeof phone !== "undefined") updateData.phone = phone;
+    if (typeof address !== "undefined") updateData.address = address;
+    if (typeof contactPerson !== "undefined")
+      updateData.contactPerson = contactPerson; 
 
     const updateSupplier = await prisma.supplier.update({
       where: { id: Number(id) },
@@ -115,31 +118,23 @@ export const DELETE = async (request, { params }) => {
   try {
     const { id } = await params;
 
-    if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid supplier ID" },
-        { status: 400 }
-      );
-    }
-
-    const supplier = await prisma.supplier.findUnique({
+    const category = await prisma.category.findUnique({
       where: { id: Number(id) },
     });
 
-    if (!supplier) {
+    if (!category)
       return NextResponse.json(
-        { success: false, error: "Supplier Not Found" },
+        { success: false, error: "Category not found" },
         { status: 404 }
       );
-    }
 
-    const updatedSupplier = await prisma.supplier.update({
+    const deletedCategory = await prisma.category.update({
       where: { id: Number(id) },
-      data: { status: STATUS.INACTIVE },
+      data: { is_deleted: true },
     });
 
     return NextResponse.json(
-      { success: true, data: updatedSupplier },
+      { success: true, data: deletedCategory },
       { status: 200 }
     );
   } catch (error) {

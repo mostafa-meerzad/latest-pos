@@ -4,7 +4,11 @@ import { NextResponse } from "next/server";
 
 export const GET = async () => {
   try {
-    const categories = await prisma.category.findMany();
+    const categories = await prisma.category.findMany({
+      where: {
+        is_deleted: false,
+      },
+    });
 
     if (!categories)
       return NextResponse.json(
@@ -44,15 +48,21 @@ export const POST = async (request) => {
     }
 
     const validation = createCategorySchema.safeParse(body);
-    if (!validation.success)
+    if (!validation.success) {
+      const errors = validation.error.flatten().fieldErrors;
       return NextResponse.json(
-        { success: false, error: validation.error.flatten() },
+        {
+          success: false,
+          error:
+            Object.values(errors).flat().join(", ") || "Invalid input data",
+        },
         { status: 400 }
       );
+    }
 
     const { name } = validation.data;
 
-    const category = await prisma.category.findFirst({ where: {name: name} });
+    const category = await prisma.category.findFirst({ where: { name: name } });
     if (category)
       return NextResponse.json(
         { success: false, error: "Category already exist" },

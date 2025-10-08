@@ -65,12 +65,13 @@ export const PUT = async (request, { params }) => {
         { status: 404 }
       );
 
-    const { name } = validation.data;
+    const { name, status } = validation.data;
 
     const updatedCategory = await prisma.category.update({
       where: { id: Number(id) },
-      data: { name },
+      data: { name, status },
     });
+
     return NextResponse.json(
       { success: true, data: updatedCategory },
       { status: 200 }
@@ -82,6 +83,7 @@ export const PUT = async (request, { params }) => {
     );
   }
 };
+
 
 export const DELETE = async (request, { params }) => {
   try {
@@ -98,7 +100,7 @@ export const DELETE = async (request, { params }) => {
 
     const deletedCategory = await prisma.category.update({
       where: { id: Number(id) },
-      data: { status: STATUS.INACTIVE },
+      data: { is_deleted: true },
     });
 
     return NextResponse.json(

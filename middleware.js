@@ -59,10 +59,10 @@ export async function middleware(req) {
   // Find the rule for the current pathname
   const rule = routePermissions.find((r) => r.match.test(pathname));
 
-    console.log("rule ", rule)
+   // console.log("rule ", rule)
   // --- 1. First, handle public or explicitly allowed routes
   if (rule?.allow) {
-    console.log("is allowed ", rule.allow)
+   // console.log("is allowed ", rule.allow)
     // If user is already authenticated and trying to view the login page,
     // send them to their intended destination (or home) instead of staying on /login
     if (pathname.startsWith("/login") && token) {

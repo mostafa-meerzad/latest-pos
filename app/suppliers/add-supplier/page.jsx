@@ -67,7 +67,7 @@ export default function CreateSupplierPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        router.push("/products");
+        router.push("/suppliers");
       } else {
         const msg = extractErrorMessage(data.error);
         setError(msg || "Failed to create supplier");
@@ -84,7 +84,7 @@ export default function CreateSupplierPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Supplier</h1>
-        <Link href="/products">
+        <Link href="/suppliers">
           <Button variant="outline" className="drop-shadow-2xl">
             Back to Suppliers
           </Button>
