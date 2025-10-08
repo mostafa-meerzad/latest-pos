@@ -12,30 +12,12 @@ const routePermissions = [
   { match: /^\/access-denied(\/.*)?$/i, allow: true },
   { match: /^\/api\/login(\/.*)?$/i, allow: true },
   { match: /^\/api\/logout(\/.*)?$/i, allow: true },
-  // --- API endpoints
-  { match: /^\/api\/users(\/.*)?$/i, action: "users.manage" },
-  { match: /^\/api\/products(\/.*)?$/i, action: "products.manage" },
-  { match: /^\/api\/category(\/.*)?$/i, action: "categories.manage" },
-  { match: /^\/api\/customers?(\/.*)?$/i, action: "customers.manage" },
-  { match: /^\/api\/deliveries(\/.*)?$/i, action: "deliveries.manage" },
-  { match: /^\/api\/drivers(\/.*)?$/i, action: "drivers.manage" },
-  { match: /^\/api\/invoices?(\/.*)?$/i, action: "invoices.manage" },
-  { match: /^\/api\/reports(\/.*)?$/i, action: "reports.view" },
-  { match: /^\/api\/sale(s?)(\/.*)?$/i, action: "sales.create" },
-  { match: /^\/api\/sales\/refund(\/.*)?$/i, action: "sales.refund" },
-  { match: /^\/api\/sales\/report(\/.*)?$/i, action: "sales.report" },
-  { match: /^\/api\/suppliers(\/.*)?$/i, action: "suppliers.manage" },
 
-  // --- Page routes (frontend)
-  { match: /^\/customer-screen(\/.*)?$/i, action: "customers.view" },
-  { match: /^\/customers(\/.*)?$/i, action: "customers.view" },
-  { match: /^\/delivery(\/.*)?$/i, action: "deliveries.view" },
-  { match: /^\/inventory(\/.*)?$/i, action: "inventory.view" },
-  { match: /^\/products(\/.*)?$/i, action: "products.view" },
-  { match: /^\/reports(\/.*)?$/i, action: "reports.view" },
-  { match: /^\/sales(\/.*)?$/i, action: "sales.view" },
-  { match: /^\/drivers(\/.*)?$/i, action: "drivers.view" },
-  { match: /^\/settings(\/.*)?$/i, action: "settings.manage" },
+  // --- Admin-only restrictions
+  { match: /^\/api\/users(\/.*)?$/i, action: "admin.only" },
+  { match: /^\/settings(\/.*)?$/i, action: "admin.only" },
+
+  // All other routes are allowed for any authenticated user (no specific action)
 ];
 
 const signInPage = "/login";

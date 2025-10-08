@@ -132,7 +132,7 @@ export const PUT = async (request, { params }) => {
     if (status) updateData.status = status;
     if (barcode) updateData.barcode = barcode;
     if (stockQuantity) updateData.stockQuantity = stockQuantity;
-    if (expiryDate) updateData.expiryDate = expiryDate;
+    if (expiryDate !== undefined) updateData.expiryDate = expiryDate;
 
     const updateProduct = await prisma.product.update({
       where: { id: Number(id) },

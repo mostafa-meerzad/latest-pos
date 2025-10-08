@@ -1,4 +1,9 @@
+"use client"
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+
 export default function AccessDenied() {
+  const router = useRouter();
   return (
     <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center" }}>
       <div style={{ width: 520, padding: 24, textAlign: "center" }}>
@@ -6,7 +11,9 @@ export default function AccessDenied() {
         <p style={{ color: "#4b5563", marginBottom: 16 }}>
           You do not have permission to access this page.
         </p>
-        <a href="/" style={{ color: "#2563eb" }}>Go back home</a>
+        
+        <Button variant={"outline"} className={"bg-[#2563eb] text-white rounded-xl active:scale-90 "} onClick={()=>router.push("/home")}>Go back home</Button>
+        {/* <a href="/home" className={"bg-[#2563eb] text-white "}>Go back home</a> */}
       </div>
     </div>
   );

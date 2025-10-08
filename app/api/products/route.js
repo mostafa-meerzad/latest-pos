@@ -122,7 +122,7 @@ export const POST = async (request) => {
         status,
         barcode,
         stockQuantity,
-        expiryDate: new Date(expiryDate),
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
         supplierId,
       },
     });

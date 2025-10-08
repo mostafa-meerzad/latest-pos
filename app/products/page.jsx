@@ -365,7 +365,7 @@ export default function ProductsPage() {
                           onChange={(e) =>
                             setEditValues((s) => ({
                               ...s,
-                              expiryDate: e.target.value,
+                              expiryDate: e.target.value ? e.target.value : null,
                             }))
                           }
                         />

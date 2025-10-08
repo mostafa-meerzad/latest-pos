@@ -37,7 +37,8 @@ const productSchema = z.object({
     .int()
     .nonnegative("Stock quantity cannot be negative"),
 
-  expiryDate: z.coerce.date("Expiry date must be a valid date"),
+  // Make expiry date optional and nullable
+  expiryDate: z.coerce.date("Expiry date must be a valid date").optional().nullable(),
 
   status: z.enum(Object.values(STATUS), "Status is required").default(STATUS.ACTIVE),
 });
