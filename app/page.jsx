@@ -57,7 +57,7 @@ export default function RoleSelectionPage() {
 
         <CardContent className="pt-20">
           <h1 className="text-5xl font-extrabold text-white mb-6 tracking-wide">
-            Welcome to AfghanPet
+            Welcome to Afghan Pets
           </h1>
           <p className="text-2xl text-gray-200 mb-10">
             Pet Food &amp; Supplies

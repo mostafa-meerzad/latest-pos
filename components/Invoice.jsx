@@ -20,7 +20,7 @@ const Invoice = forwardRef(({ items, customer, totals, saleId, date }, ref) => {
         padding: "10px",
       }}
     >
-      <h2 className="text-center text-lg font-bold">Afghan Pet</h2>
+      <h2 className="text-center text-lg font-bold">Afghan Pets</h2>
       <p className="text-center text-xs mb-2">Invoice #{saleId}</p>
       <p className="text-xs">Customer: {customer?.name || "Walk-in"}</p>
       <p className="text-xs mb-2">Date: {formattedDate}</p>

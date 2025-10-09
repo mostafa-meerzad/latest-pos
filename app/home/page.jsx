@@ -66,11 +66,11 @@ export default function DashboardPage() {
         <Image 
           src={Logo}
           className="w-9 h-9 text-orange-500"
-          alt="AfghanPet logo"
+          alt="Afghan Pets logo"
           width={100}
           height={100}
         />
-          <span className="text-white text-2xl font-bold">AfghanPet</span>
+          <span className="text-white text-2xl font-bold">Afghan Pets</span>
           </div>
           <Button
           variant="destructive"
