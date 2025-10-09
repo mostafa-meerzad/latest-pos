@@ -214,9 +214,9 @@ export default function ProductsPage() {
                Categories
             </Button>
           </Link>
-          <Link href="/suppliers/add-supplier">
+          <Link href="/suppliers">
             <Button className="bg-amber-500 hover:bg-amber-600 text-md">
-              Add Supplier
+               Suppliers
             </Button>
           </Link>
           <BackToDashboardButton />
