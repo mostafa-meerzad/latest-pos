@@ -144,11 +144,18 @@ export default function SuppliersPage() {
           Supplier Management
         </h1>
         <div className="flex items-center gap-3">
+          <Link href="/products">
+            <Button variant="outline" className={"drop-shadow-2xl"}>
+              Back to Products
+            </Button>
+          </Link>
+          
           <Link href="/suppliers/add-supplier">
             <Button className="bg-amber-500 hover:bg-amber-600 text-md">
               Add Supplier
             </Button>
           </Link>
+          
           <BackToDashboardButton />
         </div>
       </div>
