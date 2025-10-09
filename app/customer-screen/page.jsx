@@ -51,7 +51,7 @@ export default function CustomersPage() {
 
         <CardContent className="pt-10">
           <h1 className="text-5xl font-extrabold text-white mb-15 tracking-wide">
-            Welcome to AfghanPet
+            Welcome to Afghan Pets
           </h1>
           <p className="text-2xl   text-gray-200">Pet Food &amp; Supplies</p>
         </CardContent>

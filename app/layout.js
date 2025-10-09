@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "AfghanPet",
-  description: "AfghanPet - All your pet needs in one place",
+  title: "Afghan Pets",
+  description: "Afghan Pets - All your pet needs in one place",
   icons: {
     icon: "/favicon.png",
   },

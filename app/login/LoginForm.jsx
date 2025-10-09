@@ -1,6 +1,13 @@
 "use client";
+
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+import DashboradImage from "@/assets/dashboard_bg.png";
+import logo from "@/assets/logo.png";
 
 export default function LoginForm() {
   const [username, setUsername] = useState("");
@@ -40,32 +47,81 @@ export default function LoginForm() {
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center" }}>
-      <form onSubmit={onSubmit} style={{ width: 360, padding: 24, border: "1px solid #e5e7eb", borderRadius: 8 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>Sign in</h1>
-        {error ? (
-          <div style={{ background: "#fee2e2", color: "#b91c1c", padding: 8, borderRadius: 6, marginBottom: 12 }}>{error}</div>
-        ) : null}
-        <label style={{ display: "block", fontSize: 12, color: "#374151" }}>Username</label>
-        <input
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-          autoFocus
-          style={{ width: "100%", padding: 8, border: "1px solid #d1d5db", borderRadius: 6, marginTop: 4, marginBottom: 12 }}
-        />
-        <label style={{ display: "block", fontSize: 12, color: "#374151" }}>Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{ width: "100%", padding: 8, border: "1px solid #d1d5db", borderRadius: 6, marginTop: 4, marginBottom: 16 }}
-        />
-        <button type="submit" style={{ width: "100%", padding: 10, background: "#111827", color: "white", border: 0, borderRadius: 6 }}>
-          Sign in
-        </button>
-      </form>
+    <div className="relative flex h-screen w-full items-center justify-center">
+      {/* Background image */}
+      <Image
+        src={DashboradImage}
+        alt="Background"
+        fill
+        className="object-cover"
+        priority
+      />
+
+      {/* Overlay */}
+      <div className="absolute inset-0" />
+
+      {/* Content */}
+      <Card className="relative z-10 max-w-md w-full rounded-2xl border border-orange-500/70 bg-white/10 backdrop-blur-md text-center shadow-xl p-8">
+        <div className="flex justify-center -mt-16 mb-4">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full shadow-lg">
+            <Image
+              src={logo}
+              alt="Logo"
+              width={90}
+              height={90}
+              className="object-contain"
+            />
+          </div>
+        </div>
+
+        <CardContent>
+          <h1 className="text-3xl font-extrabold text-white mb-6 tracking-wide">
+            Welcome Back
+          </h1>
+          <p className="text-gray-200 mb-8">Please sign in to continue</p>
+
+          <form onSubmit={onSubmit} className="space-y-4 text-left">
+            {error && (
+              <div className="bg-red-200 text-red-800 p-2 rounded-md text-sm text-center">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-1">
+                Username
+              </label>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                autoFocus
+                className="w-full p-2 rounded-md border border-gray-300 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full p-2 rounded-md border border-gray-300 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full mt-4 h-13 bg-orange-500/80 hover:bg-orange-600 text-white font-semibold py-2 text-lg rounded-lg shadow-md backdrop-blur-md"
+            >
+              Sign in
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
