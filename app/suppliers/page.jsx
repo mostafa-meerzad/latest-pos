@@ -84,11 +84,20 @@ export default function SuppliersPage() {
         );
         cancelEdit();
       } else {
-        console.error("Update failed:", data);
-        // show the error payload (helpful for debugging validation issues)
-        const errMsg =
-          data.error?.message || JSON.stringify(data.error) || "Update failed";
-        alert("Failed to update supplier: " + errMsg);
+       
+
+        // 🔹 Extract readable error message
+        let errMsg = "Update failed";
+
+        if (data.error?.message) {
+          errMsg = data.error.message;
+        } else if (data.error?.fieldErrors) {
+          // get first key’s first error message
+          const firstKey = Object.keys(data.error.fieldErrors)[0];
+          errMsg = data.error.fieldErrors[firstKey][0];
+        }
+
+        alert(errMsg);
       }
     } catch (err) {
       console.error("Network error saving supplier:", err);
@@ -149,13 +158,13 @@ export default function SuppliersPage() {
               Back to Products
             </Button>
           </Link>
-          
+
           <Link href="/suppliers/add-supplier">
             <Button className="bg-amber-500 hover:bg-amber-600 text-md">
               Add Supplier
             </Button>
           </Link>
-          
+
           <BackToDashboardButton />
         </div>
       </div>

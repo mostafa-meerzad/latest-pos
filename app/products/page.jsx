@@ -90,6 +90,25 @@ export default function ProductsPage() {
 
   async function saveEdit() {
     if (!editingId || !editValues) return;
+    const priceNum = Number(editValues.price);
+    const stockNum = Number(editValues.stockQuantity);
+    const costNum = Number(editValues.costPrice ?? 0); // fallback if costPrice exists in your model
+
+    // --- Validation checks ---
+    if (isNaN(priceNum) || editValues.price === "" || priceNum < 0) {
+      alert(" Price cannot be empty or negative.");
+      return;
+    }
+
+    if (isNaN(stockNum) || editValues.stockQuantity === "" || stockNum < 0) {
+      alert(" Stock cannot be empty or negative.");
+      return;
+    }
+
+    if (priceNum < costNum) {
+      alert(" Price cannot be less than the product’s cost price.");
+      return;
+    }
     try {
       const res = await fetch(`/api/products/${editingId}`, {
         method: "PUT",
@@ -211,12 +230,12 @@ export default function ProductsPage() {
           </Link>
           <Link href="/products/categories">
             <Button className="bg-yellow-500 hover:bg-yellow-600 text-md">
-               Categories
+              Categories
             </Button>
           </Link>
           <Link href="/suppliers">
             <Button className="bg-amber-500 hover:bg-amber-600 text-md">
-               Suppliers
+              Suppliers
             </Button>
           </Link>
           <BackToDashboardButton />
@@ -365,7 +384,9 @@ export default function ProductsPage() {
                           onChange={(e) =>
                             setEditValues((s) => ({
                               ...s,
-                              expiryDate: e.target.value ? e.target.value : null,
+                              expiryDate: e.target.value
+                                ? e.target.value
+                                : null,
                             }))
                           }
                         />

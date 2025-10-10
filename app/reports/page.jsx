@@ -139,7 +139,6 @@ export default function ReportsPage() {
         revenue: m.revenue || 0,
         cost: m.cost || 0,
         profit: m.profit || 0,
-        itemsSold: m.itemsSold || 0,
         deliveries: m.deliveries || 0,
         count: m.count || 0,
       }));
@@ -156,7 +155,7 @@ export default function ReportsPage() {
     if (v === undefined || v === null) return "-";
     return new Intl.NumberFormat(undefined, {
       style: "currency",
-      currency: "USD",
+      currency: "AFN",
       maximumFractionDigits: 2,
     }).format(v);
   }
@@ -353,13 +352,6 @@ export default function ReportsPage() {
                       stroke={COLORS[0]}
                       strokeWidth={2}
                       dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="itemsSold"
-                      stroke={COLORS[1]}
-                      strokeWidth={1.5}
-                      dot={{ r: 2 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -581,9 +573,6 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Breakdown</CardTitle>
-              <CardDescription>
-                Detailed revenue / cost / profit by type
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
