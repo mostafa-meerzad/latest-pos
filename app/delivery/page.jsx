@@ -212,12 +212,12 @@ export default function DeliveryPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/drivers/add">
-            <Button className="bg-yellow-500 hover:bg-yellow-600 text-md">
+            <Button className="bg-yellow-500 hover:bg-yellow-600 text-md drop-shadow-2xl">
               Add Driver
             </Button>
           </Link>
           <Link href="/delivery/add">
-            <Button className="bg-orange-500 hover:bg-orange-600 text-md">
+            <Button className="bg-orange-500 hover:bg-orange-600 text-md drop-shadow-2xl">
               Add Delivery
             </Button>
           </Link>

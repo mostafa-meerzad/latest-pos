@@ -45,7 +45,7 @@ export default function SaleDetailsPage() {
       <div className="flex justify-between">
         <h1 className="text-2xl font-bold mb-6">Sale #{sale.id}</h1>
         <Link href="/sales">
-          <Button variant="outline">Back to Sales</Button>
+          <Button variant="outline" className={"drop-shadow-2xl"}>Back to Sales</Button>
         </Link>
       </div>
       <Card className="min-w-2/3">

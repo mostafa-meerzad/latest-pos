@@ -135,7 +135,7 @@ export default function DriversPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/drivers/add">
-            <Button className="bg-orange-500 hover:bg-orange-600 text-md">
+            <Button className="bg-orange-500 hover:bg-orange-600 text-md drop-shadow-2xl">
               Add Driver
             </Button>
           </Link>
