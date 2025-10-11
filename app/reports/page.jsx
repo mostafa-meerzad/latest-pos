@@ -63,7 +63,6 @@ export default function ReportsPage() {
   const [period, setPeriod] = useState("day");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [year, setYear] = useState(new Date().getFullYear());
-  const [includeDeliveries, setIncludeDeliveries] = useState(true);
 
   // Data state
   const [loading, setLoading] = useState(false);
@@ -99,9 +98,17 @@ export default function ReportsPage() {
 
   // Derived chart data helpers
   const salesVsDeliveryPie = useMemo(() => {
-    if (!report) return [];
-    const sales = report.breakdown?.sales?.revenue || 0;
-    const deliveries = report.breakdown?.deliveries?.revenue || 0;
+    // Safe check: if no report or breakdown, return empty data for chart
+    if (!report?.breakdown) return [{ name: "No Data", value: 0 }];
+
+    const sales = report.breakdown.sales?.revenue || 0;
+    const deliveries = report.breakdown.deliveries?.revenue || 0;
+
+    // Prevent empty pie chart
+    if (sales === 0 && deliveries === 0) {
+      return [{ name: "No Data", value: 0 }];
+    }
+
     return [
       { name: "Sales", value: sales },
       { name: "Deliveries", value: deliveries },
@@ -110,49 +117,74 @@ export default function ReportsPage() {
 
   // Prepare hourly, weekly, monthly series into arrays consumable by recharts
   const hourlySeries = useMemo(() => {
-    if (!report) return [];
-    const raw = report.timeSeries?.hourly || {};
-    // convert keys 0..23 to array
+    // Safe check: if no hourly data, return empty array
+    if (!report?.timeSeries?.hourly) return [];
+
+    const raw = report.timeSeries.hourly;
+    // Convert object {0: {...}, 1: {...}} to array [{hour: 0, ...}, {hour: 1, ...}]
     return Object.keys(raw)
       .map((k) => ({ hour: k, ...raw[k] }))
       .sort((a, b) => Number(a.hour) - Number(b.hour));
   }, [report]);
 
   const weeklySeries = useMemo(() => {
-    if (!report) return [];
-    const raw = report.timeSeries?.weekly || {};
+    if (!report?.timeSeries?.weekly) return [];
+
+    const raw = report.timeSeries.weekly;
     return Object.keys(raw)
-      .map((k) => ({ week: k, ...raw[k] }))
-      .sort((a, b) => Number(a.week) - Number(b.week));
+      .map((k) => ({
+        week: raw[k].name || `Week ${k}`, // Use the formatted name from backend
+        ...raw[k],
+      }))
+      .sort((a, b) => a.weekKey.localeCompare(b.weekKey)); // Sort by date
   }, [report]);
 
   const monthlySeries = useMemo(() => {
-    if (!report) return [];
-    const raw = report.timeSeries?.monthly || {};
-    // expected keys 0..11
+    if (!report?.timeSeries?.monthly) return [];
+
+    const raw = report.timeSeries.monthly;
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    // Convert object to array and ensure proper formatting
     return Object.keys(raw)
-      .map((k) => ({ monthIndex: k, ...raw[k] }))
-      .sort((a, b) => Number(a.monthIndex) - Number(b.monthIndex))
-      .map((m) => ({
-        // short month label (Jan, Feb) - will render vertically via XAxis angle
-        name: m.name?.slice(0, 3) || String(m.monthIndex),
-        revenue: m.revenue || 0,
-        cost: m.cost || 0,
-        profit: m.profit || 0,
-        deliveries: m.deliveries || 0,
-        count: m.count || 0,
-      }));
+      .map((k) => {
+        const monthIndex = Number(k);
+        const monthData = raw[k];
+        return {
+          monthIndex,
+          name: monthNames[monthIndex] || `M${monthIndex + 1}`,
+          revenue: monthData.revenue || 0,
+          cost: monthData.cost || 0,
+          profit: monthData.profit || 0,
+          deliveries: monthData.deliveries || 0,
+          count: monthData.count || 0,
+        };
+      })
+      .sort((a, b) => a.monthIndex - b.monthIndex); // Ensure proper order
   }, [report]);
 
   // yearly data for comparison: shows current vs previous
   const yearlyComparison = useMemo(() => {
-    if (!report) return null;
-    return report.timeSeries?.yearly || null;
+    if (!report?.timeSeries?.yearly) return null;
+    return report.timeSeries.yearly;
   }, [report]);
 
   // Utility to format currency
   function fmtCurrency(v) {
-    if (v === undefined || v === null) return "-";
+    if (v === undefined || v === null || isNaN(v)) return "-";
     return new Intl.NumberFormat(undefined, {
       style: "currency",
       currency: "AFN",
@@ -173,6 +205,14 @@ export default function ReportsPage() {
           />
           <h1 className="text-2xl font-semibold">Reports Dashboard</h1>
         </div>
+
+        {/* Data Freshness Indicator */}
+        {/* {report && (
+          <div className="text-xs text-muted-foreground text-center md:text-left">
+            Data as of {new Date().toLocaleTimeString()} • Period: {period} •
+            {period === "year" ? ` Year: ${year}` : ` Date: ${date}`}
+          </div>
+        )} */}
 
         <div className="flex flex-wrap gap-3 items-center">
           <div className="mr-3">
@@ -213,16 +253,6 @@ export default function ReportsPage() {
               />
             </label>
           )}
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              Include deliveries
-            </span>
-            <Switch
-              checked={includeDeliveries}
-              onCheckedChange={setIncludeDeliveries}
-            />
-          </div>
 
           <Button onClick={fetchReport} variant="outline">
             Refresh
@@ -318,299 +348,324 @@ export default function ReportsPage() {
       </div>
 
       {/* Main charts area */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Left column - Time series */}
-        <div className="xl:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Time Series</CardTitle>
-              <CardDescription>
-                Revenue over the selected interval
-              </CardDescription>
-            </CardHeader>
-            <CardContent style={{ height: 320 }}>
-              {/* Choose chart by period */}
-              {period === "day" && (
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart
-                    data={hourlySeries}
-                    margin={{ top: 10, right: 20, left: 0, bottom: 40 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="hour"
-                      tick={{ fontSize: 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                    />
-                    <YAxis />
-                    <Tooltip formatter={(value) => fmtCurrency(value)} />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke={COLORS[0]}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
 
-              {(period === "week" || period === "month") && (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart
-                    data={period === "week" ? weeklySeries : monthlySeries}
-                    margin={{ top: 10, right: 20, left: 0, bottom: 50 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    {/* X axis with vertical labels for month abbreviations */}
-                    <XAxis
-                      dataKey={period === "week" ? "week" : "name"}
-                      tick={{ fontSize: 12 }}
-                      angle={-90}
-                      textAnchor="end"
-                      interval={0}
-                    />
-                    <YAxis />
-                    <Tooltip
-                      formatter={(value) =>
-                        typeof value === "number" ? fmtCurrency(value) : value
-                      }
-                    />
-                    <Legend />
-
-                    {/* Use thin bars (barSize small) as requested */}
-                    <Bar dataKey="revenue" barSize={12} name="Revenue">
-                      {(period === "week" ? weeklySeries : monthlySeries).map(
-                        (entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
-                          />
-                        )
-                      )}
-                    </Bar>
-
-                    {/* Optional cost/profit overlay when available */}
-                    <Bar dataKey="profit" barSize={6} name="Profit" />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-
-              {period === "year" && (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart
-                    data={monthlySeries}
-                    margin={{ top: 10, right: 20, left: 0, bottom: 50 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 12 }}
-                      angle={-90}
-                      textAnchor="end"
-                      interval={0}
-                    />
-                    <YAxis />
-                    <Tooltip
-                      formatter={(value) =>
-                        typeof value === "number" ? fmtCurrency(value) : value
-                      }
-                    />
-                    <Legend />
-                    <Bar dataKey="revenue" barSize={12} name="Revenue">
-                      {monthlySeries.map((_, index) => (
-                        <Cell
-                          key={index}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Bar>
-                    <Line
-                      type="monotone"
-                      dataKey="profit"
-                      stroke={COLORS[2]}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Year over year comparison for yearly period */}
-          {period === "year" && yearlyComparison && (
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-muted-foreground">
+            Loading report data...
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Left column - Time series */}
+          <div className="xl:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Year-over-Year Comparison</CardTitle>
+                <CardTitle>Time Series</CardTitle>
                 <CardDescription>
-                  Compare current year to previous year
+                  Revenue over the selected interval
                 </CardDescription>
               </CardHeader>
-              <CardContent style={{ height: 220 }}>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart
-                    data={Object.values(report.timeSeries.monthly || {}).map(
-                      (m, i) => ({
-                        name: m.name?.slice(0, 3) || String(i),
-                        current: m.revenue,
-                      })
-                    )}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis />
-                    <Tooltip formatter={(v) => fmtCurrency(v)} />
-                    <Line
-                      type="monotone"
-                      dataKey="current"
-                      stroke={COLORS[0]}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+              <CardContent style={{ height: 320 }}>
+                {/* Choose chart by period */}
+                {period === "day" && (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <LineChart
+                      data={hourlySeries}
+                      margin={{ top: 10, right: 20, left: 0, bottom: 40 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="hour"
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                      />
+                      <YAxis />
+                      <Tooltip formatter={(value) => fmtCurrency(value)} />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke={COLORS[0]}
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+
+                {(period === "week" || period === "month") && (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart
+                      data={period === "week" ? weeklySeries : monthlySeries}
+                      margin={{ top: 10, right: 20, left: 0, bottom: 50 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      {/* X axis with vertical labels for month abbreviations */}
+                      <XAxis
+                        dataKey={period === "week" ? "week" : "name"}
+                        tick={{ fontSize: 12 }}
+                        angle={period === "week" ? 0 : -90}{period === "week" ? 0 : -90}
+                        textAnchor="end"
+                        interval={0}
+                      />
+                      <YAxis />
+                      <Tooltip
+                        formatter={(value) =>
+                          typeof value === "number" ? fmtCurrency(value) : value
+                        }
+                      />
+                      <Legend />
+
+                      {/* Use thin bars (barSize small) as requested */}
+                      <Bar dataKey="revenue" barSize={12} name="Revenue">
+                        {(period === "week" ? weeklySeries : monthlySeries).map(
+                          (entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                            />
+                          )
+                        )}
+                      </Bar>
+
+                      {/* Optional cost/profit overlay when available */}
+                      <Bar dataKey="profit" barSize={6} name="Profit" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+
+                {period === "year" && (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart
+                      data={monthlySeries}
+                      margin={{ top: 10, right: 20, left: 0, bottom: 50 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 12 }}
+                        angle={-90}
+                        textAnchor="end"
+                        interval={0}
+                      />
+                      <YAxis />
+                      <Tooltip
+                        formatter={(value) =>
+                          typeof value === "number" ? fmtCurrency(value) : value
+                        }
+                      />
+                      <Legend />
+                      <Bar dataKey="revenue" barSize={12} name="Revenue">
+                        {monthlySeries.map((_, index) => (
+                          <Cell
+                            key={index}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        ))}
+                      </Bar>
+                      <Line
+                        type="monotone"
+                        dataKey="profit"
+                        stroke={COLORS[2]}
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
-          )}
-        </div>
 
-        {/* Right column - Pie & Top products */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sales vs Deliveries</CardTitle>
-              <CardDescription>Revenue split</CardDescription>
-            </CardHeader>
-            <CardContent style={{ height: 320 }}>
-              <div className="h-full items-center justify-center">
-                <ResponsiveContainer width="100%" height={260}>
-                  <PieChart>
-                    <Pie
-                      data={salesVsDeliveryPie}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={50}
-                      outerRadius={90}
-                      paddingAngle={4}
-                      label
-                    >
-                      {salesVsDeliveryPie.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
+            {/* Year over year comparison for yearly period */}
+            {period === "year" &&
+              yearlyComparison &&
+              monthlySeries.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Year-over-Year Comparison</CardTitle>
+                    <CardDescription>
+                      Compare current year to previous year
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent style={{ height: 220 }}>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart data={monthlySeries}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={50}
                         />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v) => fmtCurrency(v)} />
-                  </PieChart>
-                </ResponsiveContainer>
-                {/* Custom Legend */}
-                <div className="mt-4 flex flex-wrap justify-center gap-4">
-                  {salesVsDeliveryPie.map((entry, index) => (
-                    <div key={entry.name} className="flex items-center gap-2">
-                      <span
-                        className="h-3 w-3 rounded-sm"
-                        style={{
-                          backgroundColor: COLORS[index % COLORS.length],
-                        }}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {entry.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                        <YAxis />
+                        <Tooltip formatter={(v) => fmtCurrency(v)} />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="revenue"
+                          name="Monthly Revenue"
+                          stroke={COLORS[0]}
+                          strokeWidth={2}
+                          dot={{ r: 2 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Products</CardTitle>
-              <CardDescription>
-                Most sold items in selected period
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Qty</TableHead>
-                    <TableHead>Revenue</TableHead>
-                    <TableHead>Cost Price</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {report?.topProducts && report.topProducts.length > 0 ? (
-                    report.topProducts.map((p, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>{idx + 1}</TableCell>
-                        <TableCell>{p.product?.name}</TableCell>
-                        <TableCell>{p.quantity}</TableCell>
-                        <TableCell>{fmtCurrency(p.revenue)}</TableCell>
-                        <TableCell>
-                          {fmtCurrency(p.product?.costPrice)}
+          {/* Right column - Pie & Top products */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sales vs Deliveries</CardTitle>
+                <CardDescription>Revenue split</CardDescription>
+              </CardHeader>
+              <CardContent style={{ height: 320 }}>
+                <div className="h-full items-center justify-center">
+                  {salesVsDeliveryPie.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-muted-foreground">
+                        No revenue data available
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <ResponsiveContainer width="100%" height={260}>
+                        <PieChart>
+                          <Pie
+                            data={salesVsDeliveryPie}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={50}
+                            outerRadius={90}
+                            paddingAngle={4}
+                            label
+                          >
+                            {salesVsDeliveryPie.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(v) => fmtCurrency(v)} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      {/* Custom Legend */}
+                      <div className="mt-4 flex flex-wrap justify-center gap-4">
+                        {salesVsDeliveryPie.map((entry, index) => (
+                          <div
+                            key={entry.name}
+                            className="flex items-center gap-2"
+                          >
+                            <span
+                              className="h-3 w-3 rounded-sm"
+                              style={{
+                                backgroundColor: COLORS[index % COLORS.length],
+                              }}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              {entry.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Products</CardTitle>
+                <CardDescription>
+                  Most sold items in selected period
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Qty</TableHead>
+                      <TableHead>Revenue</TableHead>
+                      <TableHead>Cost Price</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {report?.topProducts && report.topProducts.length > 0 ? (
+                      report.topProducts.map((p, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>{idx + 1}</TableCell>
+                          <TableCell>{p.product?.name}</TableCell>
+                          <TableCell>{p.quantity}</TableCell>
+                          <TableCell>{fmtCurrency(p.revenue)}</TableCell>
+                          <TableCell>
+                            {fmtCurrency(p.product?.costPrice)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center">
+                          No top products data
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center">
-                        No top products data
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">
-                    Sales Revenue
-                  </div>
-                  <div className="text-lg">
-                    {fmtCurrency(report?.breakdown?.sales?.revenue)}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">
-                    Deliveries Revenue
-                  </div>
-                  <div className="text-lg">
-                    {fmtCurrency(report?.breakdown?.deliveries?.revenue)}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">
-                    Revenue Difference
-                  </div>
-                  <div className="text-lg">
-                    {fmtCurrency(
-                      report?.breakdown?.comparison?.revenueDifference
                     )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">
+                      Sales Revenue
+                    </div>
+                    <div className="text-lg">
+                      {fmtCurrency(report?.breakdown?.sales?.revenue)}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">
+                      Deliveries Revenue
+                    </div>
+                    <div className="text-lg">
+                      {fmtCurrency(report?.breakdown?.deliveries?.revenue)}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">
+                      Revenue Difference
+                    </div>
+                    <div className="text-lg">
+                      {fmtCurrency(
+                        report?.breakdown?.comparison?.revenueDifference
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* <div className="mt-4">
+                {/* <div className="mt-4">
               <pre className="text-xs p-3 bg-muted rounded">{JSON.stringify(report, null, 2)}</pre>
             </div> */}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Loading and error indicators */}
       {loading && (
