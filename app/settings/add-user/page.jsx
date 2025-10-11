@@ -140,12 +140,7 @@ export default function AddUserPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ADMIN">ADMIN</SelectItem>
-                    <SelectItem value="MANAGER">MANAGER</SelectItem>
                     <SelectItem value="CASHIER">CASHIER</SelectItem>
-                    <SelectItem value="STOCK_MANAGER">STOCK_MANAGER</SelectItem>
-                    <SelectItem value="DELIVERY_DRIVER">
-                      DELIVERY_DRIVER
-                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
