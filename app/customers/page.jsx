@@ -42,7 +42,7 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
-  // Filtering
+  // Filtering and sorting
   const filteredData = useMemo(() => {
     let result = [...customers];
     if (searchQuery) {
@@ -53,6 +53,18 @@ export default function CustomersPage() {
           c.phone?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
+
+    // Sorting in descending order (newest first)
+    // Assuming customers have an 'id' or 'createdAt' field for sorting
+    result.sort((a, b) => {
+      // Use createdAt if available, otherwise use id
+      if (a.createdAt && b.createdAt) {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      // Fallback to ID if no createdAt
+      return b.id - a.id;
+    });
+
     return result;
   }, [customers, searchQuery]);
 
@@ -81,10 +93,12 @@ export default function CustomersPage() {
           Customers
         </h1>
         <div className="flex items-center gap-3">
-        <Link href="/customers/add">
-          <Button className="bg-orange-500 hover:bg-orange-600 text-md drop-shadow-2xl">Add Customer</Button>
-        </Link>
-        <BackToDashboardButton />
+          <Link href="/customers/add">
+            <Button className="bg-orange-500 hover:bg-orange-600 text-md drop-shadow-2xl">
+              Add Customer
+            </Button>
+          </Link>
+          <BackToDashboardButton />
         </div>
       </div>
 
@@ -159,7 +173,9 @@ export default function CustomersPage() {
               <Button
                 key={page}
                 variant={page === currentPage ? "default" : "outline"}
-                className={page === currentPage ? "bg-orange-500 text-white" : ""}
+                className={
+                  page === currentPage ? "bg-orange-500 text-white" : ""
+                }
                 size="sm"
                 onClick={() => goToPage(page)}
               >
