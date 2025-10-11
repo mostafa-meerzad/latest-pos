@@ -19,6 +19,7 @@ export default function CreateSupplierPage() {
 
   // ui state
   const [error, setError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   // helper: normalize error into human-readable string
@@ -45,8 +46,8 @@ export default function CreateSupplierPage() {
     setError(null);
 
     // simple client validation
-    if (!name.trim()) return setError("Supplier name is required.");
-    if (!phone.trim()) return setError("Phone number is required.");
+    // if (!name.trim()) return setError("Supplier name is required.");
+    // if (!phone.trim()) return setError("Phone number is required.");
 
     setSubmitting(true);
     try {
@@ -69,8 +70,10 @@ export default function CreateSupplierPage() {
       if (res.ok && data.success) {
         router.push("/suppliers");
       } else {
-        const msg = extractErrorMessage(data.error);
-        setError(msg || "Failed to create supplier");
+        // const msg = extractErrorMessage(data.error);
+        setError(data.error && "Failed to create supplier");
+        // console.log(data.error)
+        setFieldErrors(data.error?.fieldErrors || {});
       }
     } catch (err) {
       console.error("Error creating supplier:", err);
@@ -98,67 +101,99 @@ export default function CreateSupplierPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Name */}
                 <div>
-                  <label className="text-sm font-medium block mb-1">Supplier Name</label>
+                  <label className="text-sm font-medium block mb-1">
+                    Supplier Name
+                  </label>
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter supplier name"
+                    placeholder={fieldErrors.name || "Enter supplier name"}
+                    className={`${fieldErrors.name && "border-red-400 "}`}
                   />
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="text-sm font-medium block mb-1">Email</label>
+                  <label className="text-sm font-medium block mb-1">
+                    Email
+                  </label>
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter supplier email"
+                    placeholder={fieldErrors.email || "Enter supplier email"}
+                    className={`${
+                      fieldErrors.email && "border-red-400 "
+                    } invalid:focus:ring-red-400 invalid:focus:ring-1 invalid:focus:border-none`}
                   />
                 </div>
 
                 {/* Address */}
                 <div className="md:col-span-2">
-                  <label className="text-sm font-medium block mb-1">Address</label>
+                  <label className="text-sm font-medium block mb-1">
+                    Address
+                  </label>
                   <Input
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Enter supplier address"
+                    placeholder={
+                      fieldErrors.address || "Enter supplier address"
+                    }
+                    className={`${fieldErrors.address && "border-red-400 "}`}
                   />
                 </div>
 
                 {/* Contact Person */}
                 <div>
-                  <label className="text-sm font-medium block mb-1">Contact Person</label>
+                  <label className="text-sm font-medium block mb-1">
+                    Contact Person
+                  </label>
                   <Input
                     value={contactPerson}
                     onChange={(e) => setContactPerson(e.target.value)}
-                    placeholder="Enter contact person name"
+                    placeholder={
+                      fieldErrors.contactPerson || "Enter contact person name"
+                    }
+                    className={`${
+                      fieldErrors.contactPerson && "border-red-400 "
+                    }`}
                   />
                 </div>
 
                 {/* Phone */}
                 <div>
-                  <label className="text-sm font-medium block mb-1">Phone</label>
+                  <label className="text-sm font-medium block mb-1">
+                    Phone
+                  </label>
                   <Input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Enter phone number"
+                    placeholder={fieldErrors.phone || "Enter phone number"}
+                    className={`${fieldErrors.phone && "border-red-400 "}`}
                   />
                 </div>
               </div>
 
               {/* Actions */}
               <div className="mt-6 flex items-center gap-3">
-                <Button type="submit" className="bg-orange-500" disabled={submitting}>
+                <Button
+                  type="submit"
+                  className="bg-orange-500"
+                  disabled={submitting}
+                >
                   {submitting ? "Saving..." : "Create Supplier"}
                 </Button>
-                <Button variant="ghost" onClick={() => router.push("/suppliers")}>
+                <Button
+                  variant="ghost"
+                  onClick={() => router.push("/suppliers")}
+                >
                   Cancel
                 </Button>
 
                 {error && (
                   <div className="ml-4 text-sm text-red-600 break-words max-w-md">
+                    {console.log("the error object i get: ", typeof error)}
+                    {console.log(fieldErrors)}
                     {error}
                   </div>
                 )}
