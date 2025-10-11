@@ -379,11 +379,16 @@ export default function AddSalePage() {
             {isSubmitting ? "Saving..." : "Finalize Sale + Delivery"}
           </Button>
 
-          <Button onClick={handlePrint} className="bg-blue-500 text-md drop-shadow-2xl">
+          <Button
+            onClick={handlePrint}
+            className="bg-blue-500 text-md drop-shadow-2xl"
+          >
             Print Invoice
           </Button>
           <Link href="/sales">
-            <Button variant="outline" className={"drop-shadow-2xl"}>Back to Sales</Button>
+            <Button variant="outline" className={"drop-shadow-2xl"}>
+              Back to Sales
+            </Button>
           </Link>
         </div>
       </div>
@@ -482,6 +487,11 @@ export default function AddSalePage() {
               <div className="w-28">
                 <label className="text-xs text-gray-600">Qty</label>
                 <Input
+                  onKeyDown={(e) => {
+                    // Block minus, dot, and scientific notation keys
+                    if (["-", ".", "e", "E"].includes(e.key))
+                      e.preventDefault();
+                  }}
                   type="number"
                   min={1}
                   value={quantity}
@@ -491,6 +501,11 @@ export default function AddSalePage() {
               <div className="w-32">
                 <label className="text-xs text-gray-600">Discount</label>
                 <Input
+                  onKeyDown={(e) => {
+                    // Block minus, dot, and scientific notation keys
+                    if (["-", ".", "e", "E"].includes(e.key))
+                      e.preventDefault();
+                  }}
                   type="number"
                   step="1"
                   min={0}
@@ -548,6 +563,11 @@ export default function AddSalePage() {
               <div className="w-32">
                 <label className="text-xs text-gray-600">Tax amount</label>
                 <Input
+                  onKeyDown={(e) => {
+                    // Block minus, dot, and scientific notation keys
+                    if (["-", ".", "e", "E"].includes(e.key))
+                      e.preventDefault();
+                  }}
                   type="number"
                   step="1"
                   min={0}
