@@ -135,8 +135,7 @@ export default function AddSalePage() {
 
   function onAdd() {
     if (!selectedProduct) return alert("Select product or scan barcode");
-    if (!quantity || quantity <= 0)
-      return alert("Quantity must be at least 1");
+    if (!quantity || quantity <= 0) return alert("Quantity must be at least 1");
 
     const unitPrice = Number(selectedProduct.price || 0);
     const discount = Number(itemDiscount || 0);
@@ -191,7 +190,11 @@ export default function AddSalePage() {
     const discount = items.reduce((s, it) => s + Number(it.discount || 0), 0);
     const tax = 0;
     const final = +(subtotal - discount + tax).toFixed(2);
-    return { subtotal: +subtotal.toFixed(2), discount: +discount.toFixed(2), final };
+    return {
+      subtotal: +subtotal.toFixed(2),
+      discount: +discount.toFixed(2),
+      final,
+    };
   }, [items]);
 
   // common helper to handle invoice print
@@ -353,6 +356,7 @@ export default function AddSalePage() {
 
         <div className="flex gap-2">
           <Button
+            className={"drop-shadow-xl"}
             variant="secondary"
             onClick={() => {
               if (confirm("Clear cart?")) clear();
@@ -362,24 +366,29 @@ export default function AddSalePage() {
           </Button>
           <Button
             onClick={handleFinalizeSale}
-            className={"bg-green-500 text-md"}
+            className={"bg-green-500 text-md drop-shadow-xl"}
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Finalize Sale"}
           </Button>
           <Button
             onClick={handleFinalizeSaleWithDelivery}
-            className="bg-orange-500 text-md"
+            className="bg-orange-500 text-md drop-shadow-xl"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Finalize Sale + Delivery"}
           </Button>
 
-          <Button onClick={handlePrint} className="bg-blue-500 text-md">
+          <Button
+            onClick={handlePrint}
+            className="bg-blue-500 text-md drop-shadow-xl"
+          >
             Print Invoice
           </Button>
           <Link href="/sales">
-            <Button variant="outline">Back to Sales</Button>
+            <Button variant="outline" className={"drop-shadow-xl"}>
+              Back to Sales
+            </Button>
           </Link>
         </div>
       </div>
@@ -488,7 +497,8 @@ export default function AddSalePage() {
                 <label className="text-xs text-gray-600">Discount</label>
                 <Input
                   type="number"
-                  step="0.01"
+                  step="1"
+                  min={0}
                   value={itemDiscount}
                   onChange={(e) => setItemDiscount(Number(e.target.value))}
                 />
@@ -544,7 +554,8 @@ export default function AddSalePage() {
                 <label className="text-xs text-gray-600">Tax amount</label>
                 <Input
                   type="number"
-                  step="0.01"
+                  step="1"
+                  min={0}
                   value={taxAmount}
                   onChange={(e) => setTaxAmount(Number(e.target.value))}
                 />
@@ -616,8 +627,17 @@ export default function AddSalePage() {
                         <TableCell>
                           {editingId === row.tempId ? (
                             <Input
+                              onKeyDown={(e) => {
+                                if (
+                                  e.key === "-" ||
+                                  e.key === "e" ||
+                                  e.key === "E"
+                                )
+                                  e.preventDefault();
+                              }}
                               type="number"
-                              step="0.01"
+                              step="1"
+                              min={0}
                               value={String(
                                 editValues?.unitPrice ?? row.unitPrice
                               )}
@@ -635,7 +655,16 @@ export default function AddSalePage() {
                         <TableCell className="w-28">
                           {editingId === row.tempId ? (
                             <Input
+                              onKeyDown={(e) => {
+                                if (
+                                  e.key === "-" ||
+                                  e.key === "e" ||
+                                  e.key === "E"
+                                )
+                                  e.preventDefault();
+                              }}
                               type="number"
+                              min={0}
                               value={String(
                                 editValues?.quantity ?? row.quantity
                               )}
@@ -653,8 +682,17 @@ export default function AddSalePage() {
                         <TableCell className="w-32">
                           {editingId === row.tempId ? (
                             <Input
+                              onKeyDown={(e) => {
+                                if (
+                                  e.key === "-" ||
+                                  e.key === "e" ||
+                                  e.key === "E"
+                                )
+                                  e.preventDefault();
+                              }}
                               type="number"
-                              step="0.01"
+                              min={0}
+                              step="1"
                               value={String(
                                 editValues?.discount ?? row.discount
                               )}

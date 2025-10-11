@@ -23,7 +23,7 @@ export default function CreateProductPage() {
   const [barcode, setBarcode] = useState("");
   const [price, setPrice] = useState("");
   const [costPrice, setCostPrice] = useState("");
-  const [categoryId, setCategoryId] = useState(""); // numeric id (set by selection or manual)
+  const [categoryId, setCategoryId] = useState("");
   const [stockQuantity, setStockQuantity] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [status, setStatus] = useState("ACTIVE");
@@ -33,53 +33,45 @@ export default function CreateProductPage() {
   const [supplierQuery, setSupplierQuery] = useState("");
   const [supplierSuggestionsVisible, setSupplierSuggestionsVisible] =
     useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState(null); // { id, name, ... }
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
 
-  // categories & suggestions (NEW)
+  // categories & suggestions
   const [categories, setCategories] = useState([]);
   const [categoryQuery, setCategoryQuery] = useState("");
   const [categorySuggestionsVisible, setCategorySuggestionsVisible] =
     useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null); // { id, name }
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   // UI state
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // boot: fetch suppliers and categories
   useEffect(() => {
     async function boot() {
       try {
-        // suppliers
         const sres = await fetch("/api/suppliers");
         const sjson = await sres.json();
-        const supplierList = Array.isArray(sjson?.data)
-          ? sjson.data
-          : sjson?.data ?? [];
-        setSuppliers(supplierList);
+        setSuppliers(
+          Array.isArray(sjson?.data) ? sjson.data : sjson?.data ?? []
+        );
 
-        // categories (endpoint as you specified)
-        try {
-          const cres = await fetch("/api/category");
-          if (cres.ok) {
-            const cjson = await cres.json();
-            const cats = Array.isArray(cjson?.data)
-              ? cjson.data
-              : cjson?.data ?? [];
-            if (Array.isArray(cats)) setCategories(cats);
-          }
-        } catch (e) {
-          // ignore - categories may not exist
-          console.warn("Could not load /api/category", e);
+        const cres = await fetch("/api/category");
+        if (cres.ok) {
+          const cjson = await cres.json();
+          setCategories(
+            Array.isArray(cjson?.data) ? cjson.data : cjson?.data ?? []
+          );
         }
       } catch (err) {
-        console.error("Error booting suppliers/categories:", err);
+        console.log("Error booting suppliers/categories:", err);
       }
     }
     boot();
   }, []);
 
-  // supplier suggestions filter
+  // filter supplier suggestions
   const supplierSuggestions = useMemo(() => {
     const q = supplierQuery.trim().toLowerCase();
     if (!q) return suppliers.slice(0, 6);
@@ -91,7 +83,7 @@ export default function CreateProductPage() {
     );
   }, [supplierQuery, suppliers]);
 
-  // category suggestions filter (NEW)
+  // filter category suggestions
   const categorySuggestions = useMemo(() => {
     const q = categoryQuery.trim().toLowerCase();
     if (!q) return categories.slice(0, 6);
@@ -100,7 +92,6 @@ export default function CreateProductPage() {
     );
   }, [categoryQuery, categories]);
 
-  // choose supplier
   function chooseSupplier(s) {
     setSelectedSupplier(s);
     setSupplierQuery(s.name);
@@ -111,7 +102,6 @@ export default function CreateProductPage() {
     setSupplierQuery("");
   }
 
-  // choose category (NEW)
   function chooseCategory(c) {
     setSelectedCategory(c);
     setCategoryQuery(c.name);
@@ -124,7 +114,6 @@ export default function CreateProductPage() {
     setCategoryId("");
   }
 
-  // build request body
   function buildRequestBody() {
     return {
       name: name.trim(),
@@ -143,37 +132,9 @@ export default function CreateProductPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
-
-    // minimal client-side validation
-    if (!name.trim()) return setError("Product name is required.");
-    const finalCategoryId =
-      selectedCategory?.id ?? (categoryId ? Number(categoryId) : undefined);
-    if (!finalCategoryId)
-      return setError(
-        "Category is required (select from suggestions or type ID)."
-      );
-    if (!price) return setError("Price is required.");
-
-    //decimal and negative check
-    if (price < 0 || costPrice < 0 || stockQuantity < 0)
-      return setError(
-        "Price, Cost Price, and Stock Quantity cannot be negative."
-      );
-
-   //price < cost
-    if (Number(price) < Number(costPrice))
-      return setError("Price cannot be lesser than Cost Price");
-
-    if (
-      !Number.isInteger(Number(price)) ||
-      !Number.isInteger(Number(costPrice)) ||
-      !Number.isInteger(Number(stockQuantity))
-    )
-      return setError(
-        "Price, Cost Price, and Stock Quantity must be whole numbers."
-      );
-
+    setFieldErrors({});
     setSubmitting(true);
+
     try {
       const body = buildRequestBody();
       const res = await fetch("/api/products", {
@@ -181,20 +142,24 @@ export default function CreateProductPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+
       const data = await res.json();
       if (res.ok && data.success) {
         router.push("/products");
       } else {
-        const msg =
-          data?.error?.message ||
-          data?.error ||
-          JSON.stringify(data?.error || data) ||
-          "Failed to create product";
-        setError(msg);
+        // console.error("Error creating product:", data);
+        const fieldErrs = data?.error?.fieldErrors || {};
+        const formErrs = data?.error?.formErrors || [];
+        setFieldErrors(fieldErrs);
+        setError(
+          formErrs.length
+            ? formErrs.join(", ")
+            : "Please correct the highlighted fields."
+        );
       }
     } catch (err) {
-      console.error("Error creating product:", err);
-      setError(err.message || "Network error");
+      console.error("Network or unexpected error:", err);
+      setError("Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -205,17 +170,18 @@ export default function CreateProductPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Product</h1>
         <Link href="/products">
-          <Button variant="outline" className={"drop-shadow-2xl"}>
+          <Button variant="outline" className="drop-shadow-2xl">
             Back to Products
           </Button>
         </Link>
       </div>
+
       <div className="flex justify-center">
         <form onSubmit={handleSubmit} className="min-w-4xl drop-shadow-2xl">
           <Card>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Name */}
+                {/* Product Name */}
                 <div>
                   <label className="text-sm font-medium block mb-1">
                     Product Name
@@ -223,6 +189,8 @@ export default function CreateProductPage() {
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    placeholder={fieldErrors.name?.[0] || ""}
+                    className={fieldErrors.name ? "border-red-400" : ""}
                   />
                 </div>
 
@@ -244,9 +212,12 @@ export default function CreateProductPage() {
                   </label>
                   <Input
                     type="number"
-                    step="0.01"
+                    min="0"
+                    step="1"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
+                    placeholder={fieldErrors.price?.[0] || ""}
+                    className={fieldErrors.price ? "border-red-400" : ""}
                   />
                 </div>
 
@@ -257,9 +228,10 @@ export default function CreateProductPage() {
                   </label>
                   <Input
                     type="number"
-                    step="0.01"
                     value={costPrice}
                     onChange={(e) => setCostPrice(e.target.value)}
+                    placeholder={fieldErrors.costPrice?.[0] || ""}
+                    className={fieldErrors.costPrice ? "border-red-400" : ""}
                   />
                 </div>
 
@@ -272,6 +244,10 @@ export default function CreateProductPage() {
                     type="number"
                     value={stockQuantity}
                     onChange={(e) => setStockQuantity(e.target.value)}
+                    placeholder={fieldErrors.stockQuantity?.[0] || ""}
+                    className={
+                      fieldErrors.stockQuantity ? "border-red-400" : ""
+                    }
                   />
                 </div>
 
@@ -303,10 +279,10 @@ export default function CreateProductPage() {
                   </Select>
                 </div>
 
-                {/* Category (suggestion logic) */}
+                {/* Category */}
                 <div className="relative md:col-span-2">
                   <label className="text-sm font-medium block mb-1">
-                    Category{" "}
+                    Category
                   </label>
                   <div className="flex items-center gap-2">
                     <Input
@@ -322,8 +298,13 @@ export default function CreateProductPage() {
                           150
                         )
                       }
-                      placeholder="Type category name or id..."
-                      className="flex-1"
+                      placeholder={
+                        fieldErrors.categoryId?.[0] ||
+                        "Type category name or id..."
+                      }
+                      className={`flex-1 ${
+                        fieldErrors.categoryId ? "border-red-400" : ""
+                      }`}
                     />
                     {selectedCategory && (
                       <Button variant="ghost" onClick={clearSelectedCategory}>
@@ -354,20 +335,12 @@ export default function CreateProductPage() {
                         ))}
                       </div>
                     )}
-
-                  {selectedCategory && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      Selected Category:{" "}
-                      <strong>{selectedCategory.name}</strong> (ID:{" "}
-                      {selectedCategory.id})
-                    </div>
-                  )}
                 </div>
 
-                {/* Supplier (search + suggestions) */}
+                {/* Supplier */}
                 <div className="relative md:col-span-2">
                   <label className="text-sm font-medium block mb-1">
-                    Supplier{" "}
+                    Supplier
                   </label>
                   <div className="flex items-center gap-2">
                     <Input
@@ -383,8 +356,13 @@ export default function CreateProductPage() {
                           150
                         )
                       }
-                      placeholder="Type supplier name or id..."
-                      className="flex-1"
+                      placeholder={
+                        fieldErrors.supplierId?.[0] ||
+                        "Type supplier name or id..."
+                      }
+                      className={`flex-1 ${
+                        fieldErrors.supplierId ? "border-red-400" : ""
+                      }`}
                     />
                     {selectedSupplier && (
                       <Button variant="ghost" onClick={clearSelectedSupplier}>
@@ -415,36 +393,30 @@ export default function CreateProductPage() {
                         ))}
                       </div>
                     )}
-
-                  {selectedSupplier && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      Selected Supplier:{" "}
-                      <strong>{selectedSupplier.name}</strong> (ID:{" "}
-                      {selectedSupplier.id})
-                    </div>
-                  )}
                 </div>
               </div>
 
               {/* form actions */}
-              <div className="mt-6 flex items-center gap-3">
-                <Button
-                  type="submit"
-                  className="bg-orange-500"
-                  disabled={submitting}
-                >
-                  {submitting ? "Saving..." : "Create Product"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push("/products")}
-                >
-                  Cancel
-                </Button>
+              <div className="mt-6 flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="submit"
+                    className="bg-orange-500"
+                    disabled={submitting}
+                  >
+                    {submitting ? "Saving..." : "Create Product"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => router.push("/products")}
+                  >
+                    Cancel
+                  </Button>
+                </div>
 
                 {error && (
-                  <div className="ml-4 text-sm text-red-600">
-                    {String(error)}
+                  <div className="p-3 rounded bg-red-50 border border-red-200 text-red-600 text-sm">
+                    {error}
                   </div>
                 )}
               </div>

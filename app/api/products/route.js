@@ -43,7 +43,7 @@ export const POST = async (request) => {
     const validation = createProductSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: validation.error.format() },
+        { success: false, error: validation.error.flatten() },
         { status: 400 }
       );
     }

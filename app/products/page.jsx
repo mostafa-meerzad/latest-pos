@@ -224,17 +224,17 @@ export default function ProductsPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/products/add">
-            <Button className="bg-orange-500 hover:bg-orange-600 text-md">
+            <Button className="bg-orange-500 hover:bg-orange-600 text-md drop-shadow-xl">
               Add Product
             </Button>
           </Link>
           <Link href="/products/categories">
-            <Button className="bg-yellow-500 hover:bg-yellow-600 text-md">
+            <Button className="bg-yellow-500 hover:bg-yellow-600 text-md drop-shadow-xl">
               Categories
             </Button>
           </Link>
           <Link href="/suppliers">
-            <Button className="bg-amber-500 hover:bg-amber-600 text-md">
+            <Button className="bg-amber-500 hover:bg-amber-600 text-md drop-shadow-xl">
               Suppliers
             </Button>
           </Link>

@@ -26,10 +26,9 @@ export default function CreateDriverPage() {
       return setError("Name and phone are required.");
     }
 
-   
-  if (!/^[0-9]+$/.test(phone.trim())) {
-    return setError("Phone number must contain only digits.");
-  }
+    if (!/^[0-9]+$/.test(phone.trim())) {
+      return setError("Phone number must contain only digits.");
+    }
 
     setSubmitting(true);
     try {
@@ -58,54 +57,71 @@ export default function CreateDriverPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Delivery Driver</h1>
         <Link href="/drivers">
-          <Button variant="outline" className={"drop-shadow-2xl"}>Back to Driver</Button>
+          <Button variant="outline" className={"drop-shadow-2xl"}>
+            Back to Driver
+          </Button>
         </Link>
       </div>
 
       <div className="flex justify-center">
-      <form onSubmit={handleSubmit} className="min-w-4xl drop-shadow-2xl">
-        <Card>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-4">
-              {/* Name */}
-              <div>
-                <label className="text-sm font-medium block mb-1">Driver Name</label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter driver name"
-                />
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label className="text-sm font-medium block mb-1">Phone</label>
-                <Input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter phone number"
-                />
-              </div>
-            </div>
-
-            {/* form actions */}
-            <div className="mt-6 flex items-center gap-3">
-              <Button type="submit" className="bg-orange-500" disabled={submitting}>
-                {submitting ? "Saving..." : "Create Driver"}
-              </Button>
-              <Button variant="ghost" onClick={() => router.push("/drivers")}>
-                Cancel
-              </Button>
-
-              {error && (
-                <div className="ml-4 text-sm text-red-600">
-                  {String(error)}
+        <form onSubmit={handleSubmit} className="min-w-4xl drop-shadow-2xl">
+          <Card>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-4">
+                {/* Name */}
+                <div>
+                  <label className="text-sm font-medium block mb-1">
+                    Driver Name
+                  </label>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={
+                      error ? "Name is require" : "Enter driver name"
+                    }
+                    className={error ? "border-red-500" : ""}
+                  />
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </form>
+
+                {/* Phone */}
+                <div>
+                  <label className="text-sm font-medium block mb-1">
+                    Phone
+                  </label>
+                  <Input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder={
+                      error ? "Phone number is require" : "Enter phone number"
+                    }
+                    className={error ? "border-red-500" : ""}
+                  />
+                </div>
+              </div>
+
+              {/* form actions */}
+              <div className="mt-6 flex items-center gap-3">
+                <Button
+                  type="submit"
+                  className="bg-orange-500"
+                  disabled={submitting}
+                >
+                  {submitting ? "Saving..." : "Create Driver"}
+                </Button>
+                <Button variant="ghost" onClick={() => router.push("/drivers")}>
+                  Cancel
+                </Button>
+
+                {error && (
+                  <div className="ml-4 text-sm text-red-600">
+                    {/* {console.log(error)} */}
+                    {error !== "Name and phone are required." && String(error)}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </form>
       </div>
     </div>
   );

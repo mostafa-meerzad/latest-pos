@@ -165,163 +165,175 @@ export default function CategoriesPage() {
 
   return (
     <div>
-        <div className="flex justify-end mt-3 mr-6">
+      <div className="flex justify-end mt-3 mr-6">
         <Link href="/products">
-          <Button variant="outline" className={"drop-shadow-2xl"}>Back to Products</Button>
+          <Button variant="outline" className={"drop-shadow-2xl"}>
+            Back to Products
+          </Button>
         </Link>
-        </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 m-6">
-      {/* LEFT SIDE - Add Category */}
-      <div>
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>Add Category</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium block mb-1">
-                    Category Name
-                  </label>
-                  <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter category name..."
-                  />
-                </div>
-
-                {error && (
-                  <div className="text-sm text-red-600">{String(error)}</div>
-                )}
-
-                <div className="flex items-center gap-3">
-                  <Button
-                    type="submit"
-                    className="bg-orange-500"
-                    disabled={submitting}
-                  >
-                    {submitting ? "Saving..." : "Create Category"}
-                  </Button>
-
-                </div>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 m-6">
+        {/* LEFT SIDE - Add Category */}
+        <div>
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>Add Category</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium block mb-1">
+                      Category Name
+                    </label>
+                    <Input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder={
+                        error === "Category name is required."
+                          ? error
+                          : "Enter category name..."
+                      }
+                      className={
+                        error === "Category name is required."
+                          ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                          : ""
+                      }
+                    />
+                  </div>
 
-      {/* RIGHT SIDE - Manage Categories */}
-      <div>
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>Manage Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16 text-center">#</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center w-40">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="text-center text-gray-500"
+                  {error && (
+                    <div className="text-sm text-red-600">
+                      {error !== "Category name is required." && String(error)}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="submit"
+                      className="bg-orange-500"
+                      disabled={submitting}
                     >
-                      No categories found
-                    </TableCell>
+                      {submitting ? "Saving..." : "Create Category"}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* RIGHT SIDE - Manage Categories */}
+        <div>
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>Manage Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16 text-center">#</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-center w-40">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  categories.map((cat, i) => (
-                    <TableRow key={cat.id}>
-                      <TableCell className="text-center">{i + 1}</TableCell>
-                      <TableCell>
-                        {editingId === cat.id ? (
-                          <input
-                            className="border p-1 rounded w-full"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            autoFocus
-                          />
-                        ) : (
-                          cat.name
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {editingId === cat.id ? (
-                          <select
-                            className="border p-1 rounded"
-                            value={editStatus}
-                            onChange={(e) => setEditStatus(e.target.value)}
-                          >
-                            <option value="ACTIVE">ACTIVE</option>
-                            <option value="INACTIVE">INACTIVE</option>
-                          </select>
-                        ) : (
-                          <span
-                            className={`px-2 py-1 rounded text-xs ${
-                              cat.status === "ACTIVE"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {cat.status}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center space-x-2">
-                        {editingId === cat.id ? (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={saveEdit}
-                              disabled={saving}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <Save className="w-4 h-4 mr-1" /> Save
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={cancelEdit}
-                            >
-                              <X className="w-4 h-4 mr-1" /> Cancel
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => startEdit(cat)}
-                            >
-                              <Pencil className="w-4 h-4 mr-1" /> Edit
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => deleteCategory(cat.id)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" /> Delete
-                            </Button>
-                          </>
-                        )}
+                </TableHeader>
+                <TableBody>
+                  {categories.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center text-gray-500"
+                      >
+                        No categories found
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                  ) : (
+                    categories.map((cat, i) => (
+                      <TableRow key={cat.id}>
+                        <TableCell className="text-center">{i + 1}</TableCell>
+                        <TableCell>
+                          {editingId === cat.id ? (
+                            <input
+                              className="border p-1 rounded w-full"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              autoFocus
+                            />
+                          ) : (
+                            cat.name
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === cat.id ? (
+                            <select
+                              className="border p-1 rounded"
+                              value={editStatus}
+                              onChange={(e) => setEditStatus(e.target.value)}
+                            >
+                              <option value="ACTIVE">ACTIVE</option>
+                              <option value="INACTIVE">INACTIVE</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={`px-2 py-1 rounded text-xs ${
+                                cat.status === "ACTIVE"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {cat.status}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center space-x-2">
+                          {editingId === cat.id ? (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={saveEdit}
+                                disabled={saving}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <Save className="w-4 h-4 mr-1" /> Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={cancelEdit}
+                              >
+                                <X className="w-4 h-4 mr-1" /> Cancel
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => startEdit(cat)}
+                              >
+                                <Pencil className="w-4 h-4 mr-1" /> Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => deleteCategory(cat.id)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" /> Delete
+                              </Button>
+                            </>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
     </div>
   );
 }
