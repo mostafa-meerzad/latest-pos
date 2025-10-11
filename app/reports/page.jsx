@@ -176,11 +176,55 @@ export default function ReportsPage() {
       .sort((a, b) => a.monthIndex - b.monthIndex); // Ensure proper order
   }, [report]);
 
-  // yearly data for comparison: shows current vs previous
+  // Enhanced yearlyComparison with better data handling
   const yearlyComparison = useMemo(() => {
-    if (!report?.timeSeries?.yearly) return null;
-    return report.timeSeries.yearly;
-  }, [report]);
+    if (!report?.timeSeries?.yearly || !report?.timeSeries?.monthly)
+      return null;
+
+    const currentYearData = report.timeSeries.yearly.currentYear;
+    const previousYearData = report.timeSeries.yearly.previousYear;
+    const monthlyData = report.timeSeries.monthly;
+
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    // Create chart data - for now we'll show current year monthly and previous year as average
+    // You might want to modify your backend to provide previous year monthly data
+    const chartData = Object.keys(monthlyData)
+      .map((monthKey) => {
+        const monthIndex = Number(monthKey);
+        const monthData = monthlyData[monthKey];
+
+        return {
+          name: monthNames[monthIndex] || `M${monthIndex + 1}`,
+          monthIndex,
+          currentYear: monthData.revenue || 0,
+          previousYear: previousYearData?.revenue
+            ? previousYearData.revenue / 12
+            : 0, // Average monthly revenue for previous year
+        };
+      })
+      .sort((a, b) => a.monthIndex - b.monthIndex);
+
+    return {
+      ...report.timeSeries.yearly,
+      chartData,
+      currentYear: year,
+      previousYear: year - 1,
+    };
+  }, [report, year]);
 
   // Utility to format currency
   function fmtCurrency(v) {
@@ -481,17 +525,19 @@ export default function ReportsPage() {
             {/* Year over year comparison for yearly period */}
             {period === "year" &&
               yearlyComparison &&
-              monthlySeries.length > 0 && (
+              yearlyComparison.chartData &&
+              yearlyComparison.chartData.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Year-over-Year Comparison</CardTitle>
                     <CardDescription>
-                      Compare current year to previous year
+                      Compare {yearlyComparison.currentYear} to{" "}
+                      {yearlyComparison.previousYear} revenue
                     </CardDescription>
                   </CardHeader>
-                  <CardContent style={{ height: 220 }}>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={monthlySeries}>
+                  <CardContent style={{ height: 240 }}>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <LineChart data={yearlyComparison.chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                           dataKey="name"
@@ -501,18 +547,88 @@ export default function ReportsPage() {
                           height={50}
                         />
                         <YAxis />
-                        <Tooltip formatter={(v) => fmtCurrency(v)} />
+                        <Tooltip
+                          formatter={(value, name) => [
+                            fmtCurrency(value),
+                            name === "currentYear"
+                              ? `${yearlyComparison.currentYear} Revenue`
+                              : `${yearlyComparison.previousYear} Revenue`,
+                          ]}
+                          labelFormatter={(label) => `Month: ${label}`}
+                        />
                         <Legend />
                         <Line
                           type="monotone"
-                          dataKey="revenue"
-                          name="Monthly Revenue"
+                          dataKey="currentYear"
+                          name={`${yearlyComparison.currentYear} Revenue`}
                           stroke={COLORS[0]}
                           strokeWidth={2}
-                          dot={{ r: 2 }}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 5 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="previousYear"
+                          name={`${yearlyComparison.previousYear} Revenue`}
+                          stroke={COLORS[1]}
+                          strokeWidth={2}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 5 }}
+                          strokeDasharray="5 5"
                         />
                       </LineChart>
                     </ResponsiveContainer>
+
+                    {/* Growth Metrics */}
+                    {yearlyComparison.growth && (
+                      <div className="mt-4 grid grid-cols-3 gap-4 text-xs">
+                        <div className="text-center">
+                          <div className="text-muted-foreground">
+                            Revenue Growth
+                          </div>
+                          <div
+                            className={`font-semibold ${
+                              yearlyComparison.growth.revenue > 0
+                                ? "text-green-600"
+                                : "text-rose-600"
+                            }`}
+                          >
+                            {yearlyComparison.growth.revenue > 0 ? "+" : ""}
+                            {yearlyComparison.growth.revenue}%
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-muted-foreground">
+                            Profit Growth
+                          </div>
+                          <div
+                            className={`font-semibold ${
+                              yearlyComparison.growth.profit > 0
+                                ? "text-green-600"
+                                : "text-rose-600"
+                            }`}
+                          >
+                            {yearlyComparison.growth.profit > 0 ? "+" : ""}
+                            {yearlyComparison.growth.profit}%
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-muted-foreground">
+                            Sales Growth
+                          </div>
+                          <div
+                            className={`font-semibold ${
+                              yearlyComparison.growth.salesCount > 0
+                                ? "text-green-600"
+                                : "text-rose-600"
+                            }`}
+                          >
+                            {yearlyComparison.growth.salesCount > 0 ? "+" : ""}
+                            {yearlyComparison.growth.salesCount}%
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
