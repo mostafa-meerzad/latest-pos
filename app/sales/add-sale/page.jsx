@@ -487,30 +487,56 @@ export default function AddSalePage() {
               <div className="w-28">
                 <label className="text-xs text-gray-600">Qty</label>
                 <Input
-                  onKeyDown={(e) => {
-                    // Block minus, dot, and scientific notation keys
-                    if (["-", ".", "e", "E"].includes(e.key))
-                      e.preventDefault();
-                  }}
                   type="number"
                   min={1}
                   value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+
+                    // Allow empty value (so user can clear it)
+                    if (val === "") {
+                      setQuantity("");
+                      return;
+                    }
+
+                    // Prevent negatives and decimals
+                    const num = Number(val);
+                    if (num >= 0 && Number.isInteger(num)) {
+                      setQuantity(val);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (["-", ".", "e", "E"].includes(e.key))
+                      e.preventDefault();
+                  }}
                 />
               </div>
               <div className="w-32">
                 <label className="text-xs text-gray-600">Discount</label>
                 <Input
-                  onKeyDown={(e) => {
-                    // Block minus, dot, and scientific notation keys
-                    if (["-", ".", "e", "E"].includes(e.key))
-                      e.preventDefault();
-                  }}
                   type="number"
                   step="1"
                   min={0}
                   value={itemDiscount}
-                  onChange={(e) => setItemDiscount(Number(e.target.value))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+
+                    // Allow empty value (so user can clear it)
+                    if (val === "") {
+                      setItemDiscount("");
+                      return;
+                    }
+
+                    // Prevent negatives and decimals
+                    const num = Number(val);
+                    if (num >= 0 && Number.isInteger(num)) {
+                      setItemDiscount(val);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (["-", ".", "e", "E"].includes(e.key))
+                      e.preventDefault();
+                  }}
                 />
               </div>
               <div className="flex-1" />
@@ -563,16 +589,29 @@ export default function AddSalePage() {
               <div className="w-32">
                 <label className="text-xs text-gray-600">Tax amount</label>
                 <Input
-                  onKeyDown={(e) => {
-                    // Block minus, dot, and scientific notation keys
-                    if (["-", ".", "e", "E"].includes(e.key))
-                      e.preventDefault();
-                  }}
                   type="number"
                   step="1"
                   min={0}
                   value={taxAmount}
-                  onChange={(e) => setTaxAmount(Number(e.target.value))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+
+                    // Allow empty value (so user can clear it)
+                    if (val === "") {
+                      setTaxAmount("");
+                      return;
+                    }
+
+                    // Prevent negatives and decimals
+                    const num = Number(val);
+                    if (num >= 0 && Number.isInteger(num)) {
+                      setTaxAmount(val);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (["-", ".", "e", "E"].includes(e.key))
+                      e.preventDefault();
+                  }}
                 />
               </div>
 

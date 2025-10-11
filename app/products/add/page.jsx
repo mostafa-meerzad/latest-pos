@@ -215,12 +215,25 @@ export default function CreateProductPage() {
                     min="0"
                     step="1"
                     value={price}
+                    onChange={(e) => {
+                      const val = e.target.value;
+
+                      // Allow empty value (so user can clear it)
+                      if (val === "") {
+                        setPrice("");
+                        return;
+                      }
+
+                      // Prevent negatives and decimals
+                      const num = Number(val);
+                      if (num >= 0 && Number.isInteger(num)) {
+                        setPrice(val);
+                      }
+                    }}
                     onKeyDown={(e) => {
-                      // Block minus, dot, and scientific notation keys
                       if (["-", ".", "e", "E"].includes(e.key))
                         e.preventDefault();
                     }}
-                    onChange={(e) => setPrice(e.target.value)}
                     placeholder={fieldErrors.price?.[0] || ""}
                     className={fieldErrors.price ? "border-red-400" : ""}
                   />
@@ -233,15 +246,28 @@ export default function CreateProductPage() {
                   </label>
                   <Input
                     type="number"
+                    value={costPrice}
+                    placeholder={fieldErrors.costPrice?.[0] || ""}
+                    className={fieldErrors.costPrice ? "border-red-400" : ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+
+                      // Allow empty value (so user can clear it)
+                      if (val === "") {
+                        setCostPrice("");
+                        return;
+                      }
+
+                      // Prevent negatives and decimals
+                      const num = Number(val);
+                      if (num >= 0 && Number.isInteger(num)) {
+                        setCostPrice(val);
+                      }
+                    }}
                     onKeyDown={(e) => {
-                      // Block minus, dot, and scientific notation keys
                       if (["-", ".", "e", "E"].includes(e.key))
                         e.preventDefault();
                     }}
-                    value={costPrice}
-                    onChange={(e) => setCostPrice(e.target.value)}
-                    placeholder={fieldErrors.costPrice?.[0] || ""}
-                    className={fieldErrors.costPrice ? "border-red-400" : ""}
                   />
                 </div>
 
@@ -251,14 +277,27 @@ export default function CreateProductPage() {
                     Stock Quantity
                   </label>
                   <Input
+                    onChange={(e) => {
+                      const val = e.target.value;
+
+                      // Allow empty value (so user can clear it)
+                      if (val === "") {
+                        setStockQuantity("");
+                        return;
+                      }
+
+                      // Prevent negatives and decimals
+                      const num = Number(val);
+                      if (num >= 0 && Number.isInteger(num)) {
+                        setStockQuantity(val);
+                      }
+                    }}
                     onKeyDown={(e) => {
-                      // Block minus, dot, and scientific notation keys
                       if (["-", ".", "e", "E"].includes(e.key))
                         e.preventDefault();
                     }}
                     type="number"
                     value={stockQuantity}
-                    onChange={(e) => setStockQuantity(e.target.value)}
                     placeholder={fieldErrors.stockQuantity?.[0] || ""}
                     className={
                       fieldErrors.stockQuantity ? "border-red-400" : ""
