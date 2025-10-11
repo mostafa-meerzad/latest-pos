@@ -215,6 +215,11 @@ export default function CreateProductPage() {
                     min="0"
                     step="1"
                     value={price}
+                    onKeyDown={(e) => {
+                      // Block minus, dot, and scientific notation keys
+                      if (["-", ".", "e", "E"].includes(e.key))
+                        e.preventDefault();
+                    }}
                     onChange={(e) => setPrice(e.target.value)}
                     placeholder={fieldErrors.price?.[0] || ""}
                     className={fieldErrors.price ? "border-red-400" : ""}
@@ -228,6 +233,11 @@ export default function CreateProductPage() {
                   </label>
                   <Input
                     type="number"
+                    onKeyDown={(e) => {
+                      // Block minus, dot, and scientific notation keys
+                      if (["-", ".", "e", "E"].includes(e.key))
+                        e.preventDefault();
+                    }}
                     value={costPrice}
                     onChange={(e) => setCostPrice(e.target.value)}
                     placeholder={fieldErrors.costPrice?.[0] || ""}
@@ -241,6 +251,11 @@ export default function CreateProductPage() {
                     Stock Quantity
                   </label>
                   <Input
+                    onKeyDown={(e) => {
+                      // Block minus, dot, and scientific notation keys
+                      if (["-", ".", "e", "E"].includes(e.key))
+                        e.preventDefault();
+                    }}
                     type="number"
                     value={stockQuantity}
                     onChange={(e) => setStockQuantity(e.target.value)}

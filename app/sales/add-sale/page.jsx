@@ -628,11 +628,8 @@ export default function AddSalePage() {
                           {editingId === row.tempId ? (
                             <Input
                               onKeyDown={(e) => {
-                                if (
-                                  e.key === "-" ||
-                                  e.key === "e" ||
-                                  e.key === "E"
-                                )
+                                // Block minus, dot, and scientific notation keys
+                                if (["-", ".", "e", "E"].includes(e.key))
                                   e.preventDefault();
                               }}
                               type="number"
@@ -656,11 +653,8 @@ export default function AddSalePage() {
                           {editingId === row.tempId ? (
                             <Input
                               onKeyDown={(e) => {
-                                if (
-                                  e.key === "-" ||
-                                  e.key === "e" ||
-                                  e.key === "E"
-                                )
+                                // Block minus, dot, and scientific notation keys
+                                if (["-", ".", "e", "E"].includes(e.key))
                                   e.preventDefault();
                               }}
                               type="number"
@@ -683,11 +677,8 @@ export default function AddSalePage() {
                           {editingId === row.tempId ? (
                             <Input
                               onKeyDown={(e) => {
-                                if (
-                                  e.key === "-" ||
-                                  e.key === "e" ||
-                                  e.key === "E"
-                                )
+                                // Block minus, dot, and scientific notation keys
+                                if (["-", ".", "e", "E"].includes(e.key))
                                   e.preventDefault();
                               }}
                               type="number"
