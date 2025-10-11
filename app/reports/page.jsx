@@ -298,7 +298,7 @@ export default function ReportsPage() {
             </label>
           )}
 
-          <Button onClick={fetchReport} variant="outline">
+          <Button onClick={fetchReport} variant="outline" className={"drop-shadow-2xl"}>
             Refresh
           </Button>
         </div>

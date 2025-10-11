@@ -379,16 +379,11 @@ export default function AddSalePage() {
             {isSubmitting ? "Saving..." : "Finalize Sale + Delivery"}
           </Button>
 
-          <Button
-            onClick={handlePrint}
-            className="bg-blue-500 text-md drop-shadow-xl"
-          >
+          <Button onClick={handlePrint} className="bg-blue-500 text-md drop-shadow-2xl">
             Print Invoice
           </Button>
           <Link href="/sales">
-            <Button variant="outline" className={"drop-shadow-xl"}>
-              Back to Sales
-            </Button>
+            <Button variant="outline" className={"drop-shadow-2xl"}>Back to Sales</Button>
           </Link>
         </div>
       </div>
