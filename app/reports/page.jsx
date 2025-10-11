@@ -406,7 +406,7 @@ export default function ReportsPage() {
                       <XAxis
                         dataKey={period === "week" ? "week" : "name"}
                         tick={{ fontSize: 12 }}
-                        angle={period === "week" ? 0 : -90}{period === "week" ? 0 : -90}
+                        angle={period === "week" ? 0 : -90}
                         textAnchor="end"
                         interval={0}
                       />
