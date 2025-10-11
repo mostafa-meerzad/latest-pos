@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma"; // Adjust import path as needed
+import prisma from "@/lib/prisma";
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get("period") || "day"; // day, week, month, year
+    const period = searchParams.get("period") || "day";
     const date =
       searchParams.get("date") || new Date().toISOString().split("T")[0];
     const year = searchParams.get("year") || new Date().getFullYear();
@@ -29,17 +29,22 @@ export async function GET(request) {
             baseDate.getUTCDate() + 1
           )
         );
-        endDate.setMilliseconds(-1);
+        endDate.setUTCMilliseconds(-1);
         break;
 
       case "week":
-        const dayOfWeek = baseDate.getUTCDay();
+        // Custom week: Saturday to Friday
+        const dayOfWeek = baseDate.getUTCDay(); // 0=Sunday, 6=Saturday
+        let daysSinceSaturday = dayOfWeek - 6; // 6 = Saturday
+        if (daysSinceSaturday < 0) daysSinceSaturday += 7;
+
         startDate = new Date(baseDate);
-        startDate.setUTCDate(baseDate.getUTCDate() - dayOfWeek);
+        startDate.setUTCDate(baseDate.getUTCDate() - daysSinceSaturday);
         startDate.setUTCHours(0, 0, 0, 0);
+
         endDate = new Date(startDate);
-        endDate.setUTCDate(startDate.getUTCDate() + 7);
-        endDate.setMilliseconds(-1);
+        endDate.setUTCDate(startDate.getUTCDate() + 6); // Friday (6 days after Saturday)
+        endDate.setUTCHours(23, 59, 59, 999);
         break;
 
       case "month":
@@ -61,7 +66,11 @@ export async function GET(request) {
         return NextResponse.json({ error: "Invalid period" }, { status: 400 });
     }
 
-    // Get sales data with items (fixed cost calculation)
+    console.log(
+      `Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`
+    );
+
+    // Get sales data with items
     const sales = await prisma.sale.findMany({
       where: {
         date: {
@@ -112,11 +121,12 @@ export async function GET(request) {
       },
     });
 
-    // Convert revenue to numbers and calculate costs properly
+    // Calculate totals - FIXED: No double counting
     const totalSalesRevenue = sales.reduce(
       (sum, sale) => sum + Number(sale.totalAmount),
       0
     );
+
     const totalSalesCost = sales.reduce(
       (sum, sale) =>
         sum +
@@ -134,13 +144,17 @@ export async function GET(request) {
       0
     );
 
-    // Calculate totals from deliveries
-    const totalDeliveryRevenue = deliveries.reduce(
+    // Delivery revenue and cost (only count deliveries that don't have associated sales already counted)
+    const uniqueDeliverySales = deliveries.filter(
+      (delivery) => !sales.some((sale) => sale.id === delivery.saleId)
+    );
+
+    const totalDeliveryRevenue = uniqueDeliverySales.reduce(
       (sum, delivery) => sum + Number(delivery.sale.totalAmount),
       0
     );
 
-    const totalDeliveryCost = deliveries.reduce(
+    const totalDeliveryCost = uniqueDeliverySales.reduce(
       (sum, delivery) =>
         sum +
         delivery.sale.items.reduce(
@@ -151,12 +165,12 @@ export async function GET(request) {
       0
     );
 
-    // Combined totals
+    // Combined totals (no double counting)
     const totalRevenue = totalSalesRevenue + totalDeliveryRevenue;
     const totalCost = totalSalesCost + totalDeliveryCost;
     const totalProfit = totalRevenue - totalCost;
 
-    // Top sold products
+    // Top sold products - FIXED: Combine sales and unique deliveries
     const productSales = {};
 
     // Count from sales
@@ -175,8 +189,8 @@ export async function GET(request) {
       });
     });
 
-    // Count from delivery sales
-    deliveries.forEach((delivery) => {
+    // Count from unique delivery sales only
+    uniqueDeliverySales.forEach((delivery) => {
       delivery.sale.items.forEach((item) => {
         const productId = item.productId;
         if (!productSales[productId]) {
@@ -195,7 +209,7 @@ export async function GET(request) {
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 10);
 
-    // Get time-based breakdowns based on period
+    // Get time-based breakdowns
     let hourlyData = {};
     let weeklyData = {};
     let monthlyData = {};
@@ -203,13 +217,10 @@ export async function GET(request) {
 
     if (period === "day") {
       hourlyData = await getHourlyData(startDate, endDate);
-      monthlyData = await getMonthlyData(baseDate);
     } else if (period === "week") {
       weeklyData = await getWeeklyData(startDate, endDate);
-      monthlyData = await getMonthlyData(baseDate);
     } else if (period === "month") {
-      weeklyData = await getWeeklyData(startDate, endDate);
-      monthlyData = await getMonthlyData(baseDate);
+      monthlyData = await getMonthlyData(startDate, endDate);
     } else if (period === "year") {
       monthlyData = await getYearlyMonthlyData(parseInt(year));
       yearlyData = await getYearlyComparison(parseInt(year));
@@ -228,7 +239,7 @@ export async function GET(request) {
         profitMargin:
           totalRevenue > 0
             ? ((totalProfit / totalRevenue) * 100).toFixed(2)
-            : 0,
+            : "0.00",
         totalSoldItems,
       },
       breakdown: {
@@ -242,7 +253,7 @@ export async function GET(request) {
           revenue: totalDeliveryRevenue,
           cost: totalDeliveryCost,
           profit: totalDeliveryRevenue - totalDeliveryCost,
-          count: deliveries.length,
+          count: uniqueDeliverySales.length,
         },
         comparison: {
           higherRevenue:
@@ -288,12 +299,14 @@ async function getHourlyData(startDate, endDate) {
         lte: endDate,
       },
     },
-    select: {
-      date: true,
-      totalAmount: true,
+    include: {
       items: {
-        select: {
-          quantity: true,
+        include: {
+          product: {
+            select: {
+              costPrice: true,
+            },
+          },
         },
       },
     },
@@ -301,14 +314,28 @@ async function getHourlyData(startDate, endDate) {
 
   const hourlyData = {};
 
-  // Initialize all hours
+  // Initialize all hours with complete data structure
   for (let hour = 0; hour < 24; hour++) {
-    hourlyData[hour] = { revenue: 0, count: 0, itemsSold: 0 };
+    hourlyData[hour] = {
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+      count: 0,
+      itemsSold: 0,
+    };
   }
 
   sales.forEach((sale) => {
     const hour = new Date(sale.date).getUTCHours();
-    hourlyData[hour].revenue += Number(sale.totalAmount);
+    const revenue = Number(sale.totalAmount);
+    const cost = sale.items.reduce(
+      (sum, item) => sum + item.quantity * Number(item.product.costPrice),
+      0
+    );
+
+    hourlyData[hour].revenue += revenue;
+    hourlyData[hour].cost += cost;
+    hourlyData[hour].profit += revenue - cost;
     hourlyData[hour].count += 1;
     hourlyData[hour].itemsSold += sale.items.reduce(
       (sum, item) => sum + item.quantity,
@@ -327,12 +354,14 @@ async function getWeeklyData(startDate, endDate) {
         lte: endDate,
       },
     },
-    select: {
-      date: true,
-      totalAmount: true,
+    include: {
       items: {
-        select: {
-          quantity: true,
+        include: {
+          product: {
+            select: {
+              costPrice: true,
+            },
+          },
         },
       },
     },
@@ -340,16 +369,62 @@ async function getWeeklyData(startDate, endDate) {
 
   const weeklyData = {};
 
+  // Custom week calculation: Saturday to Friday
+  const getCustomWeek = (date) => {
+    const saturday = 6;
+    const currentDay = date.getUTCDay();
+
+    let daysSinceSaturday = currentDay - saturday;
+    if (daysSinceSaturday < 0) daysSinceSaturday += 7;
+
+    const weekStart = new Date(date);
+    weekStart.setUTCDate(date.getUTCDate() - daysSinceSaturday);
+    weekStart.setUTCHours(0, 0, 0, 0);
+
+    return weekStart.toISOString().split("T")[0];
+  };
+
   sales.forEach((sale) => {
     const saleDate = new Date(sale.date);
-    const weekNumber = Math.ceil(saleDate.getUTCDate() / 7);
+    const weekKey = getCustomWeek(saleDate);
+    const revenue = Number(sale.totalAmount);
+    const cost = sale.items.reduce(
+      (sum, item) => sum + item.quantity * Number(item.product.costPrice),
+      0
+    );
 
-    if (!weeklyData[weekNumber]) {
-      weeklyData[weekNumber] = { revenue: 0, count: 0, itemsSold: 0 };
+    if (!weeklyData[weekKey]) {
+      const weekStart = new Date(weekKey);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
+
+      const startFormatted = weekStart.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      });
+      const endFormatted = weekEnd.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      });
+
+      weeklyData[weekKey] = {
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+        count: 0,
+        itemsSold: 0,
+        name: `${startFormatted} - ${endFormatted}`,
+        weekKey: weekKey,
+      };
     }
-    weeklyData[weekNumber].revenue += Number(sale.totalAmount);
-    weeklyData[weekNumber].count += 1;
-    weeklyData[weekNumber].itemsSold += sale.items.reduce(
+
+    weeklyData[weekKey].revenue += revenue;
+    weeklyData[weekKey].cost += cost;
+    weeklyData[weekKey].profit += revenue - cost;
+    weeklyData[weekKey].count += 1;
+    weeklyData[weekKey].itemsSold += sale.items.reduce(
       (sum, item) => sum + item.quantity,
       0
     );
@@ -358,33 +433,28 @@ async function getWeeklyData(startDate, endDate) {
   return weeklyData;
 }
 
-async function getMonthlyData(baseDate) {
-  const yearStart = new Date(Date.UTC(baseDate.getUTCFullYear(), 0, 1));
-  const yearEnd = new Date(
-    Date.UTC(baseDate.getUTCFullYear(), 11, 31, 23, 59, 59, 999)
-  );
-
+async function getMonthlyData(startDate, endDate) {
   const sales = await prisma.sale.findMany({
     where: {
       date: {
-        gte: yearStart,
-        lte: yearEnd,
+        gte: startDate,
+        lte: endDate,
       },
     },
-    select: {
-      date: true,
-      totalAmount: true,
+    include: {
       items: {
-        select: {
-          quantity: true,
+        include: {
+          product: {
+            select: {
+              costPrice: true,
+            },
+          },
         },
       },
     },
   });
 
   const monthlyData = {};
-
-  // Initialize all months
   const monthNames = [
     "January",
     "February",
@@ -400,18 +470,29 @@ async function getMonthlyData(baseDate) {
     "December",
   ];
 
-  for (let month = 0; month < 12; month++) {
-    monthlyData[month] = {
-      name: monthNames[month],
-      revenue: 0,
-      count: 0,
-      itemsSold: 0,
-    };
-  }
-
   sales.forEach((sale) => {
-    const month = new Date(sale.date).getUTCMonth();
-    monthlyData[month].revenue += Number(sale.totalAmount);
+    const saleDate = new Date(sale.date);
+    const month = saleDate.getUTCMonth();
+    const revenue = Number(sale.totalAmount);
+    const cost = sale.items.reduce(
+      (sum, item) => sum + item.quantity * Number(item.product.costPrice),
+      0
+    );
+
+    if (!monthlyData[month]) {
+      monthlyData[month] = {
+        name: monthNames[month],
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+        count: 0,
+        itemsSold: 0,
+      };
+    }
+
+    monthlyData[month].revenue += revenue;
+    monthlyData[month].cost += cost;
+    monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
     monthlyData[month].itemsSold += sale.items.reduce(
       (sum, item) => sum + item.quantity,
@@ -419,10 +500,27 @@ async function getMonthlyData(baseDate) {
     );
   });
 
+  // Ensure all months in range are present
+  const startMonth = new Date(startDate).getUTCMonth();
+  const endMonth = new Date(endDate).getUTCMonth();
+
+  for (let month = startMonth; month <= endMonth; month++) {
+    if (!monthlyData[month]) {
+      monthlyData[month] = {
+        name: monthNames[month],
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+        count: 0,
+        itemsSold: 0,
+      };
+    }
+  }
+
   return monthlyData;
 }
 
-// New function for yearly monthly breakdown
+// Function for yearly monthly breakdown
 async function getYearlyMonthlyData(year) {
   const yearStart = new Date(Date.UTC(year, 0, 1));
   const yearEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
@@ -503,7 +601,7 @@ async function getYearlyMonthlyData(year) {
   return monthlyData;
 }
 
-// New function for year-over-year comparison
+// Function for year-over-year comparison
 async function getYearlyComparison(currentYear) {
   const previousYear = currentYear - 1;
 

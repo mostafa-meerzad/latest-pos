@@ -66,13 +66,13 @@ export default function RoleSelectionPage() {
           <div className="flex justify-center gap-6">
             <Button
               onClick={handleAdminClick}
-              className="border-orange-500/70 bg-white/10 backdrop-blur-md text-center shadow-xl w-[150] h-[60] text-lg"
+              className="border-orange-500/70 bg-white/10 backdrop-blur-md text-center shadow-xl w-[150] h-[60] text-lg drop-shadow-2xl"
             >
               Admin
             </Button>
             <Button
               onClick={handleCustomerClick}
-              className="border-orange-500/70 bg-white/10 backdrop-blur-md text-center shadow-xl w-[150] h-[60] text-lg"
+              className="border-orange-500/70 bg-white/10 backdrop-blur-md text-center shadow-xl w-[150] h-[60] text-lg drop-shadow-2xl"
             >
               Customer
             </Button>

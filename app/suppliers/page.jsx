@@ -160,7 +160,7 @@ export default function SuppliersPage() {
           </Link>
 
           <Link href="/suppliers/add-supplier">
-            <Button className="bg-amber-500 hover:bg-amber-600 text-md">
+            <Button className="bg-amber-500 hover:bg-amber-600 text-md drop-shadow-2xl">
               Add Supplier
             </Button>
           </Link>

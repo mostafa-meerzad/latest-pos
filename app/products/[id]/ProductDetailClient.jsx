@@ -52,7 +52,7 @@ export default function ProductDetailClient({ id }) {
     return (
       <div className="p-6 space-y-4">
         <div className="text-red-600">Error: {error}</div>
-        <Button variant="ghost" onClick={() => router.push("/products")}>
+        <Button variant="ghost" onClick={() => router.push("/products")} className={"drop-shadow-2xl"}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Button>
       </div>
@@ -78,7 +78,7 @@ export default function ProductDetailClient({ id }) {
                 ID: #{pid} • Barcode: {barcode ?? "—"}
               </p>
             </div>
-            <Button variant="ghost" onClick={() => router.push("/products")}>
+            <Button variant="ghost" onClick={() => router.push("/products")} className={"drop-shadow-2xl"}>
               <ArrowLeft className="w-4 h-4 mr-2" /> Back
             </Button>
           </div>

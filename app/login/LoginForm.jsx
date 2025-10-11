@@ -115,7 +115,7 @@ export default function LoginForm() {
 
             <Button
               type="submit"
-              className="w-full mt-4 h-13 bg-orange-500/80 hover:bg-orange-600 text-white font-semibold py-2 text-lg rounded-lg shadow-md backdrop-blur-md"
+              className="w-full mt-4 h-13 bg-orange-500/80 hover:bg-orange-600 text-white font-semibold py-2 text-lg rounded-lg shadow-md backdrop-blur-md drop-shadow-2xl"
             >
               Sign in
             </Button>
