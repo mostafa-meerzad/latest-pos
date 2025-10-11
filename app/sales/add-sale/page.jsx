@@ -356,7 +356,7 @@ export default function AddSalePage() {
 
         <div className="flex gap-2">
           <Button
-            className={"drop-shadow-xl"}
+            className={"drop-shadow-2x"}
             variant="secondary"
             onClick={() => {
               if (confirm("Clear cart?")) clear();
@@ -366,14 +366,14 @@ export default function AddSalePage() {
           </Button>
           <Button
             onClick={handleFinalizeSale}
-            className={"bg-green-500 text-md drop-shadow-xl"}
+            className={"bg-green-500 text-md drop-shadow-2x"}
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Finalize Sale"}
           </Button>
           <Button
             onClick={handleFinalizeSaleWithDelivery}
-            className="bg-orange-500 text-md drop-shadow-xl"
+            className="bg-orange-500 text-md drop-shadow-2x"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Finalize Sale + Delivery"}
