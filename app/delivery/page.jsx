@@ -211,7 +211,7 @@ export default function DeliveryPage() {
           Deliveries
         </h1>
         <div className="flex items-center gap-3">
-          <Link href="/drivers/add">
+          <Link href="/drivers/add?from=deliveries">
             <Button className="bg-yellow-500 hover:bg-yellow-600 text-md drop-shadow-2xl">
               Add Driver
             </Button>

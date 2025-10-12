@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function CreateDriverPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
 
   // form state
   const [name, setName] = useState("");
@@ -40,7 +42,11 @@ export default function CreateDriverPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        router.push("/drivers");
+        if (from === "drivers") {
+          router.push("/drivers");
+        } else {
+          router.push("/delivery");
+        }
       } else {
         setError(data?.error || "Failed to create driver");
       }
@@ -58,7 +64,7 @@ export default function CreateDriverPage() {
         <h1 className="text-3xl font-bold">Add Delivery Driver</h1>
         <Link href="/drivers">
           <Button variant="outline" className={"drop-shadow-2xl"}>
-            Back to Driver
+            Back to Drivers
           </Button>
         </Link>
       </div>
@@ -108,7 +114,12 @@ export default function CreateDriverPage() {
                 >
                   {submitting ? "Saving..." : "Create Driver"}
                 </Button>
-                <Button variant="ghost" onClick={() => router.push("/drivers")}>
+                <Button
+                  variant="ghost"
+                  onClick={() =>
+                    router.push(from === "drivers" ? "/drivers" : "/delivery")
+                  }
+                >
                   Cancel
                 </Button>
 

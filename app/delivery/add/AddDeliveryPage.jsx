@@ -298,6 +298,7 @@ export default function AddDeliveryPage() {
                   {submitting ? "Saving..." : "Create Delivery"}
                 </Button>
                 <Button
+                  type="button"
                   variant="ghost"
                   onClick={() =>
                     router.push(
