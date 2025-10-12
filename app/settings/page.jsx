@@ -60,7 +60,7 @@ export default function SettingsPage() {
     setEditValues({
       username: row.username,
       fullName: row.fullName,
-      roleId: row.roleId,
+      role: row.role?.name || row.role || "",
       password: "", // keep blank until admin types a new one
     });
   }
@@ -72,23 +72,35 @@ export default function SettingsPage() {
 
   async function saveEdit() {
     if (!editingId || !editValues) return;
+
     try {
       const res = await fetch(`/api/users/${editingId}`, {
-        method: "PUT", // ✅ using your API
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editValues),
       });
-      const data = await res.json();
-      if (data.updatedUser) {
+
+      const data = await res.json().catch(() => ({}));
+      // console.log("response from backend:", data); // 👀 Debug line
+
+      if (!res.ok) {
+        alert(data.error || "Failed to update user");
+        return;
+      }
+
+      if (data && data.id) {
         setUsers((prev) =>
-          prev.map((u) => (u.id === editingId ? { ...u, ...data.updatedUser } : u))
+          prev.map((u) => (u.id === editingId ? { ...u, ...data } : u))
         );
         cancelEdit();
+        alert("User updated successfully.");
       } else {
-        alert("Failed to update user");
+        alert("Failed to update user — backend did not return valid user data");
+        console.log("Raw backend response:", data);
       }
     } catch (err) {
       console.error("Error saving user:", err);
+      alert("Something went wrong. Check console for details.");
     }
   }
 
@@ -130,8 +142,6 @@ export default function SettingsPage() {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
-
-
   return (
     <div className="p-6 space-y-6">
       {/* ----------------- Header ----------------- */}
@@ -145,10 +155,12 @@ export default function SettingsPage() {
           />
           Settings
         </h1>
-         <div className="flex items-center gap-3">
-        <Link href="/settings/add-user">
-          <Button className={"bg-green-500 text-md drop-shadow-2xl"}>New User</Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/settings/add-user">
+            <Button className={"bg-green-500 text-md drop-shadow-2xl"}>
+              New User
+            </Button>
+          </Link>
           <BackToDashboardButton />
         </div>
       </div>
@@ -251,29 +263,26 @@ export default function SettingsPage() {
                     <TableCell>
                       {editingId === u.id ? (
                         <Select
-                          value={String(editValues?.roleId)}
+                          value={editValues?.role || ""}
                           onValueChange={(v) =>
                             setEditValues((s) => ({
                               ...s,
-                              roleId: Number(v),
+                              role: v, // 👈 send string ADMIN or CASHIER
                             }))
                           }
                         >
                           <SelectTrigger className="w-[150px]">
-                            <SelectValue />
+                            <SelectValue placeholder="Select role" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="1">ADMIN</SelectItem>
-                            <SelectItem value="2">MANAGER</SelectItem>
-                            <SelectItem value="3">CASHIER</SelectItem>
+                            <SelectItem value="ADMIN">ADMIN</SelectItem>
+                            <SelectItem value="CASHIER">CASHIER</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
-                        u.role?.name
+                        u.role?.name || "—"
                       )}
                     </TableCell>
-
-                    
 
                     {/* Actions */}
                     <TableCell className="flex gap-2 ml-2">
