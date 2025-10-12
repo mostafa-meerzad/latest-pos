@@ -334,7 +334,7 @@ export default function AddSalePage() {
         setPaymentMethod("cash");
         setTaxAmount(0);
         router.push(
-          `/delivery/add?saleId=${serverSale.id}&customerId=${serverSale.customerId}`
+          `/delivery/add?saleId=${serverSale.id}&customerId=${serverSale.customerId}&from=sale`
         );
       }, 800);
     } catch (err) {

@@ -71,7 +71,7 @@ export default function SaleDetailsPage() {
                 </TableCell>
                 <TableCell>{sale.invoice?.invoiceNumber || "-"}</TableCell>
                 <TableCell>
-                  ${sale.totalAmount}{" "}
+                  {sale.totalAmount}{" "}AFG
                   <span className="text-xs text-gray-500">
                     (Tax {sale.taxAmount}, Disc {sale.discountAmount})
                   </span>
@@ -90,7 +90,7 @@ export default function SaleDetailsPage() {
                 <TableCell>
                   {sale.items.map((i) => (
                     <div key={i.id} className="text-sm">
-                      {i.product?.name} × {i.quantity} = ${i.subtotal}
+                      {i.product?.name} × {i.quantity} = AFG{i.subtotal}
                     </div>
                   ))}
                 </TableCell>

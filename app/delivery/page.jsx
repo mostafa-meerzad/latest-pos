@@ -216,7 +216,7 @@ export default function DeliveryPage() {
               Add Driver
             </Button>
           </Link>
-          <Link href="/delivery/add">
+          <Link href="/delivery/add?from=deliveries">
             <Button className="bg-orange-500 hover:bg-orange-600 text-md drop-shadow-2xl">
               Add Delivery
             </Button>
