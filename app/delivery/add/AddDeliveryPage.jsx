@@ -19,6 +19,9 @@ export default function AddDeliveryPage() {
   const [driverId, setDriverId] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
 
+  // delivery fee field
+  const [deliveryFee, setDeliveryFee] = useState("");
+
   // data
   const [sales, setSales] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -88,6 +91,11 @@ export default function AddDeliveryPage() {
     if (!saleId || !customerId || !deliveryAddress) {
       return setError("Sale, Customer, and Delivery Address are required.");
     }
+    // Validate delivery fee
+    const fee = Number(deliveryFee);
+    if (!Number.isInteger(fee) || fee < 0) {
+      return setError("Delivery fee must be a non-negative whole number.");
+    }
 
     setSubmitting(true);
 
@@ -98,6 +106,7 @@ export default function AddDeliveryPage() {
         deliveryAddress: deliveryAddress.trim(),
         driverId: driverId ? parseInt(driverId, 10) : undefined,
         deliveryDate: deliveryDate || undefined,
+        deliveryFee: fee,
       };
 
       const res = await fetch("/api/deliveries", {
@@ -274,6 +283,24 @@ export default function AddDeliveryPage() {
                     </div>
                   )}
                 </div>
+                {/* ✅ Delivery Fee */}
+                <div>
+                  <label className="text-sm font-medium block mb-1">
+                    Delivery Fee
+                  </label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={deliveryFee}
+                    placeholder="Enter delivery fee"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // only digits allowed, no negatives or decimals
+                      if (/^\d*$/.test(value)) setDeliveryFee(value);
+                    }}
+                    required
+                  />
+                </div>
 
                 {/* Delivery Date */}
                 <div>
@@ -287,6 +314,8 @@ export default function AddDeliveryPage() {
                   />
                 </div>
               </div>
+
+              
 
               {/* form actions */}
               <div className="mt-6 flex items-center gap-3">

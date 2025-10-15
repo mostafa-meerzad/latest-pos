@@ -154,8 +154,8 @@ model Delivery {
   deliveryDate    DateTime?       @map("delivery_date")
   status          String          @default("pending") @map("delivery_status")
   driverId        Int?            @map("driver_id")
-
-  deleted         Boolean         @default(false) @map("is_deleted") 
+  deliveryFee     Int             @default(0) @map("delivery_fee")  // ✅ Integer type
+  deleted         Boolean         @default(false) @map("is_deleted")
 
   customer        Customer        @relation(fields: [customerId], references: [id])
   driver          DeliveryDriver? @relation(fields: [driverId], references: [id])
@@ -165,3 +165,4 @@ model Delivery {
   @@index([driverId], map: "deliveries_driver_id_fkey")
   @@map("deliveries")
 }
+

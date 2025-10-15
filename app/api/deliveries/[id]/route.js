@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// Update delivery (status, driver, deliveryDate, or address)
+// Update delivery (status, driver, deliveryDate, address, or deliveryFee)
 export async function PATCH(request, { params }) {
   try {
     const { id } = params;
     const body = await request.json();
-    const { status, driverId, deliveryDate, deliveryAddress } = body;
+    const {
+      status,
+      driverId,
+      deliveryDate,
+      deliveryAddress,
+      deliveryFee, // ✅ NEW FIELD
+    } = body;
 
     // Only allow valid statuses
     const allowedStatuses = ["pending", "dispatched", "delivered", "canceled"];
@@ -17,13 +23,22 @@ export async function PATCH(request, { params }) {
       );
     }
 
+    // Validate deliveryFee if provided
+    if (deliveryFee !== undefined && deliveryFee < 0) {
+      return NextResponse.json(
+        { success: false, error: "deliveryFee must be non-negative" },
+        { status: 400 }
+      );
+    }
+
     const updatedDelivery = await prisma.delivery.update({
       where: { id: Number(id) },
       data: {
         ...(status && { status }),
         ...(driverId !== undefined && { driverId }),
         ...(deliveryDate && { deliveryDate: new Date(deliveryDate) }),
-        ...(deliveryAddress !== undefined && { deliveryAddress }), // ✅ added
+        ...(deliveryAddress !== undefined && { deliveryAddress }),
+        ...(deliveryFee !== undefined && { deliveryFee }), // ✅ ADDED
       },
       include: {
         sale: true,
@@ -42,13 +57,11 @@ export async function PATCH(request, { params }) {
   }
 }
 
-
 // Soft delete delivery
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;
 
-    // Check if delivery exists
     const delivery = await prisma.delivery.findUnique({
       where: { id: Number(id) },
     });
@@ -60,7 +73,6 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Soft delete by updating "deleted"
     const deletedDelivery = await prisma.delivery.update({
       where: { id: Number(id) },
       data: { deleted: true },
