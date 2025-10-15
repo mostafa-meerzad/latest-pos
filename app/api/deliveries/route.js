@@ -1,19 +1,34 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma"; // make sure this points to your prisma client
+import prisma from "@/lib/prisma";
 
 // Create a new delivery
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { saleId, customerId, deliveryAddress, driverId, deliveryDate } =
-      body;
+    const {
+      saleId,
+      customerId,
+      deliveryAddress,
+      driverId,
+      deliveryDate,
+      deliveryFee, 
+    } = body;
 
+    // Required fields validation
     if (!saleId || !customerId || !deliveryAddress) {
       return NextResponse.json(
         {
           success: false,
           error: "saleId, customerId, and deliveryAddress are required",
         },
+        { status: 400 }
+      );
+    }
+
+    // Ensure deliveryFee is valid
+    if (deliveryFee === undefined || deliveryFee < 0) {
+      return NextResponse.json(
+        { success: false, error: "deliveryFee must be provided and non-negative" },
         { status: 400 }
       );
     }
@@ -45,6 +60,7 @@ export async function POST(request) {
         deliveryAddress,
         driverId: driverId || null,
         deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+        deliveryFee, 
       },
       include: {
         sale: true,

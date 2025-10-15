@@ -92,6 +92,7 @@ export default function DeliveryPage() {
       deliveryDate: row.deliveryDate
         ? new Date(row.deliveryDate).toISOString().split("T")[0]
         : "",
+      deliveryFee: row.deliveryFee || 0,
     });
     setDriverQuery(
       row.driver?.name ? `${row.driver.name} – ${row.driver.phone}` : ""
@@ -108,6 +109,13 @@ export default function DeliveryPage() {
 
   async function saveEdit() {
     if (!editingId || !editValues) return;
+
+    const fee = Number(editValues.deliveryFee);
+    if (!Number.isInteger(fee) || fee < 0) {
+      alert("Delivery fee must be a non-negative whole number (no decimals).");
+      return;
+    }
+
     try {
       const res = await fetch(`/api/deliveries/${editingId}`, {
         method: "PATCH",
@@ -281,6 +289,7 @@ export default function DeliveryPage() {
                 <TableHead>Driver</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Delivery Date</TableHead>
+                <TableHead>Delivery Fee</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -407,6 +416,31 @@ export default function DeliveryPage() {
                         new Date(d.deliveryDate).toLocaleDateString()
                       ) : (
                         "—"
+                      )}
+                    </TableCell>
+
+                    {/* Delivery Fee */}
+                    <TableCell>
+                      {editingId === d.id ? (
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={editValues?.deliveryFee || ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // ✅ Prevent negative or decimal values
+                            if (!/^\d*$/.test(value)) return;
+                            setEditValues((s) => ({
+                              ...s,
+                              deliveryFee: value ? parseInt(value, 10) : 0,
+                            }));
+                          }}
+                          placeholder="Enter fee"
+                          className="w-[100px]"
+                        />
+                      ) : (
+                        d.deliveryFee ?? "—"
                       )}
                     </TableCell>
 
