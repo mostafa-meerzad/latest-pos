@@ -33,7 +33,7 @@ const useSaleStore = create(
       clear: () => set({ items: [] }),
 
       // Finalize sale: (keeps old behavior if you call it locally without server)
-      finalizeSale: (customer = { id: 0, name: "Walk in" }) => {
+      finalizeSale: (customer = { id: 0, name: "Walk-in Customer" }) => {
         const { items, finalizedSales } = get();
         if (items.length === 0) return; // no sale
         const sale = {
