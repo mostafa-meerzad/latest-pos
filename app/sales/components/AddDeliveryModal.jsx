@@ -1,6 +1,6 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,20 +20,13 @@ export default function AddDeliveryModal({
   onSuccess,
 }) {
   const [drivers, setDrivers] = useState([]);
-  const [driverQuery, setDriverQuery] = useState("");
   const [selectedDriver, setSelectedDriver] = useState(null);
-  const [driverSuggestionsVisible, setDriverSuggestionsVisible] =
-    useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
-
   const [deliveryFee, setDeliveryFee] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [driverId, setDriverId] = useState("");
-
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
-  useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
   const deliverySkeleton = ["", "", ""];
 
@@ -46,10 +39,14 @@ export default function AddDeliveryModal({
         const data = await res.json();
         if (data.success) {
           setDrivers(data.data);
-          setIsLoadingDrivers(false);
+        } else {
+          toast.error("Failed to load drivers.");
         }
       } catch (err) {
         console.error("Error fetching drivers:", err);
+        toast.error("Error fetching drivers.");
+      } finally {
+        setIsLoadingDrivers(false);
       }
     }
     fetchDrivers();
@@ -58,19 +55,26 @@ export default function AddDeliveryModal({
   // ✅ Handle form submit
   async function handleSubmit(e) {
     e.preventDefault();
-    setError(null);
 
-  if (!saleId || !customerId  || !deliveryAddress) {
-  return setError("Missing required sale/customer/delivery info.");
-}
+    // Basic validation
+    if (!saleId || !customerId || !deliveryAddress) {
+      return toast.error("Missing required sale/customer/delivery info.");
+    }
 
     if (!selectedDriver) {
-      return setError("Please select a driver.");
+      return toast.error("Please select a driver.");
+    }
+
+    const afghanRegex = /^(\+93|0)?7\d{8}$/;
+    if (!afghanRegex.test(customerPhone.trim())) {
+      return toast.error(
+        "Please enter a valid Afghan phone number (e.g. +93701234567 or 0701234567)."
+      );
     }
 
     const fee = Number(deliveryFee);
     if (!Number.isInteger(fee) || fee < 0) {
-      return setError("Delivery fee must be a non-negative whole number.");
+      return toast.error("Delivery fee must be a non-negative whole number.");
     }
 
     setSubmitting(true);
@@ -97,19 +101,29 @@ export default function AddDeliveryModal({
         if (onSuccess) onSuccess(data.data);
         onClose(); // Close modal on success
       } else {
-        setError(
-          data?.error?.message ||
-            data?.error ||
-            JSON.stringify(data?.error || data) ||
-            "Failed to create delivery"
+        toast.error(
+          data?.error?.message || data?.error || "Failed to create delivery."
         );
       }
     } catch (err) {
       console.error("Error creating delivery:", err);
-      setError(err.message || "Network error");
+      toast.error(err.message || "Network error while creating delivery.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // ✅ Simple input restriction for Afghan phone format
+  function handlePhoneChange(e) {
+    let value = e.target.value.replace(/\s+/g, ""); // remove spaces
+
+    // Allow only digits and an optional '+' at the start
+    if (!/^\+?\d*$/.test(value)) return;
+
+    // Limit max length: +93 + 9 digits = 12–13 chars
+    if (value.length > 13) return;
+
+    setCustomerPhone(value);
   }
 
   return (
@@ -120,8 +134,8 @@ export default function AddDeliveryModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Driver Selector */}
-          <div className="md:col-span-2">
+          {/* Delivery Address */}
+          <div>
             <label className="text-sm font-medium block mb-1">
               Delivery Address
             </label>
@@ -132,29 +146,33 @@ export default function AddDeliveryModal({
               required
             />
           </div>
-          {/* Customer Phone */}
-          <div className="col-span-2">
+
+          {/* ✅ Customer Phone (fixed) */}
+          <div>
             <label className="text-sm font-medium block mb-1">
               Customer Phone
             </label>
             <Input
+              type="tel"
               value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              placeholder="Enter customer phone number"
+              onChange={handlePhoneChange}
+              placeholder="+93 70 123 4567"
               required
             />
           </div>
-          <div className="relative md:col-span-2">
+
+          {/* Driver Selection */}
+          <div>
             <label className="text-sm font-medium block mb-1">Driver</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border rounded-md p-3 overflow-y-scroll max-h-32">
               {isLoadingDrivers
                 ? deliverySkeleton.map((_, i) => (
                     <div
                       className="p-3 border rounded-md gap-2 flex flex-col"
                       key={i}
                     >
-                      <Skeleton className={"h-4 w-[150px] "} />
-                      <Skeleton className={"h-4 w-[180px]"} />
+                      <Skeleton className="h-4 w-[150px]" />
+                      <Skeleton className="h-4 w-[180px]" />
                     </div>
                   ))
                 : drivers.map((d) => (
@@ -164,7 +182,7 @@ export default function AddDeliveryModal({
                         setDriverId(d.id);
                         setSelectedDriver(d);
                       }}
-                      className={`p-3 border rounded-md cursor-pointer ${
+                      className={`p-3 border rounded-md cursor-pointer transition ${
                         driverId === d.id
                           ? "border-orange-500 bg-orange-50"
                           : "border-gray-300 hover:bg-gray-50"
@@ -201,6 +219,7 @@ export default function AddDeliveryModal({
               Delivery Date
             </label>
             <Input
+              required={true}
               type="date"
               value={deliveryDate}
               onChange={(e) => setDeliveryDate(e.target.value)}
@@ -208,25 +227,22 @@ export default function AddDeliveryModal({
           </div>
 
           {/* Actions */}
-          <DialogFooter className="flex justify-between items-center">
-            <div className="text-sm text-red-600">{error && String(error)}</div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onClose}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-orange-500"
-                disabled={submitting}
-              >
-                {submitting ? "Saving..." : "Create Delivery"}
-              </Button>
-            </div>
+          <DialogFooter className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-orange-500"
+              disabled={submitting}
+            >
+              {submitting ? "Saving..." : "Create Delivery"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
