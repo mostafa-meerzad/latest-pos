@@ -1,0 +1,54 @@
+/* Custom numeric keyboard theme */
+.numeric-keyboard-container {
+  width: 280px;
+  z-index: 9999;
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  padding: 0.5rem;
+}
+
+.simple-keyboard.numeric-theme {
+  background: transparent !important;
+  border: none !important;
+}
+
+.simple-keyboard.numeric-theme .hg-button {
+  height: 50px !important;
+  width: 70px !important;
+  margin: 4px !important;
+  font-size: 1.1rem !important;
+  border-radius: 10px !important;
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  transition: all 0.15s ease-in-out;
+}
+
+.simple-keyboard.numeric-theme .hg-button:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.simple-keyboard.numeric-theme .hg-button:active {
+  background-color: #e5e7eb !important;
+  transform: scale(0.97);
+}
+
+.simple-keyboard.numeric-theme .hg-button.hg-standardBtn.hg-button-bksp {
+  background-color: #fee2e2 !important;
+}
+
+.simple-keyboard.numeric-theme .hg-button.hg-standardBtn.hg-button-close {
+  background-color: #dcfce7 !important;
+}
+
+/* Make sure it stays above other UI layers */
+/* Add to your numeric-keyboard.css */
+.numeric-keyboard-container {
+  width: 280px;
+  z-index: 9999;
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  padding: 0.5rem;
+  position: relative;
+}

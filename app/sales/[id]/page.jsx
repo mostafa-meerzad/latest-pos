@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,11 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+import toast from "react-hot-toast";
 
 export default function SaleDetailsPage() {
   const { id } = useParams();
+  const router = useRouter();
   const [sale, setSale] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,15 +29,45 @@ export default function SaleDetailsPage() {
         const json = await res.json();
         if (json.success) {
           setSale(json.data);
+        } else {
+          toast.error("Failed to load sale details.");
         }
       } catch (err) {
         console.error("Error fetching sale:", err);
+        toast.error("Error fetching sale details.");
       } finally {
         setLoading(false);
       }
     };
     fetchSale();
   }, [id]);
+
+  // Refund Sale
+  async function handleRefund(saleId) {
+    const confirmed = confirm(
+      `Are you sure you want to refund sale #${saleId}? This will delete the sale and restore item stocks.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/sale/${saleId}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        toast.success("Sale refunded successfully!");
+        setTimeout(() => router.push("/sales"), 1500); // smooth redirect after toast
+      } else {
+        toast.error(data.error || "Refund failed. Please try again.");
+        console.error("Refund failed:", data);
+      }
+    } catch (err) {
+      console.error("Refund request failed:", err);
+      toast.error("Refund request failed.");
+    }
+  }
 
   if (loading) return <p className="p-6">Loading...</p>;
   if (!sale) return <p className="p-6">Sale not found.</p>;
@@ -45,7 +77,7 @@ export default function SaleDetailsPage() {
       <div className="flex justify-between">
         <h1 className="text-2xl font-bold mb-6">Sale #{sale.id}</h1>
         <Link href="/sales">
-          <Button variant="outline" >Back to Sales</Button>
+          <Button variant="outline">Back to Sales</Button>
         </Link>
       </div>
       <Card className="min-w-2/3">
@@ -62,16 +94,15 @@ export default function SaleDetailsPage() {
                 <TableHead>Customer</TableHead>
                 <TableHead>Items</TableHead>
                 <TableHead>Delivery</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell>
-                  {new Date(sale.date).toLocaleDateString()}
-                </TableCell>
+                <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
                 <TableCell>{sale.invoice?.invoiceNumber || "-"}</TableCell>
                 <TableCell>
-                  {sale.totalAmount}{" "}AFG
+                  {sale.totalAmount} AFG{" "}
                   <span className="text-xs text-gray-500">
                     (Tax {sale.taxAmount}, Disc {sale.discountAmount})
                   </span>
@@ -106,6 +137,14 @@ export default function SaleDetailsPage() {
                   ) : (
                     "-"
                   )}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleRefund(sale.id)}
+                  >
+                    Refund Sale
+                  </Button>
                 </TableCell>
               </TableRow>
             </TableBody>
