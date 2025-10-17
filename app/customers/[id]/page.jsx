@@ -107,7 +107,7 @@ export default function CustomerDetailPage() {
     return (
       <div className="p-6">
         <p className="text-red-500">Customer not found.</p>
-        <Button variant="outline" className="drop-shadow-2xl" onClick={() => router.push("/customers")}>
+        <Button variant="outline" onClick={() => router.push("/customers")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Customers
         </Button>
@@ -122,7 +122,7 @@ export default function CustomerDetailPage() {
       <Button
         variant="outline"
         onClick={() => router.push("/customers")}
-        className="mb-4 drop-shadow-2xl"
+        className="mb-4 l"
       >
         <ArrowLeft className="w-4 h-4 mr-2" /> Back
       </Button>

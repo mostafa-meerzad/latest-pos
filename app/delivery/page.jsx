@@ -93,6 +93,7 @@ export default function DeliveryPage() {
         ? new Date(row.deliveryDate).toISOString().split("T")[0]
         : "",
       deliveryFee: row.deliveryFee || 0,
+      customerPhone: row.customerPhone || null,
     });
     setDriverQuery(
       row.driver?.name ? `${row.driver.name} – ${row.driver.phone}` : ""
@@ -220,12 +221,12 @@ export default function DeliveryPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/drivers/add?from=deliveries">
-            <Button className="bg-yellow-500 hover:bg-yellow-600 text-md drop-shadow-2xl">
+            <Button className="bg-yellow-500 hover:bg-yellow-600 text-md ">
               Add Driver
             </Button>
           </Link>
           <Link href="/delivery/add?from=deliveries">
-            <Button className="bg-orange-500 hover:bg-orange-600 text-md drop-shadow-2xl">
+            <Button className="bg-orange-500 hover:bg-orange-600 text-md ">
               Add Delivery
             </Button>
           </Link>
@@ -299,7 +300,24 @@ export default function DeliveryPage() {
                   <TableRow key={d.id}>
                     <TableCell>#{d.id}</TableCell>
                     <TableCell>{d.customer?.name}</TableCell>
-                    <TableCell>{d.customer?.phone}</TableCell>
+                    {/* Phone number */}
+                    <TableCell>
+                      {editingId === d.id ? (
+                        <Input
+                          value={editValues?.customerPhone || ""}
+                          onChange={(e) =>
+                            setEditValues((s) => ({
+                              ...s,
+                              customerPhone: e.target.value,
+                            }))
+                          }
+                          placeholder="Enter customer phone"
+                          className="w-[220px]"
+                        />
+                      ) : (
+                        d.customerPhone || "—"
+                      )}
+                    </TableCell>
                     {/* Address */}
                     <TableCell>
                       {editingId === d.id ? (

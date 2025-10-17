@@ -170,7 +170,7 @@ export default function CreateProductPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Product</h1>
         <Link href="/products">
-          <Button variant="outline" className="drop-shadow-2xl">
+          <Button variant="outline" >
             Back to Products
           </Button>
         </Link>

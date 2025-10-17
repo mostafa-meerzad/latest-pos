@@ -65,11 +65,11 @@ export default function AddCustomerPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Customer</h1>
         <Link href="/customers">
-          <Button variant="outline" className={"drop-shadow-2xl"}>Back to Customers</Button>
+          <Button variant="outline" >Back to Customers</Button>
         </Link>
       </div>
       <div className="flex justify-center">
-      <form onSubmit={handleSubmit} className="min-w-3xl drop-shadow-2xl">
+      <form onSubmit={handleSubmit} className="min-w-3xl ">
         <Card>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

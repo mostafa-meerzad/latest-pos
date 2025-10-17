@@ -12,6 +12,7 @@ export async function POST(request) {
       driverId,
       deliveryDate,
       deliveryFee, 
+      customerPhone,
     } = body;
 
     // Required fields validation
@@ -61,6 +62,7 @@ export async function POST(request) {
         driverId: driverId || null,
         deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
         deliveryFee, 
+        customerPhone: customerPhone || null,
       },
       include: {
         sale: true,

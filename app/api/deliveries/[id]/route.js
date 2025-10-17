@@ -12,6 +12,7 @@ export async function PATCH(request, { params }) {
       deliveryDate,
       deliveryAddress,
       deliveryFee, // ✅ NEW FIELD
+      customerPhone,
     } = body;
 
     // Only allow valid statuses
@@ -39,6 +40,7 @@ export async function PATCH(request, { params }) {
         ...(deliveryDate && { deliveryDate: new Date(deliveryDate) }),
         ...(deliveryAddress !== undefined && { deliveryAddress }),
         ...(deliveryFee !== undefined && { deliveryFee }), // ✅ ADDED
+        ...(customerPhone !== undefined && { customerPhone }), // ✅ ADDED
       },
       include: {
         sale: true,

@@ -39,13 +39,13 @@ export default function DashboardPage() {
   }
 
   const modules = [
-    { name: "Products", src: ProductImg, alt: "Products image", textColor: "text-[#F1AD00]", href: "/products", colSpan: "col-span-2 max-sm:col-span-2" },
-    { name: "Suppliers", src: SuppliersImg, alt: "Suppliers image", textColor: "text-[#F1AD00]", href: "/suppliers", colSpan: "col-span-1" },
-    { name: "Sales", src: SalesImg, alt: "Sales image", textColor: "text-green-500", href: "/sales", colSpan: "col-span-1" },
-    { name: "Customers", src: CustomerImg, alt: "Customers image", textColor: "text-purple-500", href: "/customers", colSpan: "col-span-1" },
-    { name: "Delivery", src: DeliveryImg, alt: "Delivery image", textColor: "text-pink-500", href: "/delivery", colSpan: "col-span-1" },
+    { name: "Sales", src: SalesImg, alt: "Sales image", textColor: "text-[#3cc839]", href: "/sales", colSpan: "col-span-2 max-sm:col-span-2" },
+    { name: "Products", src: ProductImg, alt: "Products image", textColor: "text-[#F1AD00]", href: "/products", colSpan: "col-span-1" },
+    { name: "Drivers", src: DriversImg, alt: "Drivers image", textColor: "text-[#f4585d]", href: "/drivers", colSpan: "col-span-1" },
+    { name: "Delivery", src: DeliveryImg, alt: "Delivery image", textColor: "text-[#d839c1]", href: "/delivery", colSpan: "col-span-1" },
+    { name: "Customers", src: CustomerImg, alt: "Customers image", textColor: "text-[#b900f2]", href: "/customers", colSpan: "col-span-1" },
+    { name: "Suppliers", src: SuppliersImg, alt: "Suppliers image", textColor: "text-[#009df1]", href: "/suppliers", colSpan: "col-span-1" },
     { name: "Reports", src: ReportsImg, alt: "Reports image", textColor: "text-red-500", href: "/reports", colSpan: "col-span-1" },
-    { name: "Drivers", src: DriversImg, alt: "Drivers image", textColor: "text-[#e0333b]", href: "/drivers", colSpan: "col-span-1" },
     { name: "Settings", src: SettingsImg, alt: "Settings image", textColor: "text-emerald-500", href: "/settings", colSpan: "col-span-1" },
   ];
 
@@ -75,7 +75,7 @@ export default function DashboardPage() {
           <Button
           variant="destructive"
           onClick={handleLogout}
-          className="bg-orange-500 hover:bg-orange-600 drop-shadow-2xl"
+          className="bg-orange-500 hover:bg-orange-600 "
         >
           Logout
         </Button>

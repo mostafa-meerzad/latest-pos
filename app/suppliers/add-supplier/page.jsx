@@ -88,7 +88,7 @@ export default function CreateSupplierPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Supplier</h1>
         <Link href="/suppliers">
-          <Button variant="outline" className="drop-shadow-2xl">
+          <Button variant="outline" >
             Back to Suppliers
           </Button>
         </Link>

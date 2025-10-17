@@ -79,10 +79,10 @@ export default function AddUserPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add User</h1>
         <Link href="/settings">
-          <Button variant="outline" className={"drop-shadow-2xl"}>Back to Users</Button>
+          <Button variant="outline" >Back to Users</Button>
         </Link>
       </div>
-    <div className="flex justify-center drop-shadow-2xl">
+    <div className="flex justify-center">
       <form onSubmit={handleSubmit} className="min-w-3xl">
         <Card>
           <CardContent>

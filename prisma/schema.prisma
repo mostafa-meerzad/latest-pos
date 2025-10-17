@@ -9,19 +9,19 @@ datasource db {
 }
 
 model Sale {
-  id            Int        @id @default(autoincrement()) @map("sale_id")
-  date          DateTime   @default(now()) @map("sale_date")
-  userId        Int        @map("user_id")
-  customerId    Int?       @map("customer_id")
-  totalAmount   Int        @map("total_amount")
-  taxAmount     Int        @default(0) @map("tax_amount")
-  paymentMethod String     @map("payment_method")
-  discountAmount Decimal   @default(0) @map("discount_amount") 
-  delivery      Delivery?
-  invoice       Invoice?
-  items         SaleItem[]
-  customer      Customer?  @relation(fields: [customerId], references: [id])
-  user          User       @relation(fields: [userId], references: [id])
+  id             Int        @id @default(autoincrement()) @map("sale_id")
+  date           DateTime   @default(now()) @map("sale_date")
+  userId         Int        @map("user_id")
+  customerId     Int?       @map("customer_id")
+  totalAmount    Int        @map("total_amount")
+  taxAmount      Int        @default(0) @map("tax_amount")
+  paymentMethod  String     @map("payment_method")
+  discountAmount Decimal    @default(0) @map("discount_amount")
+  delivery       Delivery?
+  invoice        Invoice?
+  items          SaleItem[]
+  customer       Customer?  @relation(fields: [customerId], references: [id])
+  user           User       @relation(fields: [userId], references: [id])
 
   @@index([customerId], map: "sales_customer_id_fkey")
   @@index([userId], map: "sales_user_id_fkey")
@@ -66,11 +66,11 @@ model Product {
 }
 
 model Category {
-  id       Int       @id @default(autoincrement()) @map("category_id")
-  name     String    @unique @map("category_name")
-  status   String    @default("ACTIVE")
-  is_deleted Boolean  @default(false)
-  products Product[]
+  id         Int       @id @default(autoincrement()) @map("category_id")
+  name       String    @unique @map("category_name")
+  status     String    @default("ACTIVE")
+  is_deleted Boolean   @default(false)
+  products   Product[]
 
   @@map("categories")
 }
@@ -140,7 +140,7 @@ model DeliveryDriver {
   name       String
   phone      String     @unique
   joinDate   DateTime   @default(now()) @map("join_date")
-  isDeleted Boolean @default(false)
+  isDeleted  Boolean    @default(false)
   deliveries Delivery[]
 
   @@map("delivery_drivers")
@@ -154,9 +154,9 @@ model Delivery {
   deliveryDate    DateTime?       @map("delivery_date")
   status          String          @default("pending") @map("delivery_status")
   driverId        Int?            @map("driver_id")
-  deliveryFee     Int             @default(0) @map("delivery_fee")  // ✅ Integer type
+  deliveryFee     Int             @default(0) @map("delivery_fee") // ✅ Integer type
   deleted         Boolean         @default(false) @map("is_deleted")
-
+  customerPhone   String?         @map("customer_phone")
   customer        Customer        @relation(fields: [customerId], references: [id])
   driver          DeliveryDriver? @relation(fields: [driverId], references: [id])
   sale            Sale            @relation(fields: [saleId], references: [id])
@@ -165,4 +165,3 @@ model Delivery {
   @@index([driverId], map: "deliveries_driver_id_fkey")
   @@map("deliveries")
 }
-

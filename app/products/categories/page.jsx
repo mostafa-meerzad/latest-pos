@@ -167,7 +167,7 @@ export default function CategoriesPage() {
     <div>
       <div className="flex justify-end mt-3 mr-6">
         <Link href="/products">
-          <Button variant="outline" className={"drop-shadow-2xl"}>
+          <Button variant="outline" >
             Back to Products
           </Button>
         </Link>

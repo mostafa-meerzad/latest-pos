@@ -63,7 +63,7 @@ export default function CreateDriverPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Delivery Driver</h1>
         <Link href="/drivers">
-          <Button variant="outline" className={"drop-shadow-2xl"}>
+          <Button variant="outline">
             Back to Drivers
           </Button>
         </Link>

@@ -157,7 +157,7 @@ export default function SettingsPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/settings/add-user">
-            <Button className={"bg-green-500 text-md drop-shadow-2xl"}>
+            <Button className={"bg-green-500 text-md "}>
               New User
             </Button>
           </Link>

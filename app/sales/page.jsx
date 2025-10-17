@@ -132,7 +132,7 @@ export default function SalesPage() {
         </h1>
         <div className="flex items-center gap-3">
         <Link href="/sales/add-sale">
-          <Button className={"bg-green-500 text-md drop-shadow-2xl"}>New Sale</Button>
+          <Button className={"bg-green-500 text-md "}>New Sale</Button>
         </Link>
         <BackToDashboardButton />
         </div>

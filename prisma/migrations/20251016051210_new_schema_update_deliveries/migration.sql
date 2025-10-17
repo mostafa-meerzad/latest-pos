@@ -54,6 +54,7 @@ CREATE TABLE `categories` (
     `category_id` INTEGER NOT NULL AUTO_INCREMENT,
     `category_name` VARCHAR(191) NOT NULL,
     `status` VARCHAR(191) NOT NULL DEFAULT 'ACTIVE',
+    `is_deleted` BOOLEAN NOT NULL DEFAULT false,
 
     UNIQUE INDEX `categories_category_name_key`(`category_name`),
     PRIMARY KEY (`category_id`)
@@ -145,7 +146,9 @@ CREATE TABLE `deliveries` (
     `delivery_date` DATETIME(3) NULL,
     `delivery_status` VARCHAR(191) NOT NULL DEFAULT 'pending',
     `driver_id` INTEGER NULL,
+    `delivery_fee` INTEGER NOT NULL DEFAULT 0,
     `is_deleted` BOOLEAN NOT NULL DEFAULT false,
+    `customer_phone` VARCHAR(191) NULL,
 
     UNIQUE INDEX `deliveries_sale_id_key`(`sale_id`),
     INDEX `deliveries_customer_id_fkey`(`customer_id`),
