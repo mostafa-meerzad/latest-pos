@@ -240,7 +240,7 @@ export default function AddSalePage() {
       const finalized = {
         saleId: serverSale.id,
         date: serverSale.createdAt || new Date().toISOString(),
-        customer: customer ?? { id: 0, name: "Walk in" },
+        customer: customer ?? { id: 0, name: "Walk-in Customer" },
         items: [...items],
         totals: { ...totals },
       };
@@ -310,7 +310,7 @@ export default function AddSalePage() {
       const finalized = {
         saleId: serverSale.id,
         date: serverSale.createdAt || new Date().toISOString(),
-        customer: customer ?? { id: 0, name: "Walk in" },
+        customer: customer ?? { id: 0, name: "Walk-in Customer" },
         items: [...items],
         totals: { ...totals },
       };
@@ -412,7 +412,7 @@ export default function AddSalePage() {
               }
             />
             <div className="mt-2 text-sm text-gray-600">
-              Selected: {customer?.name || "Walk in"}
+              Selected: {customer?.name || "Walk-in Customer"}
             </div>
 
             {customerSuggestionsVisible &&
