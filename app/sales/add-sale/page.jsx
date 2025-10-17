@@ -25,6 +25,10 @@ import { useReactToPrint } from "react-to-print";
 import Invoice from "@/components/Invoice";
 import AddDeliveryModal from "../components/AddDeliveryModal";
 import { date } from "zod";
+import dynamic from "next/dynamic";
+const NumericKeyboard = dynamic(() => import("@/components/NumericKeyboard"), {
+  ssr: false,
+});
 
 export default function AddSalePage() {
   // store actions
@@ -58,11 +62,14 @@ export default function AddSalePage() {
   const [lastPrintedSale, setLastPrintedSale] = useState(null);
   const [saleData, setSaleData] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [activeInput, setActiveInput] = useState(null);
 
   const invoiceRef = useRef(null);
   const barcodeRef = useRef(null);
   const router = useRouter();
-
+  const [keyboardPosition, setKeyboardPosition] = useState({ top: 0, left: 0 });
+  const keyboardRef = useRef(null);
   const handlePrint = useReactToPrint({ contentRef: invoiceRef });
 
   const handleDeliverySuccess = (delivery) => {
@@ -355,6 +362,114 @@ export default function AddSalePage() {
     }
   }
 
+  function handleKeyboardInput(value) {
+    if (!activeInput) return;
+
+    // Handle clear or delete
+    if (value === "clear") {
+      if (activeInput === "quantity") setQuantity("");
+      if (activeInput === "discount") setItemDiscount("");
+      if (activeInput === "tax") setTaxAmount("");
+      if (activeInput === "unitPrice" && editValues)
+        setEditValues((prev) => ({ ...prev, unitPrice: "" }));
+      if (activeInput === "editQuantity" && editValues)
+        setEditValues((prev) => ({ ...prev, quantity: "" }));
+      if (activeInput === "editDiscount" && editValues)
+        setEditValues((prev) => ({ ...prev, discount: "" }));
+      return;
+    }
+
+    if (value === "backspace") {
+      if (activeInput === "quantity")
+        setQuantity((prev) => String(prev).slice(0, -1) || "");
+      if (activeInput === "discount")
+        setItemDiscount((prev) => String(prev).slice(0, -1) || "");
+      if (activeInput === "tax")
+        setTaxAmount((prev) => String(prev).slice(0, -1) || "");
+      if (activeInput === "unitPrice" && editValues)
+        setEditValues((prev) => ({
+          ...prev,
+          unitPrice: String(prev.unitPrice || "").slice(0, -1) || "",
+        }));
+      if (activeInput === "editQuantity" && editValues)
+        setEditValues((prev) => ({
+          ...prev,
+          quantity: String(prev.quantity || "").slice(0, -1) || "",
+        }));
+      if (activeInput === "editDiscount" && editValues)
+        setEditValues((prev) => ({
+          ...prev,
+          discount: String(prev.discount || "").slice(0, -1) || "",
+        }));
+      return;
+    }
+
+    // Append digits (only integers)
+    if (/^\d$/.test(value)) {
+      if (activeInput === "quantity")
+        setQuantity((prev) => (prev ? prev + value : value));
+      if (activeInput === "discount")
+        setItemDiscount((prev) => (prev ? prev + value : value));
+      if (activeInput === "tax")
+        setTaxAmount((prev) => (prev ? prev + value : value));
+      if (activeInput === "unitPrice" && editValues)
+        setEditValues((prev) => ({
+          ...prev,
+          unitPrice: prev.unitPrice ? String(prev.unitPrice) + value : value,
+        }));
+      if (activeInput === "editQuantity" && editValues)
+        setEditValues((prev) => ({
+          ...prev,
+          quantity: prev.quantity ? String(prev.quantity) + value : value,
+        }));
+      if (activeInput === "editDiscount" && editValues)
+        setEditValues((prev) => ({
+          ...prev,
+          discount: prev.discount ? String(prev.discount) + value : value,
+        }));
+    }
+  }
+
+  // Update keyboard position when active input changes
+  useEffect(() => {
+    if (activeInput && keyboardVisible) {
+      const inputElement = document.querySelector(`[data-input-type="${activeInput}"]`);
+      if (inputElement) {
+        const rect = inputElement.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        
+        setKeyboardPosition({
+          top: rect.bottom + scrollTop + 10, // 10px below input
+          left: rect.left + scrollLeft
+        });
+      }
+    }
+  }, [activeInput, keyboardVisible]);
+
+  // Add click outside handler (updated)
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (keyboardVisible && keyboardRef.current && 
+          !keyboardRef.current.contains(event.target)) {
+        
+        const isNumericInput = event.target.type === 'number' || 
+                              event.target.hasAttribute('data-input-type');
+        
+        if (!isNumericInput) {
+          setKeyboardVisible(false);
+          setActiveInput(null);
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [keyboardVisible]);
+
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -396,6 +511,7 @@ export default function AddSalePage() {
           </Link>
         </div>
       </div>
+
       {console.log("sale data before delivery modal: ", saleData)}
       {console.log(
         "sale data before delivery modal: finalized sale data ",
@@ -507,6 +623,11 @@ export default function AddSalePage() {
                   type="number"
                   min={1}
                   value={quantity}
+                  data-input-type="quantity"
+                  onFocus={() => {
+                    setActiveInput("quantity");
+                    setKeyboardVisible(true);
+                  }}
                   onChange={(e) => {
                     const val = e.target.value;
 
@@ -535,6 +656,11 @@ export default function AddSalePage() {
                   step="1"
                   min={0}
                   value={itemDiscount}
+                  data-input-type="discount"
+                  onFocus={() => {
+                    setActiveInput("discount");
+                    setKeyboardVisible(true);
+                  }}
                   onChange={(e) => {
                     const val = e.target.value;
 
@@ -610,6 +736,11 @@ export default function AddSalePage() {
                   step="1"
                   min={0}
                   value={taxAmount}
+                  data-input-type="tax"
+                  onFocus={() => {
+                    setActiveInput("tax");
+                    setKeyboardVisible(true);
+                  }}
                   onChange={(e) => {
                     const val = e.target.value;
 
@@ -643,13 +774,12 @@ export default function AddSalePage() {
           </CardContent>
         </Card>
 
-        {/* Right Panel (unchanged) */}
+        {/* Right Panel */}
         <div className="md:col-span-2">
           <Card>
             <CardContent>
               <h3 className="text-lg font-semibold mb-3">Items</h3>
 
-              {/* ... rest of your table (unchanged) ... */}
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -698,6 +828,11 @@ export default function AddSalePage() {
                         <TableCell>
                           {editingId === row.tempId ? (
                             <Input
+                              onFocus={() => {
+                                setActiveInput("unitPrice");
+                                setKeyboardVisible(true);
+                              }}
+                              data-input-type="unitPrice"
                               onKeyDown={(e) => {
                                 // Block minus, dot, and scientific notation keys
                                 if (["-", ".", "e", "E"].includes(e.key))
@@ -723,6 +858,11 @@ export default function AddSalePage() {
                         <TableCell className="w-28">
                           {editingId === row.tempId ? (
                             <Input
+                              onFocus={() => {
+                                setActiveInput("editQuantity");
+                                setKeyboardVisible(true);
+                              }}
+                              data-input-type="editQuantity"
                               onKeyDown={(e) => {
                                 // Block minus, dot, and scientific notation keys
                                 if (["-", ".", "e", "E"].includes(e.key))
@@ -747,6 +887,11 @@ export default function AddSalePage() {
                         <TableCell className="w-32">
                           {editingId === row.tempId ? (
                             <Input
+                              onFocus={() => {
+                                setActiveInput("editDiscount");
+                                setKeyboardVisible(true);
+                              }}
+                              data-input-type="editDiscount"
                               onKeyDown={(e) => {
                                 // Block minus, dot, and scientific notation keys
                                 if (["-", ".", "e", "E"].includes(e.key))
@@ -852,6 +997,24 @@ export default function AddSalePage() {
           />
         )}
       </div>
+     {keyboardVisible && (
+        <div 
+          ref={keyboardRef}
+          className="fixed z-50"
+          style={{
+            top: `${keyboardPosition.top}px`,
+            left: `${keyboardPosition.left}px`
+          }}
+        >
+          <NumericKeyboard
+            onChange={handleKeyboardInput}
+            onClose={() => {
+              setKeyboardVisible(false);
+              setActiveInput(null);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
