@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function ProductDetailClient({ id }) {
   const router = useRouter();
@@ -52,7 +52,7 @@ export default function ProductDetailClient({ id }) {
     return (
       <div className="p-6 space-y-4">
         <div className="text-red-600">Error: {error}</div>
-        <Button variant="ghost" onClick={() => router.push("/products")}\>
+        <Button variant="ghost" onClick={() => router.push("/products")}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Button>
       </div>
