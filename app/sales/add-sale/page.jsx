@@ -4,6 +4,7 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Plus, Trash2, Edit, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,8 @@ import salesImage from "@/assets/sales_img.png";
 import useSaleStore from "@/components/saleStore";
 import { useReactToPrint } from "react-to-print";
 import Invoice from "@/components/Invoice";
+import AddDeliveryModal from "../components/AddDeliveryModal";
+import { date } from "zod";
 
 export default function AddSalePage() {
   // store actions
@@ -34,38 +37,46 @@ export default function AddSalePage() {
 
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
 
-  // local states
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerSuggestionsVisible, setCustomerSuggestionsVisible] =
     useState(false);
-
   const [productQuery, setProductQuery] = useState("");
   const [productSuggestionsVisible, setProductSuggestionsVisible] =
     useState(false);
-
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [itemDiscount, setItemDiscount] = useState(0);
   const [customer, setCustomer] = useState(null);
-
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [taxAmount, setTaxAmount] = useState(0);
-
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState(null);
-
-  // invoice + print
-  const invoiceRef = useRef(null);
-  const barcodeRef = useRef(null);
-  const handlePrint = useReactToPrint({ contentRef: invoiceRef });
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastPrintedSale, setLastPrintedSale] = useState(null);
+  const [saleData, setSaleData] = useState({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const invoiceRef = useRef(null);
+  const barcodeRef = useRef(null);
   const router = useRouter();
+
+  const handlePrint = useReactToPrint({ contentRef: invoiceRef });
+
+  const handleDeliverySuccess = (delivery) => {
+    console.log("Delivery created:", delivery);
+    triggerInvoicePrint(saleData);
+    toast.success("Delivery successfully created!");
+    setSaleData({});
+  };
+
+  const handleClose = () => {
+    setIsModalOpen(false);
+    triggerInvoicePrint(saleData);
+    setSaleData({});
+  };
 
   // fetch customers
   useEffect(() => {
@@ -75,15 +86,10 @@ export default function AddSalePage() {
         const data = await res.json();
         if (data.success) setCustomers(data.data);
       } catch (err) {
-        console.error("Failed to fetch customers", err);
+        toast.error("Failed to fetch customers");
       }
     }
     fetchCustomers();
-  }, []);
-
-  // focus barcode input
-  useEffect(() => {
-    if (barcodeRef.current) barcodeRef.current.focus();
   }, []);
 
   // fetch products
@@ -94,13 +100,27 @@ export default function AddSalePage() {
         const data = await res.json();
         if (data.success) setProducts(data.data);
       } catch (err) {
-        console.error("Failed to fetch products", err);
+        toast.error("Failed to fetch products");
       }
     }
     fetchProducts();
   }, []);
 
-  // product suggestions
+  // focus barcode input
+  useEffect(() => {
+    if (barcodeRef.current) barcodeRef.current.focus();
+  }, []);
+
+  // auto print when ready
+  useEffect(() => {
+    if (lastPrintedSale && invoiceRef.current) {
+      const timer = setTimeout(() => {
+        handlePrint();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [lastPrintedSale]);
+
   const productSuggestions = useMemo(() => {
     const q = productQuery.trim().toLowerCase();
     if (!q) return [];
@@ -111,7 +131,13 @@ export default function AddSalePage() {
     );
   }, [productQuery, products]);
 
-  // quick barcode lookup
+  const customerSuggestions = useMemo(() => {
+    const q = customerQuery.trim().toLowerCase();
+    if (!q) return [];
+    return customers.filter((c) => c.name.toLowerCase().includes(q));
+  }, [customerQuery, customers]);
+
+  // barcode quick lookup
   useEffect(() => {
     if (!barcodeInput) return;
     const f = products.find((p) => p.barcode === barcodeInput.trim());
@@ -121,21 +147,15 @@ export default function AddSalePage() {
     }
   }, [barcodeInput, products]);
 
-  // customer suggestions
-  const customerSuggestions = useMemo(() => {
-    const q = customerQuery.trim().toLowerCase();
-    if (!q) return [];
-    return customers.filter((c) => c.name.toLowerCase().includes(q));
-  }, [customerQuery, customers]);
-
-  // add item
   function genTempId() {
     return `item-${crypto.randomUUID()}`;
   }
 
   function onAdd() {
-    if (!selectedProduct) return alert("Select product or scan barcode");
-    if (!quantity || quantity <= 0) return alert("Quantity must be at least 1");
+    if (!selectedProduct)
+      return toast.error("Select a product or scan a barcode first");
+    if (!quantity || quantity <= 0)
+      return toast.error("Quantity must be at least 1");
 
     const unitPrice = Number(selectedProduct.price || 0);
     const discount = Number(itemDiscount || 0);
@@ -154,6 +174,7 @@ export default function AddSalePage() {
     };
 
     addItem(item);
+    toast.success(`${selectedProduct.name} added to cart`);
     setProductQuery("");
     setSelectedProduct(null);
     setBarcodeInput("");
@@ -161,7 +182,6 @@ export default function AddSalePage() {
     setItemDiscount(0);
   }
 
-  // edit item
   function startEdit(row) {
     setEditingId(row.tempId);
     setEditValues({ ...row });
@@ -177,39 +197,31 @@ export default function AddSalePage() {
       ).toFixed(2),
     };
     updateItem(editingId, updated);
+    toast.success("Item updated");
     setEditingId(null);
     setEditValues(null);
   }
 
-  // totals
   const totals = useMemo(() => {
     const subtotal = items.reduce(
       (s, it) => s + Number(it.unitPrice || 0) * Number(it.quantity || 0),
       0
     );
     const discount = items.reduce((s, it) => s + Number(it.discount || 0), 0);
-    const tax = 0;
-    const final = +(subtotal - discount + tax).toFixed(2);
-    return {
-      subtotal: +subtotal.toFixed(2),
-      discount: +discount.toFixed(2),
-      final,
-    };
+    const final = +(subtotal - discount).toFixed(2);
+    return { subtotal, discount, final };
   }, [items]);
 
-  // common helper to handle invoice print
   function triggerInvoicePrint(saleData) {
     setLastPrintedSale(saleData);
-    setTimeout(() => handlePrint(), 300);
   }
 
-  // finalize sale (no delivery)
   async function handleFinalizeSale() {
-    if (items.length === 0) return alert("No items to finalize");
+    if (items.length === 0) return toast.error("No items to finalize");
     if (isSubmitting) return;
 
     const payload = {
-      customerId: customer?.id ?? null,
+      customerId: customer?.id ?? 1,
       paymentMethod: paymentMethod || "cash",
       taxAmount: Number(taxAmount || 0),
       items: items.map((it) => ({
@@ -232,7 +244,7 @@ export default function AddSalePage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        alert(data?.error || "Failed to create sale");
+        toast.error(data?.error || "Failed to create sale");
         return;
       }
 
@@ -263,23 +275,22 @@ export default function AddSalePage() {
         setCustomerQuery("");
         setPaymentMethod("cash");
         setTaxAmount(0);
-        alert("Sale finalized and saved successfully!");
+        toast.success("Sale finalized successfully!");
       }, 800);
     } catch (err) {
       console.error("Finalize sale error:", err);
-      alert("Network or unexpected error");
+      toast.error("Network or unexpected error");
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  // finalize sale + delivery
   async function handleFinalizeSaleWithDelivery() {
-    if (items.length === 0) return alert("No items to finalize");
+    if (items.length === 0) return toast.error("No items to finalize");
     if (isSubmitting) return;
 
     const payload = {
-      customerId: customer?.id ?? null,
+      customerId: customer?.id ?? 1,
       paymentMethod: paymentMethod || "cash",
       taxAmount: Number(taxAmount || 0),
       items: items.map((it) => ({
@@ -302,7 +313,7 @@ export default function AddSalePage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        alert(data?.error || "Failed to create sale");
+        toast.error(data?.error || "Failed to create sale");
         return;
       }
 
@@ -315,7 +326,7 @@ export default function AddSalePage() {
         totals: { ...totals },
       };
 
-      triggerInvoicePrint(finalized);
+      setSaleData(finalized);
 
       const localSale = {
         id: finalized.saleId ?? Date.now(),
@@ -333,13 +344,12 @@ export default function AddSalePage() {
         setCustomerQuery("");
         setPaymentMethod("cash");
         setTaxAmount(0);
-        router.push(
-          `/delivery/add?saleId=${serverSale.id}&customerId=${serverSale.customerId}&from=sale`
-        );
+        toast.success("Sale saved — now add delivery info");
+        setIsModalOpen(true);
       }, 800);
     } catch (err) {
       console.error("Finalize sale + delivery error:", err);
-      alert("Network or unexpected error");
+      toast.error("Network or unexpected error");
     } finally {
       setIsSubmitting(false);
     }
@@ -356,7 +366,6 @@ export default function AddSalePage() {
 
         <div className="flex gap-2">
           <Button
-            
             variant="secondary"
             onClick={() => {
               if (confirm("Clear cart?")) clear();
@@ -379,19 +388,27 @@ export default function AddSalePage() {
             {isSubmitting ? "Saving..." : "Finalize Sale + Delivery"}
           </Button>
 
-          <Button
-            onClick={handlePrint}
-            className="bg-blue-500 text-mdl"
-          >
+          <Button onClick={handlePrint} className="bg-blue-500 text-md">
             Print Invoice
           </Button>
           <Link href="/sales">
-            <Button variant="outline">
-              Back to Sales
-            </Button>
+            <Button variant="outline">Back to Sales</Button>
           </Link>
         </div>
       </div>
+      {console.log("sale data before delivery modal: ", saleData)}
+      {console.log(
+        "sale data before delivery modal: finalized sale data ",
+        addFinalizedSale
+      )}
+      <AddDeliveryModal
+        isOpen={isModalOpen}
+        onClose={handleClose}
+        saleId={saleData?.saleId}
+        customerId={saleData?.customer?.id || 1}
+        onSuccess={handleDeliverySuccess}
+        key={saleData.saleId || date()}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Left Panel */}

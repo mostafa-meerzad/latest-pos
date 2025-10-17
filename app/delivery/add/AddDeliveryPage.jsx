@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSearchParams } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AddDeliveryPage() {
   const router = useRouter();
@@ -21,7 +22,8 @@ export default function AddDeliveryPage() {
 
   // delivery fee field
   const [deliveryFee, setDeliveryFee] = useState("");
-
+  // customer phone field
+  const [customerPhone, setCustomerPhone] = useState("");
   // data
   const [sales, setSales] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -38,10 +40,12 @@ export default function AddDeliveryPage() {
   const [driverQuery, setDriverQuery] = useState("");
   const [driverSuggestionsVisible, setDriverSuggestionsVisible] =
     useState(false);
+  const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
+
   const [selectedDriver, setSelectedDriver] = useState(null);
 
+  const deliverySkeleton = ["", "", ""]
   const from = searchParams.get("from"); // "sales" or "deliveries"
-
   // Prefill SaleId from query
   useEffect(() => {
     const saleIdFromQuery = searchParams.get("saleId");
@@ -62,6 +66,8 @@ export default function AddDeliveryPage() {
         if (foundSale.deliveryAddress) {
           setDeliveryAddress(foundSale.deliveryAddress);
         }
+        if (foundSale.customer?.phone)
+          setCustomerPhone(foundSale.customer.phone);
       }
     }
   }, [searchParams, sales]);
@@ -69,6 +75,7 @@ export default function AddDeliveryPage() {
   // fetch sales & drivers once
   useEffect(() => {
     async function fetchData() {
+      setIsLoadingDrivers(true);
       try {
         const saleRes = await fetch("/api/sale");
         const saleData = await saleRes.json();
@@ -76,7 +83,10 @@ export default function AddDeliveryPage() {
 
         const driverRes = await fetch("/api/drivers");
         const driverData = await driverRes.json();
-        if (driverData.success) setDrivers(driverData.data);
+        if (driverData.success) {
+          setDrivers(driverData.data);
+          setIsLoadingDrivers(false);
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
       }
@@ -107,6 +117,7 @@ export default function AddDeliveryPage() {
         driverId: driverId ? parseInt(driverId, 10) : undefined,
         deliveryDate: deliveryDate || undefined,
         deliveryFee: fee,
+        customerPhone: customerPhone.trim(),
       };
 
       const res = await fetch("/api/deliveries", {
@@ -222,6 +233,19 @@ export default function AddDeliveryPage() {
                   )}
                 </div>
 
+                {/* Customer Phone */}
+                <div className="col-span-2">
+                  <label className="text-sm font-medium block mb-1">
+                    Customer Phone
+                  </label>
+                  <Input
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Enter customer phone number"
+                    required
+                  />
+                </div>
+
                 {/* Delivery Address */}
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium block mb-1">
@@ -236,7 +260,7 @@ export default function AddDeliveryPage() {
                 </div>
 
                 {/* Driver Selector */}
-                <div className="relative md:col-span-2">
+                {/* <div className="relative md:col-span-2">
                   <label className="text-sm font-medium block mb-1">
                     Driver
                   </label>
@@ -282,7 +306,42 @@ export default function AddDeliveryPage() {
                         ))}
                     </div>
                   )}
+                </div> */}
+                 <div className="relative md:col-span-2">
+                  <label className="text-sm font-medium block mb-1">
+                    Driver
+                  </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {isLoadingDrivers
+                    ? deliverySkeleton.map((_, i) => (
+                        <div
+                          className="p-3 border rounded-md gap-2 flex flex-col"
+                          key={i}
+                        >
+                          <Skeleton className={"h-4 w-[150px] "} />
+                          <Skeleton className={"h-4 w-[180px]"} />
+                        </div>
+                      ))
+                    : drivers.map((d) => (
+                        <div
+                          key={d.id}
+                          onClick={() => {
+                            setDriverId(d.id);
+                            setSelectedDriver(d);
+                          }}
+                          className={`p-3 border rounded-md cursor-pointer ${
+                            driverId === d.id
+                              ? "border-orange-500 bg-orange-50"
+                              : "border-gray-300 hover:bg-gray-50"
+                          }`}
+                        >
+                          <p className="font-medium">{d.name}</p>
+                          <p className="text-sm text-gray-600">{d.phone}</p>
+                        </div>
+                      ))}
                 </div>
+                </div>
+
                 {/* ✅ Delivery Fee */}
                 <div>
                   <label className="text-sm font-medium block mb-1">
@@ -314,8 +373,6 @@ export default function AddDeliveryPage() {
                   />
                 </div>
               </div>
-
-              
 
               {/* form actions */}
               <div className="mt-6 flex items-center gap-3">

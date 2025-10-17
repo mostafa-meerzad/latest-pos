@@ -15,6 +15,8 @@ export async function POST(request) {
       customerPhone,
     } = body;
 
+    console.log("the delivery data i get from frontend: ", body)
+
     // Required fields validation
     if (!saleId || !customerId || !deliveryAddress) {
       return NextResponse.json(
