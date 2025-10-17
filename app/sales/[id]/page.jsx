@@ -13,6 +13,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+import toast from "react-hot-toast";
 
 export default function SaleDetailsPage() {
   const { id } = useParams();
@@ -28,9 +29,12 @@ export default function SaleDetailsPage() {
         const json = await res.json();
         if (json.success) {
           setSale(json.data);
+        } else {
+          toast.error("Failed to load sale details.");
         }
       } catch (err) {
         console.error("Error fetching sale:", err);
+        toast.error("Error fetching sale details.");
       } finally {
         setLoading(false);
       }
@@ -49,20 +53,19 @@ export default function SaleDetailsPage() {
       const res = await fetch(`/api/sale/${saleId}/refund`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // you can optionally pass a reason: JSON.stringify({ reason: 'Customer returned' })
       });
       const data = await res.json();
+
       if (res.ok && data.success) {
-        alert("Sale refunded successfully.");
-        // Use router instead of window.location for better Next.js navigation
-        router.push("/sales");
+        toast.success("Sale refunded successfully!");
+        setTimeout(() => router.push("/sales"), 1500); // smooth redirect after toast
       } else {
-        alert("Refund failed: " + (data.error || "unknown error"));
+        toast.error(data.error || "Refund failed. Please try again.");
         console.error("Refund failed:", data);
       }
     } catch (err) {
       console.error("Refund request failed:", err);
-      alert("Refund request failed");
+      toast.error("Refund request failed.");
     }
   }
 
@@ -96,9 +99,7 @@ export default function SaleDetailsPage() {
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell>
-                  {new Date(sale.date).toLocaleDateString()}
-                </TableCell>
+                <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
                 <TableCell>{sale.invoice?.invoiceNumber || "-"}</TableCell>
                 <TableCell>
                   {sale.totalAmount} AFG{" "}
