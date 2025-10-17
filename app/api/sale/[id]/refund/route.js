@@ -17,7 +17,7 @@ export async function POST(req, { params }) {
       );
     }
 
-    const saleId = Number(params.id);
+    const saleId = Number(await params.id);
     if (!saleId || isNaN(saleId)) {
       return NextResponse.json(
         { success: false, error: "Invalid sale id" },
@@ -36,7 +36,10 @@ export async function POST(req, { params }) {
     });
 
     if (!sale) {
-      return NextResponse.json({ success: false, error: "Sale not found" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Sale not found" },
+        { status: 404 }
+      );
     }
 
     // Build map productId -> qty to restore
@@ -52,10 +55,15 @@ export async function POST(req, { params }) {
       // 1) Update product quantities
       for (const [productId, qty] of qtyByProduct.entries()) {
         // Ensure product exists
-        const product = await tx.product.findUnique({ where: { id: productId } });
+        const product = await tx.product.findUnique({
+          where: { id: productId },
+        });
         if (!product) {
           // If a product is missing, abort
-          throw new ApiError(`Product with id ${productId} not found while refunding.`, 500);
+          throw new ApiError(
+            `Product with id ${productId} not found while refunding.`,
+            500
+          );
         }
 
         await tx.product.update({
@@ -67,11 +75,10 @@ export async function POST(req, { params }) {
       // 2) Delete sale items
       await tx.saleItem.deleteMany({ where: { saleId } });
 
-      // 3) Soft-delete delivery if exists (your deliveries use `deleted: Boolean`)
+      // 3) remove delivery before the sale
       if (sale.delivery) {
-        await tx.delivery.update({
+        await tx.delivery.delete({
           where: { id: sale.delivery.id },
-          data: { deleted: true },
         });
       }
 
@@ -92,7 +99,10 @@ export async function POST(req, { params }) {
     console.error("Refund failed:", err);
 
     if (typeof ApiError !== "undefined" && err instanceof ApiError) {
-      return NextResponse.json({ success: false, error: err.message }, { status: err.status });
+      return NextResponse.json(
+        { success: false, error: err.message },
+        { status: err.status }
+      );
     }
 
     return NextResponse.json(
