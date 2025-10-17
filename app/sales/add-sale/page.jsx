@@ -29,6 +29,7 @@ import dynamic from "next/dynamic";
 const NumericKeyboard = dynamic(() => import("@/components/NumericKeyboard"), {
   ssr: false,
 });
+import Delivery from "@/components/Delivery";
 
 export default function AddSalePage() {
   // store actions
@@ -60,17 +61,20 @@ export default function AddSalePage() {
   const [editValues, setEditValues] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastPrintedSale, setLastPrintedSale] = useState(null);
+  const [lastPrintedDelivery, setLastPrintedDelivery] = useState(null);
   const [saleData, setSaleData] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [activeInput, setActiveInput] = useState(null);
 
   const invoiceRef = useRef(null);
+  const deliveryRef = useRef(null);
   const barcodeRef = useRef(null);
   const router = useRouter();
   const [keyboardPosition, setKeyboardPosition] = useState({ top: 0, left: 0 });
   const keyboardRef = useRef(null);
   const handlePrint = useReactToPrint({ contentRef: invoiceRef });
+  const handlePrintDelivery = useReactToPrint({ contentRef: deliveryRef });
 
   const handleDeliverySuccess = (delivery) => {
     console.log("Delivery created:", delivery);
@@ -127,6 +131,15 @@ export default function AddSalePage() {
       return () => clearTimeout(timer);
     }
   }, [lastPrintedSale]);
+
+  useEffect(() => {
+    if (lastPrintedDelivery && deliveryRef.current) {
+      const timer = setTimeout(() => {
+        handlePrintDelivery();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [lastPrintedDelivery]);
 
   const productSuggestions = useMemo(() => {
     const q = productQuery.trim().toLowerCase();
@@ -221,6 +234,10 @@ export default function AddSalePage() {
 
   function triggerInvoicePrint(saleData) {
     setLastPrintedSale(saleData);
+  }
+
+  function triggerDeliveryPrint(deliveryData) {
+    setLastPrintedDelivery(deliveryData);
   }
 
   async function handleFinalizeSale() {
@@ -482,6 +499,7 @@ export default function AddSalePage() {
         <div className="flex gap-2">
           <Button
             variant="secondary"
+            className={"bg-red-500 text-white text-md hover:bg-red-400"}
             onClick={() => {
               if (confirm("Clear cart?")) clear();
             }}
@@ -490,21 +508,24 @@ export default function AddSalePage() {
           </Button>
           <Button
             onClick={handleFinalizeSale}
-            className={"bg-green-500 text-md"}
+            className={"bg-green-500 text-md hover:bg-green-400"}
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Finalize Sale"}
           </Button>
           <Button
             onClick={handleFinalizeSaleWithDelivery}
-            className="bg-orange-500 text-md"
+            className="bg-orange-500 text-md hover:bg-orange-400"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Finalize Sale + Delivery"}
           </Button>
 
-          <Button onClick={handlePrint} className="bg-blue-500 text-md">
+          <Button onClick={handlePrint} className="bg-blue-500 text-md hover:bg-blue-400">
             Print Invoice
+          </Button>
+          <Button onClick={handlePrintDelivery} className="bg-cyan-400 text-md hover:bg-cyan-300">
+            Print Delivery
           </Button>
           <Link href="/sales">
             <Button variant="outline">Back to Sales</Button>
@@ -524,6 +545,7 @@ export default function AddSalePage() {
         customerId={saleData?.customer?.id || 1}
         onSuccess={handleDeliverySuccess}
         key={saleData.saleId || date()}
+        sendDeliveryDetails={triggerDeliveryPrint}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -545,17 +567,20 @@ export default function AddSalePage() {
               }
             />
             <div className="mt-2 text-sm text-gray-600">
-              Selected: {customer?.name || "Walk-in Customer"}
+              Selected:{" "}
+              <span className="font-medium text-[1rem]">
+                {customer?.name || "Walk-in Customer"}
+              </span>
             </div>
 
             {customerSuggestionsVisible &&
               customerQuery &&
               customerSuggestions.length > 0 && (
-                <div className="absolute z-20 bg-white border rounded w-md mt-1 max-h-40 overflow-auto">
+                <div className="absolute z-20 bg-white border rounded-md w-[27svw] drop-shadow-xl -mt-5 max-h-40 overflow-auto">
                   {customerSuggestions.map((c) => (
                     <div
                       key={c.id}
-                      className="p-2 hover:bg-slate-50 cursor-pointer"
+                      className="p-2 hover:bg-slate-100 cursor-pointer px-7 rounded-md"
                       onMouseDown={() => {
                         setCustomer(c);
                         setCustomerQuery(c.name);
@@ -594,11 +619,11 @@ export default function AddSalePage() {
             {productSuggestionsVisible &&
               productQuery &&
               productSuggestions.length > 0 && (
-                <div className="mb-2 max-h-36 overflow-auto border rounded bg-white">
+                <div className="mb-2 max-h-48 overflow-y-scroll border rounded-md drop-shadow-xl bg-white">
                   {productSuggestions.map((p) => (
                     <div
                       key={p.id}
-                      className="p-2 hover:bg-slate-50 cursor-pointer"
+                      className="p-2 px-4 hover:bg-slate-100 cursor-pointer"
                       onMouseDown={() => {
                         setSelectedProduct(p);
                         setProductQuery(p.name);
@@ -1015,6 +1040,25 @@ export default function AddSalePage() {
           />
         </div>
       )}
+      {console.log(
+        "this is the data in lastPrintedDelivry: ",
+        lastPrintedDelivery
+      )}
+
+      <div className="hidden">
+        {lastPrintedDelivery && (
+          <Delivery
+            ref={deliveryRef}
+            customer={lastPrintedDelivery.customer || "test"}
+            address={lastPrintedDelivery.deliveryAddress || "test"}
+            deliveryDate={lastPrintedDelivery.deliveryDate || "test"}
+            deliveryFee={lastPrintedDelivery.deliveryFee || "test"}
+            saleId={lastPrintedDelivery.saleId || "test"}
+            phone={lastPrintedDelivery.customerPhone}
+            driver={lastPrintedDelivery.driver || "test"}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -12,22 +12,34 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
+// A helper function to get the current date in YYYY-MM-DD format
+const getFormattedDate = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0"); // Months are 0-indexed, so add 1
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function AddDeliveryModal({
   isOpen,
   onClose,
   saleId,
   customerId,
   onSuccess,
+  sendDeliveryDetails,
 }) {
   const [drivers, setDrivers] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryFee, setDeliveryFee] = useState("");
-  const [deliveryDate, setDeliveryDate] = useState("");
+  // const [deliveryDate, setDeliveryDate] = useState("");
   const [driverId, setDriverId] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
+  const [deliveryDate, setDeliveryDate] = useState(getFormattedDate());
+
   const deliverySkeleton = ["", "", ""];
 
   // ✅ Fetch drivers on mount
@@ -99,6 +111,7 @@ export default function AddDeliveryModal({
 
       if (res.ok && data.success) {
         if (onSuccess) onSuccess(data.data);
+        sendDeliveryDetails(data.data);
         onClose(); // Close modal on success
       } else {
         toast.error(
