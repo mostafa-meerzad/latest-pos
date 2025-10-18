@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import {
@@ -33,90 +33,182 @@ export default function SalesPage() {
   // ----------------------------
   const [salesData, setSalesData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [paymentFilter, setpaymentFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   const itemsPerPage = 6;
 
   // ----------------------------
-  // 🔹 Fetch sales from API
+  // 🔹 Fetch sales from API (with all filters)
   // ----------------------------
   useEffect(() => {
     async function fetchSales() {
       try {
         setLoading(true);
-        const res = await fetch("/api/sale");
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemsPerPage.toString(),
+          search: searchQuery,
+          payment: paymentFilter,
+          fromDate: fromDate,
+          toDate: toDate,
+        });
+
+        // console.log("Fetching sales with params:", params.toString()); // Debug log
+
+        const res = await fetch(`/api/sale?${params.toString()}`);
         const data = await res.json();
+
+        // console.log("API Response:", data); // Debug log
+
         if (res.ok && data.success) {
-          // normalize sales data for easier use
           const formatted = data.data.map((s) => ({
-            id: `#${s.id}`, // or `#2025-${s.id}`
+            id: `#${s.id}`,
             customer: s.customer?.name || "Walk-in",
             total: `AFN ${s.totalAmount}`,
             date: s.date,
             payment_method: s.paymentMethod,
-            rawId: s.id, // keep original ID for details route
+            rawId: s.id,
           }));
+
           setSalesData(formatted);
+          setTotalPages(data.pagination.totalPages);
+          setTotalCount(data.pagination.total);
         } else {
           console.error("Failed to fetch sales:", data.error || data);
+          setSalesData([]);
+          setTotalPages(1);
+          setTotalCount(0);
         }
       } catch (err) {
         console.error("Error fetching sales:", err);
+        setSalesData([]);
+        setTotalPages(1);
+        setTotalCount(0);
       } finally {
         setLoading(false);
       }
     }
+
     fetchSales();
-  }, []);
+  }, [currentPage, searchQuery, paymentFilter, fromDate, toDate]);
 
   // ----------------------------
-  // 🔹 Filtering Logic
+  // 🔹 Reset to page 1 when filters change
   // ----------------------------
-  const filteredData = useMemo(() => {
-    return salesData.filter((item) => {
-      const matchesPayment =
-        paymentFilter === "all" || item.payment_method === paymentFilter;
-
-      const matchesSearch =
-        item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.customer.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const itemDate = new Date(item.date);
-
-      const matchesFromDate = fromDate ? itemDate >= new Date(fromDate) : true;
-      const matchesToDate = toDate
-        ? itemDate <= new Date(toDate + "T23:59:59")
-        : true;
-
-      return (
-        matchesPayment && matchesSearch && matchesFromDate && matchesToDate
-      );
-    });
-  }, [salesData, paymentFilter, searchQuery, fromDate, toDate]);
-
-  // ----------------------------
-  // 🔹 Pagination Logic
-  // ----------------------------
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredData.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredData, currentPage, itemsPerPage]);
-
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
-  }, [paymentFilter, searchQuery, fromDate, toDate]);
+  }, [searchQuery, paymentFilter, fromDate, toDate]);
 
   // ----------------------------
   // 🔹 Handlers
   // ----------------------------
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
+
+  // Generate pagination buttons
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxVisiblePages = 3;
+
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    // Adjust start page if we're near the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    buttons.push(
+      <Button
+        key="prev"
+        variant="outline"
+        size="sm"
+        onClick={() => goToPage(currentPage - 1)}
+        disabled={currentPage === 1}
+      >
+        Prev
+      </Button>
+    );
+
+    // First page and ellipsis if needed
+    if (startPage > 1) {
+      buttons.push(
+        <Button
+          key={1}
+          variant="outline"
+          size="sm"
+          onClick={() => goToPage(1)}
+        >
+          1
+        </Button>
+      );
+      if (startPage > 2) {
+        buttons.push(
+          <Button key="ellipsis1" variant="outline" size="sm" disabled>
+            ...
+          </Button>
+        );
+      }
+    }
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <Button
+          key={i}
+          variant={i === currentPage ? "default" : "outline"}
+          className={i === currentPage ? "bg-orange-500 text-white" : ""}
+          size="sm"
+          onClick={() => goToPage(i)}
+        >
+          {i}
+        </Button>
+      );
+    }
+
+    // Last page and ellipsis if needed
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttons.push(
+          <Button key="ellipsis2" variant="outline" size="sm" disabled>
+            ...
+          </Button>
+        );
+      }
+      buttons.push(
+        <Button
+          key={totalPages}
+          variant="outline"
+          size="sm"
+          onClick={() => goToPage(totalPages)}
+        >
+          {totalPages}
+        </Button>
+      );
+    }
+
+    // Next button
+    buttons.push(
+      <Button
+        key="next"
+        variant="outline"
+        size="sm"
+        onClick={() => goToPage(currentPage + 1)}
+        disabled={currentPage === totalPages}
+      >
+        Next
+      </Button>
+    );
+
+    return buttons;
   };
 
   return (
@@ -160,10 +252,10 @@ export default function SalesPage() {
           />
         </div>
 
-        {/* payment Filter */}
-        <Select onValueChange={(v) => setpaymentFilter(v)}>
+        {/* Payment Filter */}
+        <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v)}>
           <SelectTrigger className="w-[120px]">
-            <SelectValue placeholder="payment" />
+            <SelectValue placeholder="Payment" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
@@ -177,31 +269,35 @@ export default function SalesPage() {
           <Input
             placeholder="Search by Sale ID or Customer"
             className="pr-8 focus:!ring-[#f25500] focus:!border-[#f25500]"
-            value={searchQuery ?? ""}
+            value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
         </div>
       </div>
 
+      {/* ----------------- Info Text ----------------- */}
+      {!loading && (
+        <div className="text-sm text-gray-600">
+          Showing {salesData.length} of {totalCount} sales
+          {(searchQuery || paymentFilter !== "all" || fromDate || toDate) && 
+            " (filtered)"}
+        </div>
+      )}
+
       {/* ----------------- Table ----------------- */}
-      <Card className={loading && "p-0"}>
-        <CardContent className={loading && "p-0"}>
+      <Card className={loading ? "p-0" : ""}>
+        <CardContent className={loading ? "p-0" : ""}>
           {loading ? (
             <Card className="p-4 rounded-2xl border-none shadow-sm border">
-              {/* <div className="overflow-x-auto"> */}
-              <table className="min-w-full text-lg ">
+              <table className="min-w-full text-lg">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-2 px-3 font-medium">Sale ID</th>
-                    <th className="text-left py-2 px-3 font-medium">
-                      Customer
-                    </th>
+                    <th className="text-left py-2 px-3 font-medium">Customer</th>
                     <th className="text-left py-2 px-3 font-medium">Total</th>
                     <th className="text-left py-2 px-3 font-medium">Date</th>
-                    <th className="text-left py-2 px-3 font-medium">
-                      Payment Method
-                    </th>
+                    <th className="text-left py-2 px-3 font-medium">Payment Method</th>
                     <th className="text-left py-2 px-3 font-medium">Action</th>
                   </tr>
                 </thead>
@@ -230,7 +326,6 @@ export default function SalesPage() {
                   ))}
                 </tbody>
               </table>
-              {/* </div> */}
             </Card>
           ) : (
             <Table>
@@ -245,8 +340,8 @@ export default function SalesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedData.length > 0 ? (
-                  paginatedData.map((order) => (
+                {salesData.length > 0 ? (
+                  salesData.map((order) => (
                     <TableRow key={order.rawId}>
                       <TableCell>{order.id}</TableCell>
                       <TableCell>{order.customer}</TableCell>
@@ -272,11 +367,8 @@ export default function SalesPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center text-gray-500"
-                    >
-                      No results found.
+                    <TableCell colSpan={6} className="text-center text-gray-500">
+                      No sales found.
                     </TableCell>
                   </TableRow>
                 )}
@@ -287,56 +379,11 @@ export default function SalesPage() {
       </Card>
 
       {/* ----------------- Pagination ----------------- */}
-{totalPages > 1 && (
-  <div className="flex gap-2 items-center">
-    {/* Prev Button */}
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => goToPage(currentPage - 1)}
-      disabled={currentPage === 1}
-    >
-      Prev
-    </Button>
-
-    {/* Page Numbers */}
-    {[...Array(3)].map((_, i) => {
-      let pageNumber;
-      if (currentPage === 1) {
-        pageNumber = i + 1;
-      } else if (currentPage === totalPages) {
-        pageNumber = totalPages - 2 + i;
-      } else {
-        pageNumber = currentPage - 1 + i;
-      }
-
-      if (pageNumber < 1 || pageNumber > totalPages) return null;
-
-      return (
-        <Button
-          key={pageNumber}
-          variant={pageNumber === currentPage ? "default" : "outline"}
-          className={pageNumber === currentPage ? "bg-orange-500 text-white" : ""}
-          size="sm"
-          onClick={() => goToPage(pageNumber)}
-        >
-          {pageNumber}
-        </Button>
-      );
-    })}
-
-    {/* Next Button */}
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => goToPage(currentPage + 1)}
-      disabled={currentPage === totalPages}
-    >
-      Next
-    </Button>
-  </div>
-)}
-
+      {totalPages > 1 && (
+        <div className="flex gap-2 items-center flex-wrap">
+          {renderPaginationButtons()}
+        </div>
+      )}
     </div>
   );
 }

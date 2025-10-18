@@ -86,11 +86,74 @@ export async function POST(request) {
   }
 }
 
-// Get all deliveries
-export async function GET() {
+// Get all deliveries with pagination and filtering
+export async function GET(req) {
   try {
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "all";
+    const driver = searchParams.get("driver") || "all";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "6");
+
+    const skip = (page - 1) * limit;
+
+    // Build where conditions
+    const where = { deleted: false };
+
+    // Status filter
+    if (status !== "all") {
+      where.status = status;
+    }
+
+    // Driver filter
+    if (driver !== "all") {
+      where.driverId = parseInt(driver);
+    }
+
+    // Search filter
+    if (search) {
+      const searchNum = Number(search);
+      const isNumber = !isNaN(searchNum) && searchNum > 0;
+      
+      where.OR = [
+        // Search by customer name
+        {
+          customer: {
+            name: {
+              contains: search,
+            },
+          },
+        },
+        // Search by delivery address
+        {
+          deliveryAddress: {
+            contains: search,
+          },
+        },
+      ];
+
+      // Search by delivery ID if it's a valid number
+      if (isNumber) {
+        where.OR.push({ id: searchNum });
+      }
+
+      // Search by customer phone
+      where.OR.push({
+        customerPhone: {
+          contains: search,
+        },
+      });
+    }
+
+    // Get total count for pagination
+    const totalCount = await prisma.delivery.count({ where });
+
+    // Fetch paginated deliveries
     const deliveries = await prisma.delivery.findMany({
-      where: { deleted: false },
+      where,
+      skip,
+      take: limit,
       include: {
         sale: {
           include: {
@@ -103,7 +166,15 @@ export async function GET() {
       orderBy: { id: "desc" },
     });
 
-    return NextResponse.json({ success: true, data: deliveries });
+    return NextResponse.json({ 
+      success: true, 
+      data: deliveries,
+      pagination: {
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        currentPage: page,
+      }
+    });
   } catch (error) {
     console.error("Error fetching deliveries:", error);
     return NextResponse.json(
