@@ -110,6 +110,13 @@ export default function AddDeliveryPage() {
       return setError(msg);
     }
 
+    const afghanRegex = /^(\+93|0)?7\d{8}$/;
+    if (!afghanRegex.test(customerPhone.trim())) {
+      return toast.error(
+        "Please enter a valid Afghan phone number (e.g. +93701234567 or 0701234567)."
+      );
+    }
+
     const fee = Number(deliveryFee);
     if (!Number.isInteger(fee) || fee < 0) {
       const msg = "Delivery fee must be a non-negative whole number.";
@@ -158,7 +165,7 @@ export default function AddDeliveryPage() {
         toast.error(msg, { id: loadingToast });
       }
     } catch (err) {
-      console.error("Error creating delivery:", err);
+      // console.error("Error creating delivery:", err);
       const msg = err.message || "Network error";
       setError(msg);
       toast.error(msg, { id: loadingToast });
@@ -168,11 +175,24 @@ export default function AddDeliveryPage() {
     }
   }
 
+  // ✅ Simple input restriction for Afghan phone format
+  function handlePhoneChange(e) {
+    let value = e.target.value.replace(/\s+/g, ""); // remove spaces
+
+    // Allow only digits and an optional '+' at the start
+    if (!/^\+?\d*$/.test(value)) return;
+
+    // Limit max length: +93 + 9 digits = 12–13 chars
+    if (value.length > 13) return;
+
+    setCustomerPhone(value);
+  }
+
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="p-6 flex flex-col gap-8 justify-center items-center">
+      {/* <div className="flex items-center justify-between mb-4"> */}
         <h1 className="text-3xl font-bold">Add Delivery</h1>
-      </div>
+      {/* </div> */}
       <div className="flex justify-center drop-shadow-2xl ">
         <form onSubmit={handleSubmit} className="min-w-3xl relative">
           <Card>
@@ -234,16 +254,16 @@ export default function AddDeliveryPage() {
                   )}
                 </div>
 
-                {/* Customer Phone */}
-                <div className="col-span-2">
+                {/* ✅ Customer Phone (fixed) */}
+                <div>
                   <label className="text-sm font-medium block mb-1">
                     Customer Phone
                   </label>
                   <Input
+                    type="tel"
                     value={customerPhone}
-                    type={"tel"}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Enter customer phone number"
+                    onChange={handlePhoneChange}
+                    placeholder="+93 70 123 4567"
                     required
                   />
                 </div>
@@ -266,7 +286,7 @@ export default function AddDeliveryPage() {
                   <label className="text-sm font-medium block mb-1">
                     Driver
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 max-h-32 overflow-y-scroll border p-2 rounded-md">
                     {isLoadingDrivers
                       ? deliverySkeleton.map((_, i) => (
                           <div
@@ -333,7 +353,7 @@ export default function AddDeliveryPage() {
               <div className="mt-6 flex items-center gap-3">
                 <Button
                   type="submit"
-                  className="bg-orange-500"
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
                   disabled={submitting}
                 >
                   {submitting ? "Saving..." : "Create Delivery"}
@@ -365,3 +385,6 @@ export default function AddDeliveryPage() {
     </div>
   );
 }
+
+
+

@@ -9,5 +9,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-
-// --- Create a new file: app/login/LoginForm.jsx ---
