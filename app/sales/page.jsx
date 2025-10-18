@@ -25,6 +25,7 @@ import {
 
 import salesImage from "@/assets/sales_img.png";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SalesPage() {
   // ----------------------------
@@ -91,7 +92,9 @@ export default function SalesPage() {
         ? itemDate <= new Date(toDate + "T23:59:59")
         : true;
 
-      return matchesPayment && matchesSearch && matchesFromDate && matchesToDate;
+      return (
+        matchesPayment && matchesSearch && matchesFromDate && matchesToDate
+      );
     });
   }, [salesData, paymentFilter, searchQuery, fromDate, toDate]);
 
@@ -131,10 +134,10 @@ export default function SalesPage() {
           Sales History
         </h1>
         <div className="flex items-center gap-3">
-        <Link href="/sales/add-sale">
-          <Button className={"bg-green-500 text-md "}>New Sale</Button>
-        </Link>
-        <BackToDashboardButton />
+          <Link href="/sales/add-sale">
+            <Button className={"bg-green-500 text-md hover:bg-green-400 "}>New Sale</Button>
+          </Link>
+          <BackToDashboardButton />
         </div>
       </div>
 
@@ -182,60 +185,104 @@ export default function SalesPage() {
       </div>
 
       {/* ----------------- Table ----------------- */}
-      <Card>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className={"text-lg"}>
-                <TableHead>Sale ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Payment Method</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500">
-                    Loading...
-                  </TableCell>
+      <Card className={loading && "p-0"}>
+        <CardContent className={loading && "p-0"}>
+          {loading ? (
+            <Card className="p-4 rounded-2xl border-none shadow-sm border">
+              {/* <div className="overflow-x-auto"> */}
+              <table className="min-w-full text-lg ">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-3 font-medium">Sale ID</th>
+                    <th className="text-left py-2 px-3 font-medium">
+                      Customer
+                    </th>
+                    <th className="text-left py-2 px-3 font-medium">Total</th>
+                    <th className="text-left py-2 px-3 font-medium">Date</th>
+                    <th className="text-left py-2 px-3 font-medium">
+                      Payment Method
+                    </th>
+                    <th className="text-left py-2 px-3 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(6)].map((_, i) => (
+                    <tr key={i} className="border-b last:border-0">
+                      <td className="py-3 px-3">
+                        <Skeleton className="h-4 w-10" />
+                      </td>
+                      <td className="py-3 px-3">
+                        <Skeleton className="h-4 w-40" />
+                      </td>
+                      <td className="py-3 px-3">
+                        <Skeleton className="h-4 w-20" />
+                      </td>
+                      <td className="py-3 px-3">
+                        <Skeleton className="h-4 w-40" />
+                      </td>
+                      <td className="py-3 px-3">
+                        <Skeleton className="h-4 w-16" />
+                      </td>
+                      <td className="py-3 px-3">
+                        <Skeleton className="h-8 w-24 rounded-lg" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {/* </div> */}
+            </Card>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className={"text-lg"}>
+                  <TableHead>Sale ID</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Payment Method</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
-              ) : paginatedData.length > 0 ? (
-                paginatedData.map((order) => (
-                  <TableRow key={order.rawId}>
-                    <TableCell>{order.id}</TableCell>
-                    <TableCell>{order.customer}</TableCell>
-                    <TableCell>{order.total}</TableCell>
-                    <TableCell>
-                      {new Date(order.date).toLocaleString("en-US", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </TableCell>
-                    <TableCell>{order.payment_method}</TableCell>
-                    <TableCell>
-                      <Link href={`/sales/${order.rawId}`}>
-                        <Button variant="secondary" size="sm">
-                          View Details
-                        </Button>
-                      </Link>
+              </TableHeader>
+              <TableBody>
+                {paginatedData.length > 0 ? (
+                  paginatedData.map((order) => (
+                    <TableRow key={order.rawId}>
+                      <TableCell>{order.id}</TableCell>
+                      <TableCell>{order.customer}</TableCell>
+                      <TableCell>{order.total}</TableCell>
+                      <TableCell>
+                        {new Date(order.date).toLocaleString("en-US", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </TableCell>
+                      <TableCell>{order.payment_method}</TableCell>
+                      <TableCell>
+                        <Link href={`/sales/${order.rawId}`}>
+                          <Button variant="secondary" size="sm">
+                            View Details
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center text-gray-500"
+                    >
+                      No results found.
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500">
-                    No results found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
