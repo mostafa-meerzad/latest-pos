@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "react-hot-toast";
 
 export default function CreateSupplierPage() {
   const router = useRouter();
@@ -26,7 +27,6 @@ export default function CreateSupplierPage() {
   function extractErrorMessage(error) {
     if (!error) return "Unknown error occurred";
 
-    // If backend sent a flattened Zod error
     if (typeof error === "object") {
       if (error.fieldErrors) {
         return Object.entries(error.fieldErrors)
@@ -44,10 +44,6 @@ export default function CreateSupplierPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
-
-    // simple client validation
-    // if (!name.trim()) return setError("Supplier name is required.");
-    // if (!phone.trim()) return setError("Phone number is required.");
 
     setSubmitting(true);
     try {
@@ -68,16 +64,17 @@ export default function CreateSupplierPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        toast.success("Supplier created successfully!");
         router.push("/suppliers");
       } else {
-        // const msg = extractErrorMessage(data.error);
         setError(data.error && "Failed to create supplier");
-        // console.log(data.error)
         setFieldErrors(data.error?.fieldErrors || {});
+        toast.error(extractErrorMessage(data.error));
       }
     } catch (err) {
       console.error("Error creating supplier:", err);
       setError(err.message || "Network error");
+      toast.error(err.message || "Network error");
     } finally {
       setSubmitting(false);
     }
@@ -88,13 +85,11 @@ export default function CreateSupplierPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Supplier</h1>
         <Link href="/suppliers">
-          <Button variant="outline" >
-            Back to Suppliers
-          </Button>
+          <Button variant="outline">Back to Suppliers</Button>
         </Link>
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center mt-16">
         <form onSubmit={handleSubmit} className="min-w-4xl drop-shadow-2xl">
           <Card>
             <CardContent>
@@ -185,6 +180,7 @@ export default function CreateSupplierPage() {
                 </Button>
                 <Button
                   variant="ghost"
+                  type="button"
                   onClick={() => router.push("/suppliers")}
                 >
                   Cancel

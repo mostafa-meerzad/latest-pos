@@ -24,6 +24,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search, Pencil, Trash2, Save } from "lucide-react";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 import SettingsImg from "@/assets/settings_img.png";
+import { toast } from "react-hot-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SettingsPage() {
   const [users, setUsers] = useState([]);
@@ -31,7 +33,8 @@ export default function SettingsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState(null);
-
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const itemsPerPage = 5;
 
   // ----------------------------
@@ -39,14 +42,25 @@ export default function SettingsPage() {
   // ----------------------------
   useEffect(() => {
     const fetchUsers = async () => {
+      setLoading(true);
+      const toastId = toast.loading("Loading users...");
       try {
         const res = await fetch("/api/users");
         const json = await res.json();
+
         if (json.success) {
           setUsers(json.data);
+          toast.success("Users loaded successfully!", { id: toastId });
+        } else {
+          toast.error("Failed to fetch users.", { id: toastId });
         }
       } catch (err) {
         console.error("Failed to fetch users:", err);
+        toast.error("Error fetching users. Check console for details.", {
+          id: toastId,
+        });
+      } finally {
+        setLoading(false);
       }
     };
     fetchUsers();
@@ -61,7 +75,7 @@ export default function SettingsPage() {
       username: row.username,
       fullName: row.fullName,
       role: row.role?.name || row.role || "",
-      password: "", // keep blank until admin types a new one
+      password: "",
     });
   }
 
@@ -72,6 +86,34 @@ export default function SettingsPage() {
 
   async function saveEdit() {
     if (!editingId || !editValues) return;
+    if (saving) return toast("Already saving...");
+
+    // 🔸 Validate fields before saving
+    const { username, fullName, password, role } = editValues;
+
+    if (!username.trim()) {
+      toast.error("Username is required.");
+      return;
+    }
+    if (!fullName.trim()) {
+      toast.error("Full name is required.");
+      return;
+    }
+    if (!password.trim()) {
+      toast.error("Password is required.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (!role || role === "") {
+      toast.error("Role is required.");
+      return;
+    }
+
+    setSaving(true);
+    const toastId = toast.loading("Saving changes...");
 
     try {
       const res = await fetch(`/api/users/${editingId}`, {
@@ -81,10 +123,9 @@ export default function SettingsPage() {
       });
 
       const data = await res.json().catch(() => ({}));
-      // console.log("response from backend:", data); // 👀 Debug line
 
       if (!res.ok) {
-        alert(data.error || "Failed to update user");
+        toast.error(data.error || "Failed to update user", { id: toastId });
         return;
       }
 
@@ -93,30 +134,70 @@ export default function SettingsPage() {
           prev.map((u) => (u.id === editingId ? { ...u, ...data } : u))
         );
         cancelEdit();
-        alert("User updated successfully.");
+        toast.success("User updated successfully!", { id: toastId });
       } else {
-        alert("Failed to update user — backend did not return valid user data");
-        console.log("Raw backend response:", data);
+        toast.error("Invalid backend response.", { id: toastId });
       }
     } catch (err) {
       console.error("Error saving user:", err);
-      alert("Something went wrong. Check console for details.");
+      toast.error("Something went wrong. Check console for details.", {
+        id: toastId,
+      });
+    } finally {
+      setSaving(false);
     }
   }
 
+  // ----------------------------
+  // 🔹 Delete User (with confirm + toast.promise)
+  // ----------------------------
   async function deleteUser(id) {
-    if (!confirm("Are you sure you want to delete this user?")) return;
-    try {
-      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.deletedUser) {
-        setUsers((prev) => prev.filter((u) => u.id !== id));
-      } else {
-        alert("Failed to delete user");
-      }
-    } catch (err) {
-      console.error("Error deleting user:", err);
-    }
+    toast.custom((t) => (
+      <div className="bg-white shadow-lg rounded-lg p-4 flex flex-col gap-3 border border-gray-200">
+        <p className="text-gray-800 font-medium">
+          Are you sure you want to delete this user?
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button
+            size="sm"
+            className="bg-red-500 hover:bg-red-600 text-white"
+            onClick={async () => {
+              toast.dismiss(t.id);
+              toast.promise(
+                (async () => {
+                  const res = await fetch(`/api/users/${id}`, {
+                    method: "DELETE",
+                  });
+                  const data = await res.json();
+
+                  if (!res.ok || !data.deletedUser) {
+                    throw new Error("Failed to delete user.");
+                  }
+
+                  setUsers((prev) => prev.filter((u) => u.id !== id));
+                  return "User deleted successfully.";
+                })(),
+                {
+                  loading: "Deleting user...",
+                  success: "User deleted successfully!",
+                  error: (err) =>
+                    err.message || "Something went wrong while deleting.",
+                }
+              );
+            }}
+          >
+            Yes
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toast.dismiss(t.id)}
+          >
+            No
+          </Button>
+        </div>
+      </div>
+    ));
   }
 
   // ----------------------------
@@ -157,7 +238,7 @@ export default function SettingsPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/settings/add-user">
-            <Button className={"bg-green-500 text-md "}>
+            <Button className="bg-green-400 hover:bg-green-500 text-md">
               New User
             </Button>
           </Link>
@@ -179,210 +260,262 @@ export default function SettingsPage() {
       </div>
 
       {/* ----------------- Table ----------------- */}
-      <Card>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="text-lg">
-                <TableHead>ID</TableHead>
-                <TableHead>Username</TableHead>
-                <TableHead>Full Name</TableHead>
-                <TableHead>Password</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.length > 0 ? (
-                paginatedData.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell>#{u.id}</TableCell>
-
-                    {/* Username */}
-                    <TableCell>
-                      {editingId === u.id ? (
-                        <Input
-                          value={editValues?.username || ""}
-                          onChange={(e) =>
-                            setEditValues((s) => ({
-                              ...s,
-                              username: e.target.value,
-                            }))
-                          }
-                          className="w-[160px]"
-                        />
-                      ) : (
-                        u.username
-                      )}
-                    </TableCell>
-
-                    {/* Full Name */}
-                    <TableCell>
-                      {editingId === u.id ? (
-                        <Input
-                          value={editValues?.fullName || ""}
-                          onChange={(e) =>
-                            setEditValues((s) => ({
-                              ...s,
-                              fullName: e.target.value,
-                            }))
-                          }
-                          className="w-[220px]"
-                        />
-                      ) : (
-                        u.fullName
-                      )}
-                    </TableCell>
-
-                    {/* Password */}
-                    <TableCell>
-                      {editingId === u.id ? (
-                        <Input
-                          type="text"
-                          placeholder="Enter new password"
-                          value={editValues?.password || ""}
-                          onChange={(e) =>
-                            setEditValues((s) => ({
-                              ...s,
-                              password: e.target.value,
-                            }))
-                          }
-                          className="w-[200px]"
-                        />
-                      ) : (
-                        <Input
-                          type="password"
-                          value="********"
-                          readOnly
-                          className="w-[160px] bg-transparent border-none shadow-none cursor-default"
-                        />
-                      )}
-                    </TableCell>
-
-                    {/* Role */}
-                    <TableCell>
-                      {editingId === u.id ? (
-                        <Select
-                          value={editValues?.role || ""}
-                          onValueChange={(v) =>
-                            setEditValues((s) => ({
-                              ...s,
-                              role: v, // 👈 send string ADMIN or CASHIER
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder="Select role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="ADMIN">ADMIN</SelectItem>
-                            <SelectItem value="CASHIER">CASHIER</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        u.role?.name || "—"
-                      )}
-                    </TableCell>
-
-                    {/* Actions */}
-                    <TableCell className="flex gap-2 ml-2">
-                      {editingId === u.id ? (
-                        <>
-                          <Button size="sm" onClick={saveEdit}>
-                            <Save className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={cancelEdit}
-                          >
-                            Cancel
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => startEdit(u)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => deleteUser(u.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-500">
-                    No users found.
-                  </TableCell>
+      {loading ? (
+        <UsersTableSkeleton />
+      ) : (
+        <Card>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow className="text-lg">
+                  <TableHead>ID</TableHead>
+                  <TableHead>Username</TableHead>
+                  <TableHead>Full Name</TableHead>
+                  <TableHead>Password</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {paginatedData.length > 0
+                  ? paginatedData.map((u) => (
+                      <TableRow key={u.id}>
+                        <TableCell>#{u.id}</TableCell>
+                        <TableCell>
+                          {editingId === u.id ? (
+                            <Input
+                              required
+                              value={editValues?.username || ""}
+                              onChange={(e) =>
+                                setEditValues((s) => ({
+                                  ...s,
+                                  username: e.target.value,
+                                }))
+                              }
+                              className="w-[160px]"
+                            />
+                          ) : (
+                            u.username
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === u.id ? (
+                            <Input
+                              required
+                              value={editValues?.fullName || ""}
+                              onChange={(e) =>
+                                setEditValues((s) => ({
+                                  ...s,
+                                  fullName: e.target.value,
+                                }))
+                              }
+                              className="w-[220px]"
+                            />
+                          ) : (
+                            u.fullName
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === u.id ? (
+                            <Input
+                              required
+                              minLength={6}
+                              type="text"
+                              placeholder="Enter new password"
+                              value={editValues?.password || ""}
+                              onChange={(e) =>
+                                setEditValues((s) => ({
+                                  ...s,
+                                  password: e.target.value,
+                                }))
+                              }
+                              className="w-[200px]"
+                            />
+                          ) : (
+                            <Input
+                              type="password"
+                              value="********"
+                              readOnly
+                              className="w-[160px] bg-transparent border-none shadow-none cursor-default"
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === u.id ? (
+                            <Select
+                              value={editValues?.role || ""}
+                              onValueChange={(v) =>
+                                setEditValues((s) => ({
+                                  ...s,
+                                  role: v,
+                                }))
+                              }
+                            >
+                              <SelectTrigger className="w-[150px]">
+                                <SelectValue placeholder="Select role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ADMIN">ADMIN</SelectItem>
+                                <SelectItem value="CASHIER">
+                                  CASHIER
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            u.role?.name || "—"
+                          )}
+                        </TableCell>
+                        <TableCell className="flex gap-2 ml-2">
+                          {editingId === u.id ? (
+                            <>
+                              <Button
+                                disabled={saving}
+                                size="sm"
+                                onClick={saveEdit}
+                                className="bg-green-400 hover:bg-green-300 hover:text-green-800"
+                              >
+                                <Save className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  toast("Edit canceled.");
+                                  cancelEdit();
+                                }}
+                                className="hover:bg-gray-300 hover:text-gray-700"
+                              >
+                                Cancel
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => startEdit(u)}
+                                className="hover:bg-gray-300 hover:text-gray-700"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => deleteUser(u.id)}
+                                className="hover:bg-red-300 hover:text-red-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  : null}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ----------------- Pagination ----------------- */}
-{totalPages > 1 && (
-  <div className="flex gap-2 items-center">
-    {/* Prev Button */}
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => goToPage(currentPage - 1)}
-      disabled={currentPage === 1}
-    >
-      Prev
-    </Button>
+      {totalPages > 1 && (
+        <div className="flex gap-2 items-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </Button>
+          {[...Array(3)].map((_, i) => {
+            let pageNumber;
+            if (currentPage === 1) pageNumber = i + 1;
+            else if (currentPage === totalPages)
+              pageNumber = totalPages - 2 + i;
+            else pageNumber = currentPage - 1 + i;
 
-    {/* Page Numbers */}
-    {[...Array(3)].map((_, i) => {
-      let pageNumber;
-      if (currentPage === 1) {
-        pageNumber = i + 1;
-      } else if (currentPage === totalPages) {
-        pageNumber = totalPages - 2 + i;
-      } else {
-        pageNumber = currentPage - 1 + i;
-      }
+            if (pageNumber < 1 || pageNumber > totalPages) return null;
 
-      if (pageNumber < 1 || pageNumber > totalPages) return null;
-
-      return (
-        <Button
-          key={pageNumber}
-          variant={pageNumber === currentPage ? "default" : "outline"}
-          className={pageNumber === currentPage ? "bg-orange-500 text-white" : ""}
-          size="sm"
-          onClick={() => goToPage(pageNumber)}
-        >
-          {pageNumber}
-        </Button>
-      );
-    })}
-
-    {/* Next Button */}
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => goToPage(currentPage + 1)}
-      disabled={currentPage === totalPages}
-    >
-      Next
-    </Button>
-  </div>
-)}
-
+            return (
+              <Button
+                key={pageNumber}
+                variant={pageNumber === currentPage ? "default" : "outline"}
+                className={
+                  pageNumber === currentPage ? "bg-orange-500 text-white" : ""
+                }
+                size="sm"
+                onClick={() => goToPage(pageNumber)}
+              >
+                {pageNumber}
+              </Button>
+            );
+          })}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
+  );
+}
+
+function UsersTableSkeleton() {
+  return (
+    <Card>
+      <CardContent className="overflow-x-auto">
+        <Table className="min-w-full">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[150px]">
+                <Skeleton className="h-4 w-24" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-24" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-24" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-24" />
+              </TableHead>
+              <TableHead className="text-right">
+                <Skeleton className="h-4 w-16 ml-auto" />
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[...Array(5)].map((_, i) => (
+              <TableRow key={i}>
+                <TableCell>
+                  <Skeleton className="h-4 w-28" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-32" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-24" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

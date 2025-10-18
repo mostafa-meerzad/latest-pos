@@ -29,8 +29,6 @@ import {
 } from "@/components/ui/table";
 import ReportsImg from "@/assets/reports_img.png";
 import { Switch } from "@/components/ui/switch";
-
-// Recharts - charts and graphs
 import {
   LineChart,
   Line,
@@ -48,7 +46,11 @@ import {
 } from "recharts";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 
-// Small palette used for charts
+// ✅ NEW: Toast import
+import toast from "react-hot-toast";
+import { RefreshCcw } from "lucide-react";
+
+// Chart colors
 const COLORS = [
   "#4f46e5",
   "#06b6d4",
@@ -59,17 +61,13 @@ const COLORS = [
 ];
 
 export default function ReportsPage() {
-  // Filters and UI state
   const [period, setPeriod] = useState("day");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [year, setYear] = useState(new Date().getFullYear());
-
-  // Data state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [report, setReport] = useState(null);
 
-  // Fetch report whenever filters change
   useEffect(() => {
     fetchReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -78,6 +76,7 @@ export default function ReportsPage() {
   async function fetchReport() {
     setLoading(true);
     setError(null);
+    const toastId = toast.loading("Loading report data...");
     try {
       const params = new URLSearchParams();
       params.set("period", period);
@@ -88,40 +87,35 @@ export default function ReportsPage() {
       if (!res.ok) throw new Error("Failed to fetch report");
       const json = await res.json();
       setReport(json);
+
+      toast.success("Report data loaded successfully!", { id: toastId });
     } catch (err) {
       console.error(err);
       setError(err.message || "Unknown error");
+      toast.error(`Error: ${err.message || "Failed to load data"}`, {
+        id: toastId,
+      });
     } finally {
       setLoading(false);
     }
   }
 
-  // Derived chart data helpers
   const salesVsDeliveryPie = useMemo(() => {
-    // Safe check: if no report or breakdown, return empty data for chart
     if (!report?.breakdown) return [{ name: "No Data", value: 0 }];
-
     const sales = report.breakdown.sales?.revenue || 0;
     const deliveries = report.breakdown.deliveries?.revenue || 0;
-
-    // Prevent empty pie chart
     if (sales === 0 && deliveries === 0) {
       return [{ name: "No Data", value: 0 }];
     }
-
     return [
       { name: "Sales", value: sales },
       { name: "Deliveries", value: deliveries },
     ];
   }, [report]);
 
-  // Prepare hourly, weekly, monthly series into arrays consumable by recharts
   const hourlySeries = useMemo(() => {
-    // Safe check: if no hourly data, return empty array
     if (!report?.timeSeries?.hourly) return [];
-
     const raw = report.timeSeries.hourly;
-    // Convert object {0: {...}, 1: {...}} to array [{hour: 0, ...}, {hour: 1, ...}]
     return Object.keys(raw)
       .map((k) => ({ hour: k, ...raw[k] }))
       .sort((a, b) => Number(a.hour) - Number(b.hour));
@@ -129,19 +123,17 @@ export default function ReportsPage() {
 
   const weeklySeries = useMemo(() => {
     if (!report?.timeSeries?.weekly) return [];
-
     const raw = report.timeSeries.weekly;
     return Object.keys(raw)
       .map((k) => ({
-        week: raw[k].name || `Week ${k}`, // Use the formatted name from backend
+        week: raw[k].name || `Week ${k}`,
         ...raw[k],
       }))
-      .sort((a, b) => a.weekKey.localeCompare(b.weekKey)); // Sort by date
+      .sort((a, b) => a.weekKey?.localeCompare?.(b.weekKey) || 0);
   }, [report]);
 
   const monthlySeries = useMemo(() => {
     if (!report?.timeSeries?.monthly) return [];
-
     const raw = report.timeSeries.monthly;
     const monthNames = [
       "Jan",
@@ -157,8 +149,6 @@ export default function ReportsPage() {
       "Nov",
       "Dec",
     ];
-
-    // Convert object to array and ensure proper formatting
     return Object.keys(raw)
       .map((k) => {
         const monthIndex = Number(k);
@@ -173,10 +163,9 @@ export default function ReportsPage() {
           count: monthData.count || 0,
         };
       })
-      .sort((a, b) => a.monthIndex - b.monthIndex); // Ensure proper order
+      .sort((a, b) => a.monthIndex - b.monthIndex);
   }, [report]);
 
-  // Enhanced yearlyComparison with better data handling
   const yearlyComparison = useMemo(() => {
     if (!report?.timeSeries?.yearly || !report?.timeSeries?.monthly)
       return null;
@@ -200,20 +189,17 @@ export default function ReportsPage() {
       "Dec",
     ];
 
-    // Create chart data - for now we'll show current year monthly and previous year as average
-    // You might want to modify your backend to provide previous year monthly data
     const chartData = Object.keys(monthlyData)
       .map((monthKey) => {
         const monthIndex = Number(monthKey);
         const monthData = monthlyData[monthKey];
-
         return {
           name: monthNames[monthIndex] || `M${monthIndex + 1}`,
           monthIndex,
           currentYear: monthData.revenue || 0,
           previousYear: previousYearData?.revenue
             ? previousYearData.revenue / 12
-            : 0, // Average monthly revenue for previous year
+            : 0,
         };
       })
       .sort((a, b) => a.monthIndex - b.monthIndex);
@@ -226,7 +212,6 @@ export default function ReportsPage() {
     };
   }, [report, year]);
 
-  // Utility to format currency
   function fmtCurrency(v) {
     if (v === undefined || v === null || isNaN(v)) return "-";
     return new Intl.NumberFormat(undefined, {
@@ -238,7 +223,6 @@ export default function ReportsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header + Filters */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div className="flex items-center justify-between">
           <Image
@@ -250,19 +234,12 @@ export default function ReportsPage() {
           <h1 className="text-2xl font-semibold">Reports Dashboard</h1>
         </div>
 
-        {/* Data Freshness Indicator */}
-        {/* {report && (
-          <div className="text-xs text-muted-foreground text-center md:text-left">
-            Data as of {new Date().toLocaleTimeString()} • Period: {period} •
-            {period === "year" ? ` Year: ${year}` : ` Date: ${date}`}
-          </div>
-        )} */}
-
         <div className="flex flex-wrap gap-3 items-center">
-          <div className="mr-3">
-            <BackToDashboardButton />
-          </div>
-          {/* Period select */}
+          <Button onClick={fetchReport} variant="outline">
+            <RefreshCcw />
+            Refresh
+          </Button>
+
           <label className="flex flex-col">
             <Select onValueChange={(v) => setPeriod(v)} value={period}>
               <SelectTrigger className="w-36">
@@ -277,7 +254,6 @@ export default function ReportsPage() {
             </Select>
           </label>
 
-          {/* Date or Year input depending on period */}
           {period === "year" ? (
             <label className="flex flex-col">
               <Input
@@ -298,9 +274,9 @@ export default function ReportsPage() {
             </label>
           )}
 
-          <Button onClick={fetchReport} variant="outline" >
-            Refresh
-          </Button>
+          <div className="mr-3">
+            <BackToDashboardButton />
+          </div>
         </div>
       </div>
 
@@ -384,9 +360,9 @@ export default function ReportsPage() {
             </div>
 
             {/* <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">Revenue Difference</div>
-                <div className="text-lg">{fmtCurrency(report?.breakdown?.comparison?.revenueDifference)}</div>
-              </div> */}
+                 <div className="text-xs text-muted-foreground">Revenue Difference</div>
+                 <div className="text-lg">{fmtCurrency(report?.breakdown?.comparison?.revenueDifference)}</div>
+               </div> */}
           </CardContent>
         </Card>
       </div>
@@ -773,21 +749,11 @@ export default function ReportsPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* <div className="mt-4">
-              <pre className="text-xs p-3 bg-muted rounded">{JSON.stringify(report, null, 2)}</pre>
-            </div> */}
               </CardContent>
             </Card>
           </div>
         </div>
       )}
-
-      {/* Loading and error indicators */}
-      {loading && (
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      )}
-      {error && <div className="text-sm text-rose-600">Error: {error}</div>}
     </div>
   );
 }

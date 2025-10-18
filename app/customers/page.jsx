@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 import CustomerImg from "@/assets/customer_img.png";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -25,15 +26,18 @@ export default function CustomersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch Customers
   useEffect(() => {
     async function fetchCustomers() {
+      setIsLoading(true);
       try {
         const res = await fetch("/api/customer");
         const data = await res.json();
         if (data?.success) {
           setCustomers(data.data || []);
+          setIsLoading(false);
         }
       } catch (err) {
         console.error("Error fetching customers:", err);
@@ -114,26 +118,30 @@ export default function CustomersPage() {
       </div>
 
       {/* ----------------- Table ----------------- */}
-      <Card>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="text-lg">
-                <TableHead>Customer Name</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.length > 0 ? (
-                paginatedData.map((c) => (
+
+      {isLoading ? (
+        <CustomersSkeleton />
+      ) : (
+        <Card>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow className="text-lg">
+                  <TableHead>Customer Name</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedData.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>{c.name || "Walk in"}</TableCell>
                     <TableCell>{c.phone || "-"}</TableCell>
                     <TableCell>{c.email || "-"}</TableCell>
                     <TableCell>
                       <Button
+                        className={"hover:bg-gray-300 hover:text-gray-700"}
                         size="sm"
                         variant="outline"
                         onClick={() => router.push(`/customers/${c.id}`)}
@@ -142,70 +150,83 @@ export default function CustomersPage() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-gray-500">
-                    No customers found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ----------------- Pagination ----------------- */}
-{totalPages > 1 && (
-  <div className="flex gap-2 items-center">
-    {/* Prev Button */}
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => goToPage(currentPage - 1)}
-      disabled={currentPage === 1}
-    >
-      Prev
-    </Button>
+      {totalPages > 1 && (
+        <div className="flex gap-2 items-center">
+          {/* Prev Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </Button>
 
-    {/* Page Numbers */}
-    {[...Array(3)].map((_, i) => {
-      let pageNumber;
-      if (currentPage === 1) {
-        pageNumber = i + 1;
-      } else if (currentPage === totalPages) {
-        pageNumber = totalPages - 2 + i;
-      } else {
-        pageNumber = currentPage - 1 + i;
-      }
+          {/* Page Numbers */}
+          {[...Array(3)].map((_, i) => {
+            let pageNumber;
+            if (currentPage === 1) {
+              pageNumber = i + 1;
+            } else if (currentPage === totalPages) {
+              pageNumber = totalPages - 2 + i;
+            } else {
+              pageNumber = currentPage - 1 + i;
+            }
 
-      if (pageNumber < 1 || pageNumber > totalPages) return null;
+            if (pageNumber < 1 || pageNumber > totalPages) return null;
 
-      return (
-        <Button
-          key={pageNumber}
-          variant={pageNumber === currentPage ? "default" : "outline"}
-          className={pageNumber === currentPage ? "bg-orange-500 text-white" : ""}
-          size="sm"
-          onClick={() => goToPage(pageNumber)}
-        >
-          {pageNumber}
-        </Button>
-      );
-    })}
+            return (
+              <Button
+                key={pageNumber}
+                variant={pageNumber === currentPage ? "default" : "outline"}
+                className={
+                  pageNumber === currentPage ? "bg-orange-500 text-white" : ""
+                }
+                size="sm"
+                onClick={() => goToPage(pageNumber)}
+              >
+                {pageNumber}
+              </Button>
+            );
+          })}
 
-    {/* Next Button */}
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => goToPage(currentPage + 1)}
-      disabled={currentPage === totalPages}
-    >
-      Next
-    </Button>
-  </div>
-)}
+          {/* Next Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
+function CustomersSkeleton() {
+  return (
+    <div className=" border rounded-lg p-6 py-10 flex items-center justify-between">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="w-full px-2 flex flex-col gap-6">
+          <Skeleton key={i} className={"w-40 h-8 mb-4"} />
+
+          <Skeleton className={"w-30 h-6"} />
+          <Skeleton className={"w-48 h-6"} />
+          <Skeleton className={"w-40 h-6"} />
+          <Skeleton className={"w-30 h-6"} />
+          <Skeleton className={"w-40 h-6"} />
+        </div>
+      ))}
     </div>
   );
 }
