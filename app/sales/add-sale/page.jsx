@@ -511,25 +511,12 @@ export default function AddSalePage() {
       if (!clickedInsideKeyboard) {
         setKeyboardVisible(false);
         setActiveInput(null);
-      if (
-        keyboardVisible &&
-        keyboardRef.current &&
-        !keyboardRef.current.contains(event.target)
-      ) {
-        const isNumericInput =
-          event.target.type === "number" ||
-          event.target.hasAttribute("data-input-type");
-
-        if (!isNumericInput) {
-          setKeyboardVisible(false);
-          setActiveInput(null);
-        }
       }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }}, [keyboardVisible, activeInput]);
+  }, [keyboardVisible, activeInput]);
    
   
 
