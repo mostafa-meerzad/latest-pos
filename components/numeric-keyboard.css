@@ -1,54 +1,78 @@
-/* Custom numeric keyboard theme */
 .numeric-keyboard-container {
-  width: 280px;
+  position: absolute;
+  bottom: 15px;
+  right: 20px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 50px);
+  grid-gap: 12px;
+  justify-content: center;
+  align-items: center;
   z-index: 9999;
-  background-color: #ffffff;
-  border-radius: 1rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  padding: 0.5rem;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
-.simple-keyboard.numeric-theme {
-  background: transparent !important;
-  border: none !important;
+.numeric-keyboard-container.hidden {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
-.simple-keyboard.numeric-theme .hg-button {
-  height: 50px !important;
-  width: 70px !important;
-  margin: 4px !important;
-  font-size: 1.1rem !important;
-  border-radius: 10px !important;
-  background-color: #f9fafb !important;
-  border: 1px solid #e5e7eb !important;
-  transition: all 0.15s ease-in-out;
+.numeric-key {
+  background: #f8f9fa;
+  color: #000;
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  height: 50px;
+  width: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
 }
 
-.simple-keyboard.numeric-theme .hg-button:hover {
-  background-color: #f3f4f6 !important;
+.numeric-key:hover {
+  background: #e9ecef;
+  transform: scale(1.05);
 }
 
-.simple-keyboard.numeric-theme .hg-button:active {
-  background-color: #e5e7eb !important;
-  transform: scale(0.97);
+.numeric-key:active {
+  background: #dee2e6;
+  transform: scale(0.98);
 }
 
-.simple-keyboard.numeric-theme .hg-button.hg-standardBtn.hg-button-bksp {
-  background-color: #fee2e2 !important;
+.numeric-key.zero {
+  grid-column: span 1;
 }
 
-.simple-keyboard.numeric-theme .hg-button.hg-standardBtn.hg-button-close {
-  background-color: #dcfce7 !important;
+.numeric-key.clear {
+  grid-column: span 1;
+  background: #f1f3f5;
+  font-size: 15px;
 }
 
-/* Make sure it stays above other UI layers */
-/* Add to your numeric-keyboard.css */
-.numeric-keyboard-container {
-  width: 280px;
-  z-index: 9999;
-  background-color: #ffffff;
-  border-radius: 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  padding: 0.5rem;
-  position: relative;
+.numeric-key svg {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 768px) {
+  .numeric-keyboard-container {
+    right: 10px;
+    bottom: 10px;
+    grid-template-columns: repeat(3, 60px);
+  }
+
+  .numeric-key {
+    width: 60px;
+    height: 60px;
+    font-size: 20px;
+  }
 }
