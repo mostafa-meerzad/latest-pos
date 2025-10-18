@@ -1,85 +1,58 @@
-"use client";
-import React, { useEffect, useRef, useState } from "react";
-import Keyboard from "simple-keyboard";
-import "simple-keyboard/build/css/index.css";
+import React, { useState } from "react";
 import "./numeric-keyboard.css";
 
-export default function NumericKeyboard({ onChange, onClose }) {
-  const keyboardContainerRef = useRef(null);
-  const keyboardInstanceRef = useRef(null);
+const NumericKeyboard = ({ onInput }) => {
   const [inputValue, setInputValue] = useState("");
 
-  useEffect(() => {
-    if (!keyboardContainerRef.current) return;
-
-    keyboardInstanceRef.current = new Keyboard(keyboardContainerRef.current, {
-      layout: {
-        default: ["1 2 3", "4 5 6", "7 8 9", "{shift} 0 _", "{bksp} {close}"],
-        shift: ["! / #", "$ % ^", "& * (", "{shift} ) +", "{bksp} {close}"],
-      },
-      display: {
-        "{bksp}": "⌫",
-        "{shift}": "⇧",
-        "{close}": "✓",
-      },
-      theme: "hg-theme-default hg-layout-numeric numeric-theme",
-      layoutName: "default",
-      onKeyPress: (button) => handleKeyPress(button),
-    });
-
-    // Keep input focus
-    const keepFocus = (e) => {
-      const active = document.querySelector("input:focus");
-      if (active) {
-        e.preventDefault();
-        active.focus();
-      }
-    };
-
-    document.addEventListener("mousedown", keepFocus, true);
-
-    return () => {
-      document.removeEventListener("mousedown", keepFocus, true);
-      keyboardInstanceRef.current?.destroy();
-    };
-  }, []);
-
-  function handleKeyPress(button) {
-    if (button === "{shift}") {
-      toggleShift();
-    } else if (button === "{close}") {
-      onClose();
-    } else if (button === "{bksp}") {
-      handleBackspace();
+  const handleInput = (value) => {
+    if (value === "backspace") {
+      const newValue = inputValue.slice(0, -1);
+      setInputValue(newValue);
+      onInput && onInput("backspace");
+    } else if (value === "clear") {
+      setInputValue("");
+      onInput && onInput("clear");
     } else {
-      handleInput(button);
+      const newValue = inputValue + value;
+      setInputValue(newValue);
+      onInput && onInput(value);
     }
-  }
-
-  function toggleShift() {
-    const currentLayout = keyboardInstanceRef.current.options.layoutName;
-    const next = currentLayout === "default" ? "shift" : "default";
-    keyboardInstanceRef.current.setOptions({ layoutName: next });
-  }
-
-  function handleInput(value) {
-    const newValue = inputValue + value;
-    setInputValue(newValue);
-    onChange(value); // Send the individual key press
-  }
-
-  function handleBackspace() {
-    const newValue = inputValue.slice(0, -1);
-    setInputValue(newValue);
-    onChange("backspace"); // Send "backspace" signal to parent
-  }
+  };
 
   return (
-    <div className="flex justify-center mt-4">
-      <div
-        ref={keyboardContainerRef}
-        className="numeric-keyboard-container"
-      ></div>
+    <div className="numeric-keyboard-container">
+      {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
+        <button
+          key={num}
+          onClick={() => handleInput(num)}
+          className="numeric-key"
+        >
+          {num}
+        </button>
+      ))}
+
+      
+
+      <button
+        onClick={() => handleInput("backspace")}
+        className="numeric-key"
+        title="Backspace"
+      >
+        ⌫
+      </button>
+
+      <button onClick={() => handleInput("0")} className="numeric-key zero">
+        0
+      </button>
+
+      <button
+        onClick={() => handleInput("clear")}
+        className="numeric-key clear"
+      >
+        Clear
+      </button>
     </div>
   );
-}
+};
+
+export default NumericKeyboard;

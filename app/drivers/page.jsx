@@ -255,40 +255,55 @@ export default function DriversPage() {
           </Table>
         </CardContent>
       </Card>
-      {/* Pagination */}
+      {/* ----------------- Pagination ----------------- */}
       {totalPages > 1 && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {/* Prev Button */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
           >
-            &lt;
+            Prev
           </Button>
-          {[...Array(totalPages)].map((_, index) => {
-            const page = index + 1;
+
+          {/* Page Numbers */}
+          {[...Array(3)].map((_, i) => {
+            let pageNumber;
+            if (currentPage === 1) {
+              pageNumber = i + 1;
+            } else if (currentPage === totalPages) {
+              pageNumber = totalPages - 2 + i;
+            } else {
+              pageNumber = currentPage - 1 + i;
+            }
+
+            if (pageNumber < 1 || pageNumber > totalPages) return null;
+
             return (
               <Button
-                key={page}
-                variant={page === currentPage ? "default" : "outline"}
+                key={pageNumber}
+                variant={pageNumber === currentPage ? "default" : "outline"}
                 className={
-                  page === currentPage ? "bg-orange-500 text-white" : ""
+                  pageNumber === currentPage ? "bg-orange-500 text-white" : ""
                 }
                 size="sm"
-                onClick={() => goToPage(page)}
+                onClick={() => goToPage(pageNumber)}
               >
-                {page}
+                {pageNumber}
               </Button>
             );
           })}
+
+          {/* Next Button */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
           >
-            &gt;
+            Next
           </Button>
         </div>
       )}

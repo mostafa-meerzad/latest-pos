@@ -450,16 +450,34 @@ export default function AddSalePage() {
   // Update keyboard position when active input changes
   useEffect(() => {
     if (activeInput && keyboardVisible) {
-      const inputElement = document.querySelector(`[data-input-type="${activeInput}"]`);
+      const inputElement = document.querySelector(
+        `[data-input-type="${activeInput}"]`
+      );
       if (inputElement) {
         const rect = inputElement.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-        
-        setKeyboardPosition({
-          top: rect.bottom + scrollTop + 10, // 10px below input
-          left: rect.left + scrollLeft
-        });
+        const scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft =
+          window.pageXOffset || document.documentElement.scrollLeft;
+        const keyboardHeight = 250; // approximate height of the keypad
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        let top;
+        if (spaceBelow < keyboardHeight && spaceAbove > keyboardHeight) {
+          // Not enough space below → place above input
+          top = rect.top + scrollTop - keyboardHeight - 10;
+        } else {
+          // Default: place below input
+          top = rect.bottom + scrollTop + 10;
+        }
+
+        let left = rect.left + scrollLeft;
+        // Prevent going off right edge
+        const maxLeft = window.innerWidth - 300; // assuming keypad width ~300px
+        if (left > maxLeft) left = maxLeft;
+
+        setKeyboardPosition({ top, left });
       }
     }
   }, [activeInput, keyboardVisible]);
@@ -467,25 +485,30 @@ export default function AddSalePage() {
   // Add click outside handler (updated)
   useEffect(() => {
     function handleClickOutside(event) {
-      if (keyboardVisible && keyboardRef.current && 
-          !keyboardRef.current.contains(event.target)) {
-        
-        const isNumericInput = event.target.type === 'number' || 
-                              event.target.hasAttribute('data-input-type');
-        
-        if (!isNumericInput) {
-          setKeyboardVisible(false);
-          setActiveInput(null);
+      if (!keyboardVisible || !keyboardRef.current) return;
+
+      const clickedInsideKeyboard = keyboardRef.current.contains(event.target);
+      const clickedNumericInput = event.target.closest("[data-input-type]");
+
+      // If clicking a different numeric input, just switch focus — don't close
+      if (clickedNumericInput) {
+        const newType = clickedNumericInput.getAttribute("data-input-type");
+        if (newType !== activeInput) {
+          setActiveInput(newType);
         }
+        return;
+      }
+
+      // If clicked outside keyboard and not numeric input → close
+      if (!clickedInsideKeyboard) {
+        setKeyboardVisible(false);
+        setActiveInput(null);
       }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [keyboardVisible]);
-
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [keyboardVisible, activeInput]);
 
   return (
     <div className="p-6 space-y-6">
@@ -1022,22 +1045,17 @@ export default function AddSalePage() {
           />
         )}
       </div>
-     {keyboardVisible && (
-        <div 
+      {keyboardVisible && (
+        <div
           ref={keyboardRef}
-          className="fixed z-50"
           style={{
-            top: `${keyboardPosition.top}px`,
-            left: `${keyboardPosition.left}px`
+            position: "fixed",
+            bottom: "40px",
+            right: "40px",
+            zIndex: 9999,
           }}
         >
-          <NumericKeyboard
-            onChange={handleKeyboardInput}
-            onClose={() => {
-              setKeyboardVisible(false);
-              setActiveInput(null);
-            }}
-          />
+          <NumericKeyboard onInput={handleKeyboardInput} />
         </div>
       )}
       {console.log(
