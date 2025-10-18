@@ -519,12 +519,12 @@ export default function AddSalePage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
+        <h1 className="text-3xl font-bold flex items-center gap-2 w-fit text-nowrap">
           <Image src={salesImage} width={80} height={80} alt="sales" />
           New Sale
         </h1>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 max-2xl:flex-wrap max-2xl:justify-end">
           <Button
             variant="secondary"
             className={"bg-red-500 text-white text-md hover:bg-red-400"}
@@ -673,7 +673,7 @@ export default function AddSalePage() {
                   ))}
                 </div>
               )}
-            <div className=" flex justify-between items-center">
+            <div className=" flex justify-between items-center max-xl:flex-col">
               <div>
             {/* Qty + Discount */}
             <div className="flex items-center gap-2 mt-3">
@@ -1076,14 +1076,12 @@ export default function AddSalePage() {
             right: "40px",
             zIndex: 9999,
           }}
+          
         >
           <NumericKeyboard onInput={handleKeyboardInput} />
         </div>
       )}
-      {console.log(
-        "this is the data in lastPrintedDelivry: ",
-        lastPrintedDelivery
-      )}
+     
 
       <div className="hidden">
         {lastPrintedDelivery && (
