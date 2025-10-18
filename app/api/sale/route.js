@@ -17,7 +17,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    console.log("POST /api/sale body:", JSON.stringify(body, null, 2));
+    // console.log("POST /api/sale body:", JSON.stringify(body, null, 2));
 
     const validation = saleSchema.safeParse(body);
     if (!validation.success) {
@@ -156,9 +156,67 @@ export async function POST(req) {
   }
 }
 
-export async function GET() {
+export async function GET(req) {
   try {
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search") || "";
+    const payment = searchParams.get("payment") || "all";
+    const fromDate = searchParams.get("fromDate") || "";
+    const toDate = searchParams.get("toDate") || "";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+
+    const skip = (page - 1) * limit;
+
+    // 🔍 Build Prisma where conditions
+    const where = {};
+
+    // payment filter
+    if (payment !== "all") {
+      where.paymentMethod = payment;
+    }
+
+    // search by sale ID or customer name - FIXED: removed mode parameter
+    if (search && search.trim() !== "") {
+      const searchNum = Number(search);
+      const isNumber = !isNaN(searchNum) && searchNum > 0;
+      
+      where.OR = [
+        // Search by customer name - removed mode: "insensitive"
+        {
+          customer: {
+            name: {
+              contains: search,
+              // mode: "insensitive" // REMOVED - not supported in older Prisma
+            },
+          },
+        },
+      ];
+
+      // Only add ID search if it's a valid positive number
+      if (isNumber) {
+        where.OR.push({ id: searchNum });
+      }
+    }
+
+    // date filters
+    if (fromDate) {
+      where.date = { ...where.date, gte: new Date(fromDate) };
+    }
+    if (toDate) {
+      where.date = { ...where.date, lte: new Date(`${toDate}T23:59:59.999`) };
+    }
+
+    // console.log("Where clause:", JSON.stringify(where, null, 2)); // Debug log
+
+    // ✅ Get total count first (for pagination)
+    const totalCount = await prisma.sale.count({ where });
+
+    // ✅ Fetch paginated + filtered sales
     const sales = await prisma.sale.findMany({
+      where,
+      skip,
+      take: limit,
       orderBy: { date: "desc" },
       include: {
         customer: true,
@@ -177,12 +235,26 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ success: true, data: sales });
+    return NextResponse.json({
+      success: true,
+      data: sales,
+      pagination: {
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        currentPage: page,
+      },
+    });
   } catch (err) {
-    console.error("Failed to fetch sales:", err);
+    console.error("❌ Failed to fetch sales:", err);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch sales" },
+      { 
+        success: false, 
+        error: "Failed to fetch sales",
+        details: err.message 
+      },
       { status: 500 }
     );
   }
 }
+
+
