@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -15,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -24,14 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { motion } from "framer-motion";
 import { Pencil, Save, Search, Trash2 } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast"; // ✅ Added Toaster import
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Pencil, Trash2, Save } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DeliveryPage() {
@@ -58,7 +51,7 @@ export default function DeliveryPage() {
   // ----------------------------
   useEffect(() => {
     const fetchDeliveries = async () => {
-      setIsLoading(true);
+      setLoading(true);
       try {
         setLoading(true);
         const params = new URLSearchParams({
