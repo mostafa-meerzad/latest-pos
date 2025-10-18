@@ -240,42 +240,56 @@ export default function SalesPage() {
       </Card>
 
       {/* ----------------- Pagination ----------------- */}
-      {totalPages > 1 && (
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            &lt;
-          </Button>
+{totalPages > 1 && (
+  <div className="flex gap-2 items-center">
+    {/* Prev Button */}
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => goToPage(currentPage - 1)}
+      disabled={currentPage === 1}
+    >
+      Prev
+    </Button>
 
-          {[...Array(totalPages)].map((_, index) => {
-            const page = index + 1;
-            return (
-              <Button
-                key={page}
-                variant={page === currentPage ? "default" : "outline"}
-                className={page === currentPage ? "bg-orange-500 text-white" : ""}
-                size="sm"
-                onClick={() => goToPage(page)}
-              >
-                {page}
-              </Button>
-            );
-          })}
+    {/* Page Numbers */}
+    {[...Array(3)].map((_, i) => {
+      let pageNumber;
+      if (currentPage === 1) {
+        pageNumber = i + 1;
+      } else if (currentPage === totalPages) {
+        pageNumber = totalPages - 2 + i;
+      } else {
+        pageNumber = currentPage - 1 + i;
+      }
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            &gt;
-          </Button>
-        </div>
-      )}
+      if (pageNumber < 1 || pageNumber > totalPages) return null;
+
+      return (
+        <Button
+          key={pageNumber}
+          variant={pageNumber === currentPage ? "default" : "outline"}
+          className={pageNumber === currentPage ? "bg-orange-500 text-white" : ""}
+          size="sm"
+          onClick={() => goToPage(pageNumber)}
+        >
+          {pageNumber}
+        </Button>
+      );
+    })}
+
+    {/* Next Button */}
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => goToPage(currentPage + 1)}
+      disabled={currentPage === totalPages}
+    >
+      Next
+    </Button>
+  </div>
+)}
+
     </div>
   );
 }
