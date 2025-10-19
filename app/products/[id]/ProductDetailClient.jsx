@@ -26,7 +26,7 @@ export default function ProductDetailClient({ id }) {
         if (!res.ok || !json.success)
           throw new Error(json?.error || "Failed to fetch");
         setProduct(json.data);
-        toast.success("Product details loaded successfully");
+        // toast.success("Product details loaded successfully");
       } catch (err) {
         setError(err.message);
         toast.error(err.message || "Failed to load product details");
