@@ -78,14 +78,20 @@ export default function AddSalePage() {
   const handlePrintDelivery = useReactToPrint({ contentRef: deliveryRef });
 
   const handleDeliverySuccess = (delivery) => {
+    // First, trigger sale invoice print
     triggerInvoicePrint(saleData);
+
+    // Then after a delay, trigger delivery print
+    setTimeout(() => {
+      triggerDeliveryPrint(delivery);
+    }, 1000); // 1 second delay to ensure sale invoice prints first
+
     toast.success("Delivery successfully created!");
     setSaleData({});
   };
 
   const handleClose = () => {
     setIsModalOpen(false);
-    triggerInvoicePrint(saleData);
     setSaleData({});
   };
 
@@ -143,7 +149,7 @@ export default function AddSalePage() {
     if (lastPrintedDelivery && deliveryRef.current) {
       const timer = setTimeout(() => {
         handlePrintDelivery();
-      }, 100);
+      }, 800); // Increased delay to ensure sale invoice prints first
       return () => clearTimeout(timer);
     }
   }, [lastPrintedDelivery]);
@@ -663,13 +669,21 @@ export default function AddSalePage() {
                         setProductSuggestionsVisible(false);
                       }}
                     >
-                      <div className="font-medium text-[1.12rem] mb-1">{p.name}</div>
+                      <div className="font-medium text-[1.12rem] mb-1">
+                        {p.name}
+                      </div>
                       <div className=" text-gray-900 font-bold text-[.79rem] flex gap-4">
                         <span>
-                          <span className="text-[.8rem] font-semibold text-gray-700">Stock: </span> {p.stockQuantity}
+                          <span className="text-[.8rem] font-semibold text-gray-700">
+                            Stock:{" "}
+                          </span>{" "}
+                          {p.stockQuantity}
                         </span>{" "}
                         <span>
-                          <span className="text-[.8rem] font-semibold text-gray-700">Price: </span> AFN {p.price}
+                          <span className="text-[.8rem] font-semibold text-gray-700">
+                            Price:{" "}
+                          </span>{" "}
+                          AFN {p.price}
                         </span>
                       </div>
                     </div>

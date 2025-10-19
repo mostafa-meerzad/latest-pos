@@ -16,7 +16,7 @@ export async function PATCH(request, { params }) {
     } = body;
 
     // Only allow valid statuses
-    const allowedStatuses = ["pending", "dispatched", "delivered", "canceled"];
+    const allowedStatuses = ["pending", "delivered", "canceled"];
     if (status && !allowedStatuses.includes(status)) {
       return NextResponse.json(
         { success: false, error: "Invalid status value" },
