@@ -2,24 +2,14 @@
 
 import NewInvoice from "@/components/NewInvoice";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import Link from "next/link";
+import { ArrowLeft, FileText, User, Package, Truck } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useReactToPrint } from "react-to-print";
+import { motion } from "framer-motion";
 
 export default function SaleDetailsPage() {
   const { id } = useParams();
@@ -49,14 +39,14 @@ export default function SaleDetailsPage() {
     fetchSale();
   }, [id]);
 
-  // ✅ Print Invoice
+  // ✅ Print Invoice (kept logic identical)
   const handlePrint = useReactToPrint({
     contentRef: invoiceRef,
     documentTitle: `Invoice-${sale?.id || "print"}`,
     onAfterPrint: () => toast.success("Invoice printed successfully!"),
   });
 
-  // Refund Sale
+  // Refund Sale (kept logic identical)
   async function handleRefund(saleId) {
     const toastId = toast.custom((t) => (
       <div
@@ -117,195 +107,327 @@ export default function SaleDetailsPage() {
       }
     }
   }
-  if (loading) return <SaleDetailsSkeleton />;
+
+  // Small helper
+  function formatDate(d) {
+    if (!d) return "—";
+    try {
+      return new Date(d).toLocaleDateString("default", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return String(d);
+    }
+  }
+
+  // 🟡 Skeleton Loader (styled to match ProductDetailClient)
+  if (loading) {
+    return (
+      <motion.div
+        className="p-6 max-w-3xl mx-auto mt-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <Card className="rounded-2xl border border-gray-100 drop-shadow-2xl">
+          <CardContent className="p-8 space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+              <div>
+                <Skeleton className="h-8 w-48 rounded-md" />
+                <Skeleton className="h-4 w-64 mt-2 rounded-md" />
+              </div>
+              <Button variant="outline" disabled>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+            </div>
+
+            {/* Sale Details */}
+            <motion.div
+              className="space-y-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+            >
+              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-gray-400" />
+                Sale Details
+              </h2>
+
+              <div className="grid grid-cols-2 gap-x-10 gap-y-4 text-sm">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i}>
+                    <Skeleton className="h-4 w-24 mb-2 rounded-md" />
+                    <Skeleton className="h-5 w-32 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Customer */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.3 }}
+            >
+              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
+                <User className="w-5 h-5 text-gray-400" />
+                Customer
+              </h2>
+              <div className="bg-gray-100 rounded-xl p-4 space-y-2">
+                <Skeleton className="h-4 w-40 rounded-md" />
+                <Skeleton className="h-3 w-24 rounded-md" />
+              </div>
+            </motion.div>
+
+            {/* Items */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.3 }}
+            >
+              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
+                <Package className="w-5 h-5 text-gray-400" />
+                Items
+              </h2>
+              <div className="bg-gray-100 rounded-xl p-4 space-y-2 text-sm">
+                <Skeleton className="h-4 w-48 rounded-md" />
+                <Skeleton className="h-3 w-36 rounded-md" />
+                <Skeleton className="h-3 w-32 rounded-md" />
+              </div>
+            </motion.div>
+
+            {/* Delivery */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.3 }}
+            >
+              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
+                <Truck className="w-5 h-5 text-gray-400" />
+                Delivery
+              </h2>
+              <div className="bg-gray-100 rounded-xl p-4 space-y-2 text-sm">
+                <Skeleton className="h-4 w-48 rounded-md" />
+                <Skeleton className="h-3 w-36 rounded-md" />
+              </div>
+            </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
   if (!sale) return <p className="p-6">Sale not found.</p>;
 
+  // Destructure some commonly used fields for cleaner markup
+  const {
+    id: saleId,
+    date,
+    totalAmount,
+    taxAmount,
+    discountAmount,
+    paymentMethod,
+    customer,
+    items,
+    delivery,
+  } = sale;
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Sale #{sale.id}</h1>
-        <div className="flex gap-2">
-          <Button
-            onClick={handlePrint}
-            variant="outline"
-            className={"bg-green-300 hover:bg-green-200 text-sm"}
+    <motion.div
+      className="p-6 max-w-3xl mx-auto mt-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      <Card className="rounded-2xl border border-gray-100 drop-shadow-2xl">
+        <CardContent className="p-8 space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+            <div>
+              <h1 className="text-3xl font-semibold text-gray-900">
+                Sale #{saleId}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">{formatDate(date)}</p>
+            </div>
+
+            <motion.div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handlePrint}
+                  variant="outline"
+                  className={"bg-green-300 hover:bg-green-200 text-sm"}
+                >
+                  Print Invoice
+                </Button>
+                <Button variant="outline" onClick={() => router.push("/sales")}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* ===== Sale Details ===== */}
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.25 }}
           >
-            Print Invoice
-          </Button>
-          <Link href="/sales">
-            <Button variant="outline">Back to Sales</Button>
-          </Link>
-        </div>
-      </div>
+            <Section
+              title="Sale Details"
+              icon={<FileText className="w-5 h-5 text-gray-500" />}
+            >
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <Detail label="Total" value={`${totalAmount} AFG`} />
+                <Detail label="Payment" value={paymentMethod || "—"} />
+                <Detail label="Tax" value={`${taxAmount ?? 0} AFG`} />
+                <Detail label="Discount" value={`${discountAmount ?? 0} AFG`} />
+              </div>
+            </Section>
 
-      <Card className="min-w-2/3 drop-shadow-xl">
-        <CardContent className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Sale Details</h2>
-
-          <Table className="[&_td]:py-2 [&_th]:py-2">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                {/* <TableHead>Invoice</TableHead> */}
-                <TableHead>Amount</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Delivery</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody  className="[&_p]:m-0 [&_td]:align-top">
-              <TableRow>
-                <TableCell>
-                  {new Date(sale.date).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {sale.totalAmount} AFG{" "}
-                  <span className="text-xs text-gray-500">
-                    (Tax {sale.taxAmount}, Disc {sale.discountAmount})
-                  </span>
-                </TableCell>
-                <TableCell>{sale.paymentMethod}</TableCell>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{sale.customer?.name}</p>
-                    {sale.customer?.phone && (
-                      <p className="text-xs text-gray-500">
-                        {sale.customer.phone}
-                      </p>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {sale.items.map((i) => (
-                    <div key={i.id} className="text-sm">
-                      {i.product?.name} × {i.quantity} = AFG{i.subtotal}
-                    </div>
-                  ))}
-                </TableCell>
-                <TableCell>
-                  {/* {console.log("delivery data: ", sale.delivery)} */}
-                  {sale.delivery ? (
-                    <div className="text-sm">
-                      <p>{sale.delivery.deliveryAddress}</p>
-                      <p className="text-gray-500">
-                        Driver: {sale.delivery.driver?.name}
-                      </p>
-                      <p className="text-gray-500">
-                        Driver: {sale.delivery.deliveryFee}
-                      </p>
-                      <p>Status: {sale.delivery.status}</p>
-                    </div>
-                  ) : (
-                    "-"
+            {/* ===== Customer ===== */}
+            <Section
+              title="Customer"
+              icon={<User className="w-5 h-5 text-gray-500" />}
+            >
+              {customer ? (
+                <div className="bg-gray-100 rounded-xl p-4 space-y-1 text-sm">
+                  <p className="font-medium text-gray-800 text-lg">
+                    {customer.name}
+                  </p>
+                  {customer.phone && (
+                    <p className="text-gray-500">
+                      Phone:{" "}
+                      <span className="text-[1rem] text-gray-800 font-semibold">
+                        {customer.phone}
+                      </span>
+                    </p>
                   )}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    className={
-                      "bg-red-400 text-white hover:bg-red-300 hover:text-red-800"
-                    }
-                    variant="outline"
-                    onClick={() => handleRefund(sale.id)}
-                  >
-                    Refund Sale
-                  </Button>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                  {customer.address && (
+                    <p className="text-gray-500">
+                      Address:{" "}
+                      <span className="text-[1rem] text-gray-800 font-semibold">
+                        {customer.address}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic">No customer info</p>
+              )}
+            </Section>
+
+            {/* ===== Items ===== */}
+            <Section
+              title="Items"
+              icon={<Package className="w-5 h-5 text-gray-500" />}
+            >
+              <div className="bg-gray-100 rounded-xl p-4 text-sm space-y-2">
+                {items && items.length > 0 ? (
+                  items.map((it) => (
+                    <div
+                      key={it.id}
+                      className="flex justify-between items-start"
+                    >
+                      <div>
+                        <div className="font-medium">
+                          {it.product?.name ?? "—"}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Qty: {it.quantity}
+                        </div>
+                      </div>
+                      <div className="text-sm font-semibold">
+                        AFG {it.subtotal}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 italic">No items</p>
+                )}
+              </div>
+            </Section>
+
+            {/* ===== Delivery ===== */}
+            <Section
+              title="Delivery"
+              icon={<Truck className="w-5 h-5 text-gray-500" />}
+            >
+              {delivery ? (
+                <div className="bg-gray-100 rounded-xl p-4 text-sm space-y-1">
+                  <p className="font-medium">{delivery.deliveryAddress}</p>
+                  <p className="text-gray-500">
+                    Driver:{" "}
+                    <span className="text-[1rem] text-gray-800 font-semibold">
+                      {delivery.driver?.name ?? "—"}
+                    </span>
+                  </p>
+                  <p className="text-gray-500">
+                    Fee:{" "}
+                    <span className="text-[1rem] text-gray-800 font-semibold">
+                      {delivery.deliveryFee ?? "—"}
+                    </span>
+                  </p>
+                  <p className="text-gray-500">
+                    Status:{" "}
+                    <span className="text-[1rem] text-gray-800 font-semibold">
+                      {delivery.status ?? "—"}
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic">No delivery</p>
+              )}
+            </Section>
+
+            {/* Refund action */}
+            <div className="pt-2">
+              <Button
+                className={
+                  "bg-red-400 text-white hover:bg-red-300 hover:text-red-800"
+                }
+                variant="outline"
+                onClick={() => handleRefund(saleId)}
+              >
+                Refund Sale
+              </Button>
+            </div>
+          </motion.div>
         </CardContent>
       </Card>
 
-      {/* Hidden Invoice for printing */}
+      {/* Hidden Invoice for printing (kept identical) */}
       <div style={{ display: "none" }}>
         <NewInvoice ref={invoiceRef} sale={sale} />
       </div>
+    </motion.div>
+  );
+}
+
+/* Small sub-component for clean detail rows */
+function Detail({ label, value }) {
+  return (
+    <div className="flex gap-2 items-center">
+      <div className="text-sm text-gray-500">{label}</div>
+      <div className="font-medium text-[1rem]">{value}</div>
     </div>
   );
 }
 
-function SaleDetailsSkeleton() {
+/* Generic section wrapper with icon + title */
+function Section({ title, icon, children }) {
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
-        <Skeleton className="h-10 w-32 rounded-md" /> {/* Buttons */}
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-32 rounded-md" /> {/* Buttons */}
-          <Skeleton className="h-10 w-32 rounded-md" /> {/* Buttons */}
-        </div>
-      </div>
-      <Card className="p-8">
-        {/* <h2 className="text-2xl font-bold">Sale Details</h2> */}
-        <Skeleton className="w-20 h-8" />
-        <div className="">
-          <div className="grid grid-cols-7 gap-4 py-3 text-sm font-medium text-gray-600">
-            <Skeleton className="h-4 w-16" /> {/* Header */}
-            <Skeleton className="h-4 w-16" /> {/* Header */}
-            <Skeleton className="h-4 w-16" /> {/* Header */}
-            <Skeleton className="h-4 w-16" /> {/* Header */}
-            <Skeleton className="h-4 w-16" /> {/* Header */}
-            <Skeleton className="h-4 w-16" /> {/* Header */}
-          </div>
-          <div className="border-t pt-3 pt-10">
-            <div className="grid grid-cols-7 gap-4 items-start">
-              <Skeleton className="h-4 w-20" /> {/* Date */}
-              <Skeleton className="h-4 w-10" /> {/* Invoice */}
-              <Skeleton className="h-4 w-24" /> {/* Amount */}
-              <Skeleton className="h-4 w-16" /> {/* Payment */}
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" /> {/* Name */}
-                <Skeleton className="h-3 w-20" /> {/* Phone */}
-              </div>
-              <Skeleton className="h-4 w-40" /> {/* Items */}
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" /> {/* Address */}
-                <Skeleton className="h-3 w-32" /> {/* Driver info */}
-              </div>
-            </div>
-          </div>
-          <div className=" pt-3 mt-4 ">
-            <div className="grid grid-cols-7 gap-4 items-start">
-              <Skeleton className="h-4 w-20" /> {/* Date */}
-              <Skeleton className="h-4 w-10" /> {/* Invoice */}
-              <Skeleton className="h-4 w-24" /> {/* Amount */}
-              <Skeleton className="h-4 w-16" /> {/* Payment */}
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" /> {/* Name */}
-                <Skeleton className="h-3 w-20" /> {/* Phone */}
-              </div>
-              <Skeleton className="h-4 w-40" /> {/* Items */}
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" /> {/* Address */}
-                <Skeleton className="h-3 w-32" /> {/* Driver info */}
-              </div>
-            </div>
-          </div>
-          <div className=" pt-3 mt-4 ">
-            <div className="grid grid-cols-7 gap-4 items-start">
-              <Skeleton className="h-4 w-20" /> {/* Date */}
-              <Skeleton className="h-4 w-10" /> {/* Invoice */}
-              <Skeleton className="h-4 w-24" /> {/* Amount */}
-              <Skeleton className="h-4 w-16" /> {/* Payment */}
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" /> {/* Name */}
-                <Skeleton className="h-3 w-20" /> {/* Phone */}
-              </div>
-              <Skeleton className="h-4 w-40" /> {/* Items */}
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" /> {/* Address */}
-                <Skeleton className="h-3 w-32" /> {/* Driver info */}
-              </div>
-            </div>
-
-            {/* <div className="flex justify-end mt-6"> */}
-            {/* <Skeleton className="h-10 w-28 rounded-md" />{" "} */}
-            {/* Refund button */}
-            {/* </div> */}
-          </div>
-        </div>
-      </Card>
+    <div>
+      <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
+        {icon}
+        {title}
+      </h2>
+      {children}
     </div>
   );
 }

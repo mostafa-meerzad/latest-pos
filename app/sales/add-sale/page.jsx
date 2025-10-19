@@ -751,7 +751,7 @@ export default function AddSalePage() {
                 {selectedProduct && (
                   <div className="mt-3 text-sm text-gray-600">
                     Selected: <strong>{selectedProduct.name}</strong> • AFN
-                    {selectedProduct.price}
+                    <strong> {selectedProduct.price}</strong>
                   </div>
                 )}
 

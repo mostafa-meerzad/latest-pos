@@ -216,11 +216,11 @@ export default function ProductDetailClient({ id }) {
             <div className="grid grid-cols-2 gap-x-10 gap-y-4 text-sm">
               <Detail
                 label="Price"
-                value={`$${Number(price).toLocaleString()}`}
+                value={`AFG ${Number(price).toLocaleString()}`}
               />
               <Detail
                 label="Cost Price"
-                value={`$${Number(costPrice).toLocaleString()}`}
+                value={`AFG ${Number(costPrice).toLocaleString()}`}
               />
               <Detail label="Stock Quantity" value={stockQuantity} />
               <Detail label="Expiry Date" value={formatDate(expiryDate)} />
