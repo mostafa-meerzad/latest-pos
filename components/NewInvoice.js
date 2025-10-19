@@ -79,7 +79,6 @@ const NewInvoice = forwardRef(({ sale }, ref) => {
           <p><strong>Delivery:</strong> {sale.delivery.deliveryAddress}</p>
           <p><strong>Delivery Fee:</strong> AFG {sale.delivery.deliveryFee}</p>
           <p>Driver: {sale.delivery.driver?.name}</p>
-          <p>Status: {sale.delivery.status}</p>
         </div>
       )}
 

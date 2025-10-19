@@ -142,11 +142,11 @@ export default function SaleDetailsPage() {
         <CardContent className="p-6">
           <h2 className="text-xl font-semibold mb-4">Sale Details</h2>
 
-          <Table>
+          <Table className="[&_td]:py-2 [&_th]:py-2">
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Invoice</TableHead>
+                {/* <TableHead>Invoice</TableHead> */}
                 <TableHead>Amount</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Customer</TableHead>
@@ -155,12 +155,11 @@ export default function SaleDetailsPage() {
                 <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody  className="[&_p]:m-0 [&_td]:align-top">
               <TableRow>
                 <TableCell>
                   {new Date(sale.date).toLocaleDateString()}
                 </TableCell>
-                <TableCell>{sale.invoice?.invoiceNumber || "-"}</TableCell>
                 <TableCell>
                   {sale.totalAmount} AFG{" "}
                   <span className="text-xs text-gray-500">
@@ -186,7 +185,7 @@ export default function SaleDetailsPage() {
                   ))}
                 </TableCell>
                 <TableCell>
-                  {console.log("delivery data: ", sale.delivery)}
+                  {/* {console.log("delivery data: ", sale.delivery)} */}
                   {sale.delivery ? (
                     <div className="text-sm">
                       <p>{sale.delivery.deliveryAddress}</p>
