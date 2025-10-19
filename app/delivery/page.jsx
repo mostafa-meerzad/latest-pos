@@ -322,7 +322,7 @@ export default function DeliveryPage() {
     let style = "";
     if (status === "delivered") style = "bg-green-500 text-white";
     if (status === "pending") style = "bg-yellow-500 text-white";
-    if (status === "dispatched") style = "bg-blue-500 text-white";
+    // if (status === "dispatched") style = "bg-blue-500 text-white";
     if (status === "canceled") style = "bg-red-500 text-white";
     return (
       <span className={`px-3 py-1 rounded-full text-sm font-medium ${style}`}>
@@ -375,7 +375,7 @@ export default function DeliveryPage() {
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="dispatched">Dispatched</SelectItem>
+            {/* <SelectItem value="dispatched">Dispatched</SelectItem> */}
             <SelectItem value="delivered">Delivered</SelectItem>
             <SelectItem value="canceled">Canceled</SelectItem>
           </SelectContent>
@@ -419,13 +419,13 @@ export default function DeliveryPage() {
       </div>
 
       {/* ----------------- Info Text ----------------- */}
-      {!loading && (
+      {/* {!loading && (
         <div className="text-sm text-gray-600">
           Showing {deliveries.length} of {totalCount} deliveries
           {(searchQuery || statusFilter !== "all" || driverFilter !== "all") &&
             " (filtered)"}
         </div>
-      )}
+      )} */}
 
       {/* ----------------- Table ----------------- */}
       <Card className={loading ? "p-0" : ""}>
@@ -615,9 +615,9 @@ export default function DeliveryPage() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="dispatched">
+                              {/* <SelectItem value="dispatched">
                                 Dispatched
-                              </SelectItem>
+                              </SelectItem> */}
                               <SelectItem value="delivered">
                                 Delivered
                               </SelectItem>

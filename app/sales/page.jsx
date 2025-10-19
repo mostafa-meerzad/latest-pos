@@ -277,13 +277,13 @@ export default function SalesPage() {
       </div>
 
       {/* ----------------- Info Text ----------------- */}
-      {!loading && (
+      {/* {!loading && (
         <div className="text-sm text-gray-600">
           Showing {salesData.length} of {totalCount} sales
           {(searchQuery || paymentFilter !== "all" || fromDate || toDate) && 
             " (filtered)"}
         </div>
-      )}
+      )} */}
 
       {/* ----------------- Table ----------------- */}
       <Card className={loading ? "p-0" : ""}>
