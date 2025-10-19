@@ -78,7 +78,6 @@ export default function AddSalePage() {
   const handlePrintDelivery = useReactToPrint({ contentRef: deliveryRef });
 
   const handleDeliverySuccess = (delivery) => {
-    console.log("Delivery created:", delivery);
     triggerInvoicePrint(saleData);
     toast.success("Delivery successfully created!");
     setSaleData({});
@@ -110,11 +109,18 @@ export default function AddSalePage() {
       try {
         const res = await fetch("/api/products/");
         const data = await res.json();
-        if (data.success) setProducts(data.data);
+
+        if (data.success) {
+          const filtered = data.data.filter(
+            (p) => p.status === "ACTIVE" && !p.isDeleted && p.stockQuantity > 0
+          );
+          setProducts(filtered);
+        }
       } catch (err) {
         toast.error("Failed to fetch products");
       }
     }
+
     fetchProducts();
   }, []);
 
@@ -451,7 +457,6 @@ export default function AddSalePage() {
   // Update keyboard position when active input changes
   useEffect(() => {
     if (activeInput && keyboardVisible) {
-    
       const inputElement = document.querySelector(
         `[data-input-type="${activeInput}"]`
       );
@@ -462,8 +467,6 @@ export default function AddSalePage() {
         const scrollLeft =
           window.pageXOffset || document.documentElement.scrollLeft;
 
-        
-       
         const keyboardHeight = 250; // approximate height of the keypad
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
@@ -567,11 +570,6 @@ export default function AddSalePage() {
         </div>
       </div>
 
-      {console.log("sale data before delivery modal: ", saleData)}
-      {console.log(
-        "sale data before delivery modal: finalized sale data ",
-        addFinalizedSale
-      )}
       <AddDeliveryModal
         isOpen={isModalOpen}
         onClose={handleClose}
@@ -657,7 +655,7 @@ export default function AddSalePage() {
                   {productSuggestions.map((p) => (
                     <div
                       key={p.id}
-                      className="p-2 px-4 hover:bg-slate-100 cursor-pointer"
+                      className="p-2 px-4 hover:bg-slate-100 cursor-pointer border-b"
                       onMouseDown={() => {
                         setSelectedProduct(p);
                         setProductQuery(p.name);
@@ -665,9 +663,14 @@ export default function AddSalePage() {
                         setProductSuggestionsVisible(false);
                       }}
                     >
-                      <div className="font-medium">{p.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {p.barcode} • AFN {p.price}
+                      <div className="font-medium text-[1.12rem] mb-1">{p.name}</div>
+                      <div className=" text-gray-900 font-bold text-[.79rem] flex gap-4">
+                        <span>
+                          <span className="text-[.8rem] font-semibold text-gray-700">Stock: </span> {p.stockQuantity}
+                        </span>{" "}
+                        <span>
+                          <span className="text-[.8rem] font-semibold text-gray-700">Price: </span> AFN {p.price}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -675,158 +678,158 @@ export default function AddSalePage() {
               )}
             <div className=" flex justify-between items-center max-xl:flex-col">
               <div>
-            {/* Qty + Discount */}
-            <div className="flex items-center gap-2 mt-3">
-              <div className="w-28">
-                <label className="text-xs text-gray-600">Qty</label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={quantity}
-                  data-input-type="quantity"
-                  onFocus={() => {
-                    setActiveInput("quantity");
-                    setKeyboardVisible(true);
-                  }}
-                  onChange={(e) => {
-                    const val = e.target.value;
+                {/* Qty + Discount */}
+                <div className="flex items-center gap-2 mt-3">
+                  <div className="w-28">
+                    <label className="text-xs text-gray-600">Qty</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={quantity}
+                      data-input-type="quantity"
+                      onFocus={() => {
+                        setActiveInput("quantity");
+                        setKeyboardVisible(true);
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value;
 
-                    // Allow empty value (so user can clear it)
-                    if (val === "") {
-                      setQuantity("");
-                      return;
-                    }
+                        // Allow empty value (so user can clear it)
+                        if (val === "") {
+                          setQuantity("");
+                          return;
+                        }
 
-                    // Prevent negatives and decimals
-                    const num = Number(val);
-                    if (num >= 0 && Number.isInteger(num)) {
-                      setQuantity(val);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (["-", ".", "e", "E"].includes(e.key))
-                      e.preventDefault();
-                  }}
-                />
-              </div>
-              <div className="w-32">
-                <label className="text-xs text-gray-600">Discount</label>
-                <Input
-                  type="number"
-                  step="1"
-                  min={0}
-                  value={itemDiscount}
-                  data-input-type="discount"
-                  onFocus={() => {
-                    setActiveInput("discount");
-                    setKeyboardVisible(true);
-                  }}
-                  onChange={(e) => {
-                    const val = e.target.value;
+                        // Prevent negatives and decimals
+                        const num = Number(val);
+                        if (num >= 0 && Number.isInteger(num)) {
+                          setQuantity(val);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (["-", ".", "e", "E"].includes(e.key))
+                          e.preventDefault();
+                      }}
+                    />
+                  </div>
+                  <div className="w-32">
+                    <label className="text-xs text-gray-600">Discount</label>
+                    <Input
+                      type="number"
+                      step="1"
+                      min={0}
+                      value={itemDiscount}
+                      data-input-type="discount"
+                      onFocus={() => {
+                        setActiveInput("discount");
+                        setKeyboardVisible(true);
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value;
 
-                    // Allow empty value (so user can clear it)
-                    if (val === "") {
-                      setItemDiscount("");
-                      return;
-                    }
+                        // Allow empty value (so user can clear it)
+                        if (val === "") {
+                          setItemDiscount("");
+                          return;
+                        }
 
-                    // Prevent negatives and decimals
-                    const num = Number(val);
-                    if (num >= 0 && Number.isInteger(num)) {
-                      setItemDiscount(val);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (["-", ".", "e", "E"].includes(e.key))
-                      e.preventDefault();
-                  }}
-                />
-              </div>
-              <div className="flex-1" />
-            </div>
+                        // Prevent negatives and decimals
+                        const num = Number(val);
+                        if (num >= 0 && Number.isInteger(num)) {
+                          setItemDiscount(val);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (["-", ".", "e", "E"].includes(e.key))
+                          e.preventDefault();
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1" />
+                </div>
 
-            {selectedProduct && (
-              <div className="mt-3 text-sm text-gray-600">
-                Selected: <strong>{selectedProduct.name}</strong> • AFN
-                {selectedProduct.price}
-              </div>
-            )}
+                {selectedProduct && (
+                  <div className="mt-3 text-sm text-gray-600">
+                    Selected: <strong>{selectedProduct.name}</strong> • AFN
+                    {selectedProduct.price}
+                  </div>
+                )}
 
-            {/* Payment method + Tax */}
-            <div className="flex items-center gap-2 mt-3">
-              {/* Custom Payment Method Dropdown */}
-              <div className="w-28 relative">
+                {/* Payment method + Tax */}
+                <div className="flex items-center gap-2 mt-3">
+                  {/* Custom Payment Method Dropdown */}
+                  <div className="w-28 relative">
                     <label className="text-xs text-gray-600">
                       Payment method
                     </label>
-                <div
-                  className="mt-1 p-2 border rounded bg-white cursor-pointer"
-                  onClick={() => setShowPaymentOptions(!showPaymentOptions)}
-                >
-                  {paymentMethod ? (
-                    <span className="text-sm">{paymentMethod}</span>
-                  ) : (
-                    <span className="text-sm text-gray-400">
-                      Select method...
-                    </span>
-                  )}
-                </div>
+                    <div
+                      className="mt-1 p-2 border rounded bg-white cursor-pointer"
+                      onClick={() => setShowPaymentOptions(!showPaymentOptions)}
+                    >
+                      {paymentMethod ? (
+                        <span className="text-sm">{paymentMethod}</span>
+                      ) : (
+                        <span className="text-sm text-gray-400">
+                          Select method...
+                        </span>
+                      )}
+                    </div>
 
-                {showPaymentOptions && (
-                  <div className="absolute z-10 mt-1 w-full max-h-36 overflow-auto border rounded bg-white shadow">
-                    {["Cash", "Card", "Mobile", "Other"].map((method) => (
-                      <div
-                        key={method}
-                        className="p-2 hover:bg-slate-50 cursor-pointer text-sm"
-                        onMouseDown={() => {
-                          setPaymentMethod(method);
-                          setShowPaymentOptions(false);
-                        }}
-                      >
-                        {method}
+                    {showPaymentOptions && (
+                      <div className="absolute z-10 mt-1 w-full max-h-36 overflow-auto border rounded bg-white shadow">
+                        {["Cash", "Card", "Mobile", "Other"].map((method) => (
+                          <div
+                            key={method}
+                            className="p-2 hover:bg-slate-50 cursor-pointer text-sm"
+                            onMouseDown={() => {
+                              setPaymentMethod(method);
+                              setShowPaymentOptions(false);
+                            }}
+                          >
+                            {method}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Tax Amount */}
-              <div className="w-32">
-                <label className="text-xs text-gray-600">Tax amount</label>
-                <Input
-                  type="number"
-                  step="1"
-                  min={0}
-                  value={taxAmount}
-                  data-input-type="tax"
-                  onFocus={() => {
-                    setActiveInput("tax");
-                    setKeyboardVisible(true);
-                  }}
-                  onChange={(e) => {
-                    const val = e.target.value;
+                  {/* Tax Amount */}
+                  <div className="w-32">
+                    <label className="text-xs text-gray-600">Tax amount</label>
+                    <Input
+                      type="number"
+                      step="1"
+                      min={0}
+                      value={taxAmount}
+                      data-input-type="tax"
+                      onFocus={() => {
+                        setActiveInput("tax");
+                        setKeyboardVisible(true);
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value;
 
-                    // Allow empty value (so user can clear it)
-                    if (val === "") {
-                      setTaxAmount("");
-                      return;
-                    }
+                        // Allow empty value (so user can clear it)
+                        if (val === "") {
+                          setTaxAmount("");
+                          return;
+                        }
 
-                    // Prevent negatives and decimals
-                    const num = Number(val);
-                    if (num >= 0 && Number.isInteger(num)) {
-                      setTaxAmount(val);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (["-", ".", "e", "E"].includes(e.key))
-                      e.preventDefault();
-                  }}
-                />
-              </div>
+                        // Prevent negatives and decimals
+                        const num = Number(val);
+                        if (num >= 0 && Number.isInteger(num)) {
+                          setTaxAmount(val);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (["-", ".", "e", "E"].includes(e.key))
+                          e.preventDefault();
+                      }}
+                    />
+                  </div>
 
-              <div className="flex-1" />
-            </div>
+                  <div className="flex-1" />
+                </div>
               </div>
               <div className=" flex justify-end mt-8">
                 <motion.button
@@ -1066,7 +1069,7 @@ export default function AddSalePage() {
           />
         )}
       </div>
-      
+
       {keyboardVisible && (
         <div
           ref={keyboardRef}
@@ -1076,12 +1079,10 @@ export default function AddSalePage() {
             right: "40px",
             zIndex: 9999,
           }}
-          
         >
           <NumericKeyboard onInput={handleKeyboardInput} />
         </div>
       )}
-     
 
       <div className="hidden">
         {lastPrintedDelivery && (

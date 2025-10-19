@@ -229,20 +229,27 @@ export default function CustomerDetailPage() {
                       }`}
                     >
                       <span className="text-[1rem] text-gray-700 font-semibold">
-                        {customer.status}
+                        {formData.name !== "WALK-IN CUSTOMER" &&
+                          customer.status}
                       </span>
                     </span>
                   </p>
                   <p>
                     <strong>Joined:</strong>{" "}
                     <span className="text-[1rem] text-gray-700 font-semibold">
-                      {new Date(customer.createdAt).toLocaleDateString()}
+                      {formData.name !== "WALK-IN CUSTOMER" &&
+                        new Date(customer.createdAt).toLocaleDateString()}
                     </span>
                   </p>
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div
+                className={`${
+                  formData.name === "WALK-IN CUSTOMER" &&
+                  "pointer-events-none opacity-30 select-none"
+                } flex gap-2`}
+              >
                 {editMode ? (
                   <>
                     <Button
