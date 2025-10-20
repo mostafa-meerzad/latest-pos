@@ -12,7 +12,7 @@ export default function AccessDenied() {
           You do not have permission to access this page.
         </p>
         
-        <Button variant={"outline"} className={"bg-[#2563eb] text-white rounded-xl active:scale-90 "} onClick={()=>router.push("/home")}>Go back home</Button>
+        <Button variant={"outline"} className={"bg-[#2563eb] text-white rounded-xl active:scale-90 "} onClick={()=>router.push("/home")}>Back to Dashboard</Button>
         {/* <a href="/home" className={"bg-[#2563eb] text-white "}>Go back home</a> */}
       </div>
     </div>

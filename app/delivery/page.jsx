@@ -43,8 +43,29 @@ export default function DeliveryPage() {
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [driverSuggestionsVisible, setDriverSuggestionsVisible] =
     useState(false);
+  const [user, setUser] = useState(null);
 
   const itemsPerPage = 6;
+
+  // Fetch user data
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const res = await fetch("/api/me"); // Adjust the endpoint as needed
+        const json = await res.json();
+
+        if (json.success) {
+          setUser(json.data);
+        } else {
+          console.error("Failed to fetch user data:", json.error);
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+      }
+    };
+    fetchUserData();
+  }, []);
 
   // ----------------------------
   // 🔹 Fetch deliveries with filters
@@ -183,12 +204,48 @@ export default function DeliveryPage() {
   }
 
   async function deleteDelivery(id) {
-    if (!confirm("Are you sure you want to delete this delivery?")) return;
+    // Confirmation using toast
+    const confirmDelete = await new Promise((resolve) => {
+      toast(
+        (t) => (
+          <div className="flex flex-col gap-2 ">
+            <p>Are you sure you want to delete this delivery?</p>
+            <div className="flex justify-end gap-2">
+              <Button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  resolve(true);
+                }}
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                Yes
+              </Button>
+              <Button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  resolve(false);
+                }}
+                variant="outline"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ),
+        { duration: Infinity, position: "top-center" }
+      );
+    });
+
+    if (!confirmDelete) return;
+
+    const toastId = toast.loading("Deleting delivery...");
+
     try {
       const res = await fetch(`/api/deliveries/${id}`, { method: "DELETE" });
       const data = await res.json();
+
       if (data.success) {
-        // Refresh the data after successful deletion
+        // Refresh data after successful deletion
         const params = new URLSearchParams({
           page: currentPage.toString(),
           limit: itemsPerPage.toString(),
@@ -204,16 +261,21 @@ export default function DeliveryPage() {
           setTotalPages(refreshData.pagination.totalPages);
           setTotalCount(refreshData.pagination.total);
 
-          // Adjust current page if we deleted the last item on the page
+          // Adjust current page if last item on the page was deleted
           if (refreshData.data.length === 0 && currentPage > 1) {
             setCurrentPage(currentPage - 1);
           }
+
+          toast.success("Delivery deleted successfully!", { id: toastId });
+        } else {
+          toast.error("Failed to refresh deliveries.", { id: toastId });
         }
       } else {
-        alert("Failed to delete delivery");
+        toast.error("Failed to delete delivery.", { id: toastId });
       }
     } catch (err) {
       console.error("Error deleting delivery:", err);
+      toast.error("Something went wrong while deleting.", { id: toastId });
     }
   }
 
@@ -678,12 +740,18 @@ export default function DeliveryPage() {
                       <TableCell className="flex gap-2 ml-2">
                         {editingId === d.id ? (
                           <>
-                            <Button size="sm" onClick={saveEdit}>
+                            <Button
+                              size="sm"
+                              onClick={saveEdit}
+                              className={
+                                "bg-green-400 hover:bg-green-300 hover:text-green-800"
+                              }
+                            >
                               <Save className="w-4 h-4" />
                             </Button>
                             <Button
                               size="sm"
-                              variant="ghost"
+                              variant="outline"
                               onClick={cancelEdit}
                             >
                               Cancel
@@ -695,13 +763,18 @@ export default function DeliveryPage() {
                               size="sm"
                               variant="secondary"
                               onClick={() => startEdit(d)}
+                              className={
+                                "hover:bg-gray-300 hover:text-gray-700"
+                              }
                             >
                               <Pencil className="w-4 h-4" />
                             </Button>
                             <Button
+                              disabled={user?.role !== "ADMIN"}
                               size="sm"
                               variant="destructive"
                               onClick={() => deleteDelivery(d.id)}
+                              className={"hover:bg-red-300 hover:text-red-800"}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>

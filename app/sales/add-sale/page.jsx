@@ -53,7 +53,7 @@ export default function AddSalePage() {
     useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [barcodeInput, setBarcodeInput] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(0);
   const [itemDiscount, setItemDiscount] = useState(0);
   const [customer, setCustomer] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("Cash");
@@ -699,25 +699,31 @@ export default function AddSalePage() {
                     <Input
                       type="number"
                       min={1}
-                      value={quantity}
+                      value={quantity === "" ? "" : quantity}
+                      placeholder="1" // visible default hint
                       data-input-type="quantity"
                       onFocus={() => {
                         setActiveInput("quantity");
                         setKeyboardVisible(true);
+                        // Remove default if it's still "1"
+                        if (quantity === 1) setQuantity("");
+                      }}
+                      onBlur={() => {
+                        // If the user leaves input empty, restore default
+                        if (quantity === "") setQuantity(1);
                       }}
                       onChange={(e) => {
                         const val = e.target.value;
 
-                        // Allow empty value (so user can clear it)
+                        // Allow empty (so user can clear)
                         if (val === "") {
                           setQuantity("");
                           return;
                         }
 
-                        // Prevent negatives and decimals
                         const num = Number(val);
                         if (num >= 0 && Number.isInteger(num)) {
-                          setQuantity(val);
+                          setQuantity(num);
                         }
                       }}
                       onKeyDown={(e) => {

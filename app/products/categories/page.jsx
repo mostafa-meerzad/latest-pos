@@ -375,7 +375,9 @@ export default function CategoriesPage() {
                                   size="sm"
                                   onClick={saveEdit}
                                   disabled={saving}
-                                  className={"bg-green-400 hover:bg-green-300 hover:text-green-800"}
+                                  className={
+                                    "bg-green-400 hover:bg-green-300 hover:text-green-800"
+                                  }
                                 >
                                   <Save className="w-4 h-4 mr-1" /> Save
                                 </Button>
@@ -394,7 +396,9 @@ export default function CategoriesPage() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => startEdit(cat)}
-                                  className={"hover:bg-gray-300 hover:text-gray-700"}
+                                  className={
+                                    "hover:bg-gray-300 hover:text-gray-700"
+                                  }
                                 >
                                   <Pencil className="w-4 h-4 mr-1" /> Edit
                                 </Button>
@@ -402,8 +406,9 @@ export default function CategoriesPage() {
                                   size="sm"
                                   variant="destructive"
                                   onClick={() => deleteCategory(cat.id)}
-                                  
-                                    className={"hover:bg-red-300 hover:text-red-800"}
+                                  className={
+                                    "hover:bg-red-300 hover:text-red-800"
+                                  }
                                 >
                                   <Trash2 className="w-4 h-4 mr-1" /> Delete
                                 </Button>

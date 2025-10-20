@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 // Update delivery (status, driver, deliveryDate, address, or deliveryFee)
 export async function PATCH(request, { params }) {
@@ -62,7 +63,23 @@ export async function PATCH(request, { params }) {
 // Soft delete delivery
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const cookieHeader = request.headers.get("cookie") || "";
+    const cookie = cookieHeader
+      .split(/;\s*/)
+      .find((c) => c.startsWith(`${SESSION_COOKIE}=`));
+    const jwtToken = cookie
+      ? decodeURIComponent(cookie.split("=")[1] || "")
+      : null;
+    const token = jwtToken ? await verifySessionToken(jwtToken) : null;
+
+    if (token?.role !== "ADMIN") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Admins only" },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
 
     const delivery = await prisma.delivery.findUnique({
       where: { id: Number(id) },
