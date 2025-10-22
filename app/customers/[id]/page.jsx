@@ -246,7 +246,7 @@ export default function CustomerDetailPage() {
                   label="Address"
                   value={customer.address}
                 />
-                {formData.name !== "WALK-IN CUSTOMER" && (
+                {formData.name.toLowerCase().startsWith("walk-in") && (
                   <Detail
                     label="Joined"
                     value={new Date(customer.createdAt).toLocaleDateString()}
@@ -257,7 +257,7 @@ export default function CustomerDetailPage() {
 
             <div
               className={`${
-                formData.name === "WALK-IN CUSTOMER"
+                formData.name.toLocaleLowerCase().startsWith("walk-in")
                   ? "pointer-events-none opacity-30 select-none"
                   : ""
               } flex gap-2 pt-2`}

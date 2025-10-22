@@ -20,6 +20,13 @@ const getFormattedDate = () => {
   const day = date.getDate().toString().padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+// Helper function to get current time in HH:MM (24-hour format)
+const getFormattedTime = () => {
+  const date = new Date();
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
 
 export default function AddDeliveryModal({
   isOpen,
@@ -41,6 +48,8 @@ export default function AddDeliveryModal({
   const [deliveryDate, setDeliveryDate] = useState(getFormattedDate());
 
   const deliverySkeleton = ["", "", ""];
+  // delivery time
+  const [deliveryTime, setDeliveryTime] = useState(getFormattedTime());
 
   // ✅ Fetch drivers on mount
   useEffect(() => {
@@ -96,7 +105,10 @@ export default function AddDeliveryModal({
         customerId: parseInt(customerId, 10),
         deliveryAddress: deliveryAddress.trim(),
         driverId: selectedDriver.id,
-        deliveryDate: deliveryDate || undefined,
+        deliveryDate:
+          deliveryDate && deliveryTime
+            ? new Date(`${deliveryDate}T${deliveryTime}`).toISOString()
+            : undefined,
         deliveryFee: fee,
         customerPhone: customerPhone.trim(),
       };
@@ -226,17 +238,30 @@ export default function AddDeliveryModal({
             />
           </div>
 
-          {/* Delivery Date */}
-          <div>
-            <label className="text-sm font-medium block mb-1">
-              Delivery Date
-            </label>
-            <Input
-              required={true}
-              type="date"
-              value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
-            />
+          {/* Delivery Date & Time */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <label className="text-sm font-medium block mb-1">
+                Delivery Date
+              </label>
+              <Input
+                required
+                type="date"
+                value={deliveryDate}
+                onChange={(e) => setDeliveryDate(e.target.value)}
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-sm font-medium block mb-1">
+                Delivery Time
+              </label>
+              <Input
+                required
+                type="time"
+                value={deliveryTime}
+                onChange={(e) => setDeliveryTime(e.target.value)}
+              />
+            </div>
           </div>
 
           {/* Actions */}

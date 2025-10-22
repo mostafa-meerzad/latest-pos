@@ -16,6 +16,13 @@ const getFormattedDate = () => {
   const day = date.getDate().toString().padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+// Helper function to get current time in HH:MM (24-hour format)
+const getFormattedTime = () => {
+  const date = new Date();
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
 
 export default function AddDeliveryPage() {
   const router = useRouter();
@@ -50,6 +57,9 @@ export default function AddDeliveryPage() {
 
   const deliverySkeleton = ["", "", ""];
   const from = searchParams.get("from"); // "sales" or "deliveries"
+
+  // delivery time
+  const [deliveryTime, setDeliveryTime] = useState(getFormattedTime());
 
   // Prefill SaleId from query
   useEffect(() => {
@@ -133,7 +143,11 @@ export default function AddDeliveryPage() {
         customerId: parseInt(customerId, 10),
         deliveryAddress: deliveryAddress.trim(),
         driverId: driverId ? parseInt(driverId, 10) : undefined,
-        deliveryDate: deliveryDate || undefined,
+        deliveryDate:
+          deliveryDate && deliveryTime
+            ? new Date(`${deliveryDate}T${deliveryTime}`).toISOString()
+            : undefined,
+
         deliveryFee: fee,
         customerPhone: customerPhone.trim(),
       };
@@ -191,7 +205,7 @@ export default function AddDeliveryPage() {
   return (
     <div className="p-6 flex flex-col gap-8 justify-center items-center">
       {/* <div className="flex items-center justify-between mb-4"> */}
-        <h1 className="text-3xl font-bold">Add Delivery</h1>
+      <h1 className="text-3xl font-bold">Add Delivery</h1>
       {/* </div> */}
       <div className="flex justify-center drop-shadow-2xl ">
         <form onSubmit={handleSubmit} className="min-w-3xl relative">
@@ -335,17 +349,30 @@ export default function AddDeliveryPage() {
                   />
                 </div>
 
-                {/* Delivery Date */}
-                <div>
-                  <label className="text-sm font-medium block mb-1">
-                    Delivery Date
-                  </label>
-                  <Input
-                    required={true}
-                    type="date"
-                    value={deliveryDate}
-                    onChange={(e) => setDeliveryDate(e.target.value)}
-                  />
+                {/* Delivery Date & Time */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium block mb-1">
+                      Delivery Date
+                    </label>
+                    <Input
+                      required
+                      type="date"
+                      value={deliveryDate}
+                      onChange={(e) => setDeliveryDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-sm font-medium block mb-1">
+                      Delivery Time
+                    </label>
+                    <Input
+                      required
+                      type="time"
+                      value={deliveryTime}
+                      onChange={(e) => setDeliveryTime(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -385,6 +412,3 @@ export default function AddDeliveryPage() {
     </div>
   );
 }
-
-
-

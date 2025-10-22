@@ -145,6 +145,10 @@ export default function DeliveryPage() {
       deliveryDate: row.deliveryDate
         ? new Date(row.deliveryDate).toISOString().split("T")[0]
         : "",
+      deliveryTime: row.deliveryDate
+        ? new Date(row.deliveryDate).toTimeString().split(" ")[0].slice(0, 5) // HH:MM format
+        : "",
+
       deliveryFee: row.deliveryFee || 0,
       customerPhone: row.customerPhone || null,
     });
@@ -168,6 +172,13 @@ export default function DeliveryPage() {
     if (!Number.isInteger(fee) || fee < 0) {
       toast.error("Delivery fee must be a non-negative whole number.");
       return;
+    }
+
+    // Combine date and time into one ISO string
+    if (editValues.deliveryDate && editValues.deliveryTime) {
+      editValues.deliveryDate = new Date(
+        `${editValues.deliveryDate}T${editValues.deliveryTime}`
+      ).toISOString();
     }
 
     const toastId = toast.loading("Updating delivery...");
@@ -392,6 +403,17 @@ export default function DeliveryPage() {
       </span>
     );
   };
+  function formatDateTime(dateString) {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    const formattedDate = date.toLocaleDateString();
+    const formattedTime = date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+    return `${formattedDate} • ${formattedTime}`;
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -694,20 +716,30 @@ export default function DeliveryPage() {
                       {/* Delivery Date */}
                       <TableCell>
                         {editingId === d.id ? (
-                          <Input
-                            type="date"
-                            value={editValues?.deliveryDate || ""}
-                            onChange={(e) =>
-                              setEditValues((s) => ({
-                                ...s,
-                                deliveryDate: e.target.value,
-                              }))
-                            }
-                          />
-                        ) : d.deliveryDate ? (
-                          new Date(d.deliveryDate).toLocaleDateString()
+                          <div className="flex flex-col gap-1">
+                            <Input
+                              type="date"
+                              value={editValues?.deliveryDate || ""}
+                              onChange={(e) =>
+                                setEditValues((s) => ({
+                                  ...s,
+                                  deliveryDate: e.target.value,
+                                }))
+                              }
+                            />
+                            <Input
+                              type="time"
+                              value={editValues?.deliveryTime || ""}
+                              onChange={(e) =>
+                                setEditValues((s) => ({
+                                  ...s,
+                                  deliveryTime: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
                         ) : (
-                          "—"
+                          formatDateTime(d.deliveryDate)
                         )}
                       </TableCell>
 
@@ -737,49 +769,53 @@ export default function DeliveryPage() {
                       </TableCell>
 
                       {/* Actions */}
-                      <TableCell className="flex gap-2 ml-2">
-                        {editingId === d.id ? (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={saveEdit}
-                              className={
-                                "bg-green-400 hover:bg-green-300 hover:text-green-800"
-                              }
-                            >
-                              <Save className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={cancelEdit}
-                            >
-                              Cancel
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => startEdit(d)}
-                              className={
-                                "hover:bg-gray-300 hover:text-gray-700"
-                              }
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              disabled={user?.role !== "ADMIN"}
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => deleteDelivery(d.id)}
-                              className={"hover:bg-red-300 hover:text-red-800"}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
+                      <TableCell>
+                        <div className="flex gap-2 ml-2">
+                          {editingId === d.id ? (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={saveEdit}
+                                className={
+                                  "bg-green-400 hover:bg-green-300 hover:text-green-800"
+                                }
+                              >
+                                <Save className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={cancelEdit}
+                              >
+                                Cancel
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => startEdit(d)}
+                                className={
+                                  "hover:bg-gray-300 hover:text-gray-700"
+                                }
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                disabled={user?.role !== "ADMIN"}
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => deleteDelivery(d.id)}
+                                className={
+                                  "hover:bg-red-300 hover:text-red-800"
+                                }
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

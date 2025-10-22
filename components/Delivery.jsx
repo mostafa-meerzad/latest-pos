@@ -7,9 +7,21 @@ const Delivery = forwardRef(
     { customer, address, deliveryDate, deliveryFee, saleId, phone, driver },
     ref
   ) => {
-    // ✅ Format date to YYYY/MM/DD
+    // ✅ Format date and time (e.g., 2025/10/22 • 03:45 PM)
     const formattedDate = deliveryDate
-      ? new Date(deliveryDate).toISOString().split("T")[0].replace(/-/g, "/")
+      ? (() => {
+          const date = new Date(deliveryDate);
+          const formattedDay = date
+            .toISOString()
+            .split("T")[0]
+            .replace(/-/g, "/");
+          const formattedTime = date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+          return `${formattedDay} • ${formattedTime}`;
+        })()
       : "";
 
     return (
