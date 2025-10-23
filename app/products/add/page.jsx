@@ -27,6 +27,7 @@ export default function CreateProductPage() {
   const [stockQuantity, setStockQuantity] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [status, setStatus] = useState("ACTIVE");
+  const [unit, setUnit] = useState("pcs");
 
   // suppliers & suggestions
   const [suppliers, setSuppliers] = useState([]);
@@ -124,6 +125,7 @@ export default function CreateProductPage() {
         selectedCategory?.id ?? (categoryId ? Number(categoryId) : undefined),
       status,
       stockQuantity: stockQuantity !== "" ? Number(stockQuantity) : undefined,
+      unit: unit || "pcs",
       expiryDate: expiryDate || undefined,
       supplierId: selectedSupplier?.id ?? undefined,
     };
@@ -136,6 +138,12 @@ export default function CreateProductPage() {
     setSubmitting(true);
 
     try {
+      const validUnits = ["pcs", "kg"]; 
+      if (!validUnits.includes(unit)) {
+        setError("Invalid unit value. Must be 'pcs' or 'kg'.");
+        setSubmitting(false);
+        return;
+      }
       const body = buildRequestBody();
       const res = await fetch("/api/products", {
         method: "POST",
@@ -305,16 +313,18 @@ export default function CreateProductPage() {
                   />
                 </div>
 
-                {/* Expiry Date */}
+                {/* Unit (NEW FIELD) */}
                 <div>
-                  <label className="text-sm font-medium block mb-1">
-                    Expiry Date
-                  </label>
-                  <Input
-                    type="date"
-                    value={expiryDate}
-                    onChange={(e) => setExpiryDate(e.target.value)}
-                  />
+                  <label className="text-sm font-medium block mb-1">Unit</label>
+                  <Select value={unit} onValueChange={(v) => setUnit(v)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pcs">Pieces</SelectItem>
+                      <SelectItem value="kg">Kilograms</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Status */}
@@ -333,6 +343,18 @@ export default function CreateProductPage() {
                   </Select>
                 </div>
 
+                {/* Expiry Date */}
+                <div>
+                  <label className="text-sm font-medium block mb-1">
+                    Expiry Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={expiryDate}
+                    onChange={(e) => setExpiryDate(e.target.value)}
+                  />
+                </div>
+                
                 {/* Category */}
                 <div className="relative md:col-span-2">
                   <label className="text-sm font-medium block mb-1">

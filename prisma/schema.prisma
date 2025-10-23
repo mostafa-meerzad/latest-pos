@@ -55,6 +55,7 @@ model Product {
   stockQuantity Int        @map("stock_quantity")
   expiryDate    DateTime?  @map("expiry_date")
   status        String     @default("ACTIVE")
+  unit          String     
   isDeleted     Boolean    @default(false)
   category      Category   @relation(fields: [categoryId], references: [id])
   supplier      Supplier   @relation(fields: [supplierId], references: [id])

@@ -41,6 +41,8 @@ const productSchema = z.object({
   expiryDate: z.coerce.date("Expiry date must be a valid date").optional().nullable(),
 
   status: z.enum(Object.values(STATUS), "Status is required").default(STATUS.ACTIVE),
+
+  unit: z.enum(["pcs", "kg"]),
 });
 
 // Create schema (all fields required)
