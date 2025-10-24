@@ -696,16 +696,25 @@ export default function AddSalePage() {
                 <div className="flex items-center gap-2 mt-3">
                   <div className="w-28">
                     <label className="text-xs text-gray-600">Qty</label>
+                    {/* Qty input (changed: prevent native keyboard with readOnly + inputMode, add pointer handler) */}
                     <Input
                       type="number"
                       min={1}
                       value={quantity === "" ? "" : quantity}
                       placeholder="1" // visible default hint
                       data-input-type="quantity"
-                      onFocus={() => {
+                      readOnly
+                      inputMode="none"
+                      onPointerDown={() => {
                         setActiveInput("quantity");
                         setKeyboardVisible(true);
                         // Remove default if it's still "1"
+                        if (quantity === 1) setQuantity("");
+                      }}
+                      onFocus={() => {
+                        // keep existing focus behavior as fallback
+                        setActiveInput("quantity");
+                        setKeyboardVisible(true);
                         if (quantity === 1) setQuantity("");
                       }}
                       onBlur={() => {
@@ -714,54 +723,52 @@ export default function AddSalePage() {
                       }}
                       onChange={(e) => {
                         const val = e.target.value;
-
-                        // Allow empty (so user can clear)
                         if (val === "") {
                           setQuantity("");
                           return;
                         }
-
                         const num = Number(val);
                         if (num >= 0 && Number.isInteger(num)) {
                           setQuantity(num);
                         }
                       }}
                       onKeyDown={(e) => {
-                        if (["-", ".", "e", "E"].includes(e.key))
-                          e.preventDefault();
+                        if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault();
                       }}
                     />
                   </div>
                   <div className="w-32">
                     <label className="text-xs text-gray-600">Discount</label>
+                    {/* Discount input (changed similarly) */}
                     <Input
                       type="number"
                       step="1"
                       min={0}
                       value={itemDiscount}
                       data-input-type="discount"
+                      readOnly
+                      inputMode="none"
+                      onPointerDown={() => {
+                        setActiveInput("discount");
+                        setKeyboardVisible(true);
+                      }}
                       onFocus={() => {
                         setActiveInput("discount");
                         setKeyboardVisible(true);
                       }}
                       onChange={(e) => {
                         const val = e.target.value;
-
-                        // Allow empty value (so user can clear it)
                         if (val === "") {
                           setItemDiscount("");
                           return;
                         }
-
-                        // Prevent negatives and decimals
                         const num = Number(val);
                         if (num >= 0 && Number.isInteger(num)) {
                           setItemDiscount(val);
                         }
                       }}
                       onKeyDown={(e) => {
-                        if (["-", ".", "e", "E"].includes(e.key))
-                          e.preventDefault();
+                        if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault();
                       }}
                     />
                   </div>
@@ -816,34 +823,36 @@ export default function AddSalePage() {
                   {/* Tax Amount */}
                   <div className="w-32">
                     <label className="text-xs text-gray-600">Tax amount</label>
+                    {/* Tax input (changed similarly) */}
                     <Input
                       type="number"
                       step="1"
                       min={0}
                       value={taxAmount}
                       data-input-type="tax"
+                      readOnly
+                      inputMode="none"
+                      onPointerDown={() => {
+                        setActiveInput("tax");
+                        setKeyboardVisible(true);
+                      }}
                       onFocus={() => {
                         setActiveInput("tax");
                         setKeyboardVisible(true);
                       }}
                       onChange={(e) => {
                         const val = e.target.value;
-
-                        // Allow empty value (so user can clear it)
                         if (val === "") {
                           setTaxAmount("");
                           return;
                         }
-
-                        // Prevent negatives and decimals
                         const num = Number(val);
                         if (num >= 0 && Number.isInteger(num)) {
                           setTaxAmount(val);
                         }
                       }}
                       onKeyDown={(e) => {
-                        if (["-", ".", "e", "E"].includes(e.key))
-                          e.preventDefault();
+                        if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault();
                       }}
                     />
                   </div>
@@ -924,18 +933,21 @@ export default function AddSalePage() {
                                 setActiveInput("unitPrice");
                                 setKeyboardVisible(true);
                               }}
+                              onPointerDown={() => {
+                                setActiveInput("unitPrice");
+                                setKeyboardVisible(true);
+                              }}
                               data-input-type="unitPrice"
                               onKeyDown={(e) => {
-                                // Block minus, dot, and scientific notation keys
                                 if (["-", ".", "e", "E"].includes(e.key))
                                   e.preventDefault();
                               }}
                               type="number"
                               step="1"
                               min={0}
-                              value={String(
-                                editValues?.unitPrice ?? row.unitPrice
-                              )}
+                              value={String(editValues?.unitPrice ?? row.unitPrice)}
+                              readOnly
+                              inputMode="none"
                               onChange={(e) =>
                                 setEditValues((s) => ({
                                   ...(s || {}),
@@ -954,17 +966,20 @@ export default function AddSalePage() {
                                 setActiveInput("editQuantity");
                                 setKeyboardVisible(true);
                               }}
+                              onPointerDown={() => {
+                                setActiveInput("editQuantity");
+                                setKeyboardVisible(true);
+                              }}
                               data-input-type="editQuantity"
                               onKeyDown={(e) => {
-                                // Block minus, dot, and scientific notation keys
                                 if (["-", ".", "e", "E"].includes(e.key))
                                   e.preventDefault();
                               }}
                               type="number"
                               min={0}
-                              value={String(
-                                editValues?.quantity ?? row.quantity
-                              )}
+                              value={String(editValues?.quantity ?? row.quantity)}
+                              readOnly
+                              inputMode="none"
                               onChange={(e) =>
                                 setEditValues((s) => ({
                                   ...(s || {}),
@@ -983,18 +998,21 @@ export default function AddSalePage() {
                                 setActiveInput("editDiscount");
                                 setKeyboardVisible(true);
                               }}
+                              onPointerDown={() => {
+                                setActiveInput("editDiscount");
+                                setKeyboardVisible(true);
+                              }}
                               data-input-type="editDiscount"
                               onKeyDown={(e) => {
-                                // Block minus, dot, and scientific notation keys
                                 if (["-", ".", "e", "E"].includes(e.key))
                                   e.preventDefault();
                               }}
                               type="number"
                               min={0}
                               step="1"
-                              value={String(
-                                editValues?.discount ?? row.discount
-                              )}
+                              value={String(editValues?.discount ?? row.discount)}
+                              readOnly
+                              inputMode="none"
                               onChange={(e) =>
                                 setEditValues((s) => ({
                                   ...(s || {}),
