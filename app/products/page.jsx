@@ -95,6 +95,7 @@ export default function ProductsPage() {
     const priceNum = Number(editValues.price);
     const stockNum = Number(editValues.stockQuantity);
     const costNum = Number(editValues.costPrice ?? 0);
+    const unit = editValues.unit || "pcs";
 
     if (isNaN(priceNum) || editValues.price === "" || priceNum < 0) {
       toast.error("Price cannot be empty or negative.");
@@ -108,8 +109,20 @@ export default function ProductsPage() {
       return;
     }
 
+    // Validate stock quantity based on unit type
+    if (unit === "pcs") {
+      if (!Number.isInteger(stockNum)) {
+        toast.error(
+          "Stock quantity must be a whole number for items sold by piece (pcs)."
+        );
+        toast.dismiss();
+        return;
+      }
+    }
+    // For kg, decimal values are allowed
+
     if (priceNum < costNum) {
-      toast.error("Price cannot be less than the product’s cost price.");
+      toast.error("Price cannot be less than the product's cost price.");
       return;
     }
 
@@ -126,7 +139,7 @@ export default function ProductsPage() {
         setProducts((prev) =>
           prev.map((p) => (p.id === editingId ? { ...p, ...editValues } : p))
         );
-        resetEditState(); // ← just reset state, no "canceled" toast
+        resetEditState();
         toast.success("Product updated successfully.");
       } else {
         toast.error("Failed to update product.");
@@ -428,14 +441,61 @@ export default function ProductsPage() {
                           {editingId === p.id ? (
                             <Input
                               type="number"
+                              step={editValues?.unit === "kg" ? "0.01" : "1"} // Allow decimals for kg
                               value={editValues?.stockQuantity || ""}
-                              onChange={(e) =>
-                                setEditValues((s) => ({
-                                  ...s,
-                                  stockQuantity: Number(e.target.value),
-                                }))
-                              }
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                const unit = editValues?.unit || p.unit;
+
+                                if (value === "") {
+                                  setEditValues((s) => ({
+                                    ...s,
+                                    stockQuantity: "",
+                                  }));
+                                  return;
+                                }
+
+                                const numValue = Number(value);
+
+                                // Validate based on unit type
+                                if (unit === "pcs") {
+                                  // For pcs, only allow integers
+                                  if (
+                                    Number.isInteger(numValue) &&
+                                    numValue >= 0
+                                  ) {
+                                    setEditValues((s) => ({
+                                      ...s,
+                                      stockQuantity: numValue,
+                                    }));
+                                  }
+                                } else {
+                                  // For kg, allow decimals
+                                  if (numValue >= 0) {
+                                    setEditValues((s) => ({
+                                      ...s,
+                                      stockQuantity: numValue,
+                                    }));
+                                  }
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                const unit = editValues?.unit || p.unit;
+
+                                if (unit === "pcs") {
+                                  // For pcs, block decimal point
+                                  if (["-", ".", "e", "E"].includes(e.key))
+                                    e.preventDefault();
+                                } else {
+                                  // For kg, only block negative and scientific notation
+                                  if (["-", "e", "E"].includes(e.key))
+                                    e.preventDefault();
+                                }
+                              }}
                             />
+                          ) : // Display with proper formatting
+                          p.unit === "kg" ? (
+                            Number(p.stockQuantity).toFixed(2)
                           ) : (
                             p.stockQuantity
                           )}

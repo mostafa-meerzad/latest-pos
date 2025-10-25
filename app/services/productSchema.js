@@ -34,7 +34,6 @@ const productSchema = z.object({
 
   stockQuantity: z
     .number("Stock quantity is required")
-    .int()
     .nonnegative("Stock quantity cannot be negative"),
 
   // Make expiry date optional and nullable

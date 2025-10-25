@@ -190,6 +190,19 @@ export default function AddSalePage() {
     if (!quantity || quantity <= 0)
       return toast.error("Quantity must be at least 1");
 
+    // Get the product unit and validate quantity based on unit type
+    const productUnit = selectedProduct.unit || "pcs";
+
+    if (productUnit === "pcs") {
+      // For pcs, quantity must be integer
+      if (!Number.isInteger(Number(quantity))) {
+        return toast.error(
+          "Quantity must be a whole number for items sold by piece (pcs)"
+        );
+      }
+    }
+    // For kg, decimal values are allowed
+
     const unitPrice = Number(selectedProduct.price || 0);
     const discount = Number(itemDiscount || 0);
     const subtotal = +(unitPrice * quantity - discount);
@@ -204,6 +217,7 @@ export default function AddSalePage() {
       discount,
       subtotal: +subtotal.toFixed(2),
       expiryDate: selectedProduct.expiryDate || null,
+      unit: productUnit,
     };
 
     addItem(item);
@@ -222,6 +236,20 @@ export default function AddSalePage() {
 
   function saveEdit() {
     if (!editingId || !editValues) return;
+
+    // Find the original item to get the unit
+    const originalItem = items.find((item) => item.tempId === editingId);
+    const productUnit = originalItem?.unit || "pcs";
+
+    // Validate quantity based on unit type
+    if (productUnit === "pcs") {
+      if (!Number.isInteger(Number(editValues.quantity))) {
+        return toast.error(
+          "Quantity must be a whole number for items sold by piece (pcs)"
+        );
+      }
+    }
+
     const updated = {
       ...editValues,
       subtotal: +(
@@ -396,18 +424,18 @@ export default function AddSalePage() {
     if (!activeInput) return;
 
     // Handle clear or delete
-    if (value === "clear") {
-      if (activeInput === "quantity") setQuantity("");
-      if (activeInput === "discount") setItemDiscount("");
-      if (activeInput === "tax") setTaxAmount("");
-      if (activeInput === "unitPrice" && editValues)
-        setEditValues((prev) => ({ ...prev, unitPrice: "" }));
-      if (activeInput === "editQuantity" && editValues)
-        setEditValues((prev) => ({ ...prev, quantity: "" }));
-      if (activeInput === "editDiscount" && editValues)
-        setEditValues((prev) => ({ ...prev, discount: "" }));
-      return;
-    }
+    // if (value === "clear") {
+    //   if (activeInput === "quantity") setQuantity("");
+    //   if (activeInput === "discount") setItemDiscount("");
+    //   if (activeInput === "tax") setTaxAmount("");
+    //   if (activeInput === "unitPrice" && editValues)
+    //     setEditValues((prev) => ({ ...prev, unitPrice: "" }));
+    //   if (activeInput === "editQuantity" && editValues)
+    //     setEditValues((prev) => ({ ...prev, quantity: "" }));
+    //   if (activeInput === "editDiscount" && editValues)
+    //     setEditValues((prev) => ({ ...prev, discount: "" }));
+    //   return;
+    // }
 
     if (value === "backspace") {
       if (activeInput === "quantity")
@@ -434,10 +462,45 @@ export default function AddSalePage() {
       return;
     }
 
+    // Handle decimal point for kg items
+    if (value === ".") {
+      const isKgItem =
+        (activeInput === "quantity" && selectedProduct?.unit === "kg") ||
+        (activeInput === "editQuantity" && editValues?.unit === "kg");
+
+      if (isKgItem) {
+        if (activeInput === "quantity") {
+          const current = String(quantity || "0");
+          if (!current.includes(".")) {
+            setQuantity(current === "0" ? "0." : current + ".");
+          }
+        }
+        if (activeInput === "editQuantity" && editValues) {
+          const current = String(editValues.quantity || "0");
+          if (!current.includes(".")) {
+            setEditValues((prev) => ({
+              ...prev,
+              quantity: current === "0" ? "0." : current + ".",
+            }));
+          }
+        }
+      }
+      return;
+    }
+
     // Append digits (only integers)
     if (/^\d$/.test(value)) {
-      if (activeInput === "quantity")
-        setQuantity((prev) => (prev ? prev + value : value));
+      if (activeInput === "quantity") {
+        const current = String(quantity || "0");
+        // If current value is "0" or "0.", replace it appropriately
+        if (current === "0") {
+          setQuantity(value);
+        } else if (current === "0.") {
+          setQuantity(current + value);
+        } else {
+          setQuantity(current + value);
+        }
+      }
       if (activeInput === "discount")
         setItemDiscount((prev) => (prev ? prev + value : value));
       if (activeInput === "tax")
@@ -698,17 +761,17 @@ export default function AddSalePage() {
                     <label className="text-xs text-gray-600">Qty</label>
                     {/* Qty input (changed: prevent native keyboard with readOnly + inputMode, add pointer handler) */}
                     <Input
-                      type="number"
-                      min={1}
+                      type="text"
+                      inputMode="decimal"
+                      min={0}
+                      step={selectedProduct?.unit === "kg" ? "0.1" : "1"} // Allow decimals for kg
                       value={quantity === "" ? "" : quantity}
-                      placeholder="1" // visible default hint
+                      placeholder="1"
                       data-input-type="quantity"
                       readOnly
-                      inputMode="none"
                       onPointerDown={() => {
                         setActiveInput("quantity");
                         setKeyboardVisible(true);
-                        // Remove default if it's still "1"
                         if (quantity === 1) setQuantity("");
                       }}
                       onFocus={() => {
@@ -718,7 +781,6 @@ export default function AddSalePage() {
                         if (quantity === 1) setQuantity("");
                       }}
                       onBlur={() => {
-                        // If the user leaves input empty, restore default
                         if (quantity === "") setQuantity(1);
                       }}
                       onChange={(e) => {
@@ -728,12 +790,30 @@ export default function AddSalePage() {
                           return;
                         }
                         const num = Number(val);
-                        if (num >= 0 && Number.isInteger(num)) {
-                          setQuantity(num);
+                        if (num >= 0) {
+                          // For pcs, only allow integers
+                          if (selectedProduct?.unit === "pcs") {
+                            if (Number.isInteger(num)) {
+                              setQuantity(num);
+                            }
+                          } else {
+                            // For kg, allow decimals
+                            setQuantity(num);
+                          }
                         }
                       }}
                       onKeyDown={(e) => {
-                        if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault();
+                        // Only block negative numbers and scientific notation
+                        // Allow decimal point for kg items
+                        if (selectedProduct?.unit === "pcs") {
+                          // For pcs, block decimal point
+                          if (["-", ".", "e", "E"].includes(e.key))
+                            e.preventDefault();
+                        } else {
+                          // For kg, only block negative and scientific notation
+                          if (["-", "e", "E"].includes(e.key))
+                            e.preventDefault();
+                        }
                       }}
                     />
                   </div>
@@ -885,8 +965,9 @@ export default function AddSalePage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Product</TableHead>
-                    <TableHead>Unit</TableHead>
+                    <TableHead>Unit Price</TableHead>
                     <TableHead>Qty</TableHead>
+                    <TableHead>Unit</TableHead>
                     <TableHead>Discount</TableHead>
                     <TableHead>Subtotal</TableHead>
                     <TableHead>Actions</TableHead>
@@ -971,26 +1052,52 @@ export default function AddSalePage() {
                                 setKeyboardVisible(true);
                               }}
                               data-input-type="editQuantity"
-                              onKeyDown={(e) => {
-                                if (["-", ".", "e", "E"].includes(e.key))
-                                  e.preventDefault();
-                              }}
-                              type="number"
+                              type="text"
+                              inputMode="decimal"
                               min={0}
-                              value={String(editValues?.quantity ?? row.quantity)}
-                              readOnly
-                              inputMode="none"
-                              onChange={(e) =>
-                                setEditValues((s) => ({
-                                  ...(s || {}),
-                                  quantity: Number(e.target.value),
-                                }))
-                              }
+                              step={editValues?.unit === "kg" ? "0.01" : "1"} // Allow decimals for kg
+                              value={String(
+                                editValues?.quantity ?? row.quantity
+                              )}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const num = Number(val);
+
+                                if (num >= 0) {
+                                  // For pcs, only allow integers
+                                  if (editValues?.unit === "pcs") {
+                                    if (Number.isInteger(num)) {
+                                      setEditValues((s) => ({
+                                        ...(s || {}),
+                                        quantity: num,
+                                      }));
+                                    }
+                                  } else {
+                                    // For kg, allow decimals
+                                    setEditValues((s) => ({
+                                      ...(s || {}),
+                                      quantity: num,
+                                    }));
+                                  }
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (editValues?.unit === "pcs") {
+                                  // For pcs, block decimal point
+                                  if (["-", ".", "e", "E"].includes(e.key))
+                                    e.preventDefault();
+                                } else {
+                                  // For kg, only block negative and scientific notation
+                                  if (["-", "e", "E"].includes(e.key))
+                                    e.preventDefault();
+                                }
+                              }}
                             />
                           ) : (
                             row.quantity
                           )}
                         </TableCell>
+                        <TableCell>{row.unit || "No unit provided"}</TableCell>
                         <TableCell className="w-32">
                           {editingId === row.tempId ? (
                             <Input

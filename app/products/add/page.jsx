@@ -72,6 +72,18 @@ export default function CreateProductPage() {
     boot();
   }, []);
 
+  // For Unit changes
+  useEffect(() => {
+    // When unit changes from kg to pcs and stock has decimals, round it
+    if (
+      unit === "pcs" &&
+      stockQuantity &&
+      !Number.isInteger(Number(stockQuantity))
+    ) {
+      setStockQuantity(Math.round(Number(stockQuantity)).toString());
+    }
+  }, [unit]); // This will run whenever the unit changes
+
   // filter supplier suggestions
   const supplierSuggestions = useMemo(() => {
     const q = supplierQuery.trim().toLowerCase();
@@ -138,12 +150,23 @@ export default function CreateProductPage() {
     setSubmitting(true);
 
     try {
-      const validUnits = ["pcs", "kg"]; 
+      const validUnits = ["pcs", "kg"];
       if (!validUnits.includes(unit)) {
         setError("Invalid unit value. Must be 'pcs' or 'kg'.");
         setSubmitting(false);
         return;
       }
+
+      // Validate stock quantity based on unit
+      const stockNum = Number(stockQuantity);
+      if (unit === "pcs" && !Number.isInteger(stockNum)) {
+        setError(
+          "Stock quantity must be a whole number for items sold by piece (pcs)."
+        );
+        setSubmitting(false);
+        return;
+      }
+      
       const body = buildRequestBody();
       const res = await fetch("/api/products", {
         method: "POST",
@@ -178,9 +201,7 @@ export default function CreateProductPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Add Product</h1>
         <Link href="/products">
-          <Button variant="outline" >
-            Back to Products
-          </Button>
+          <Button variant="outline">Back to Products</Button>
         </Link>
       </div>
 
@@ -279,40 +300,6 @@ export default function CreateProductPage() {
                   />
                 </div>
 
-                {/* Stock Quantity */}
-                <div>
-                  <label className="text-sm font-medium block mb-1">
-                    Stock Quantity
-                  </label>
-                  <Input
-                    onChange={(e) => {
-                      const val = e.target.value;
-
-                      // Allow empty value (so user can clear it)
-                      if (val === "") {
-                        setStockQuantity("");
-                        return;
-                      }
-
-                      // Prevent negatives and decimals
-                      const num = Number(val);
-                      if (num >= 0 && Number.isInteger(num)) {
-                        setStockQuantity(val);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (["-", ".", "e", "E"].includes(e.key))
-                        e.preventDefault();
-                    }}
-                    type="number"
-                    value={stockQuantity}
-                    placeholder={fieldErrors.stockQuantity?.[0] || ""}
-                    className={
-                      fieldErrors.stockQuantity ? "border-red-400" : ""
-                    }
-                  />
-                </div>
-
                 {/* Unit (NEW FIELD) */}
                 <div>
                   <label className="text-sm font-medium block mb-1">Unit</label>
@@ -325,6 +312,56 @@ export default function CreateProductPage() {
                       <SelectItem value="kg">Kilograms</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Stock Quantity */}
+                <div>
+                  <label className="text-sm font-medium block mb-1">
+                    Stock Quantity
+                  </label>
+                  <Input
+                    type="number"
+                    step={unit === "kg" ? "0.01" : "1"} // Allow decimals for kg
+                    value={stockQuantity}
+                    onChange={(e) => {
+                      const val = e.target.value;
+
+                      // Allow empty value (so user can clear it)
+                      if (val === "") {
+                        setStockQuantity("");
+                        return;
+                      }
+
+                      const numValue = Number(val);
+
+                      // Validate based on unit type
+                      if (unit === "pcs") {
+                        // For pcs, only allow integers
+                        if (Number.isInteger(numValue) && numValue >= 0) {
+                          setStockQuantity(val);
+                        }
+                      } else {
+                        // For kg, allow decimals
+                        if (numValue >= 0) {
+                          setStockQuantity(val);
+                        }
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (unit === "pcs") {
+                        // For pcs, block decimal point
+                        if (["-", ".", "e", "E"].includes(e.key))
+                          e.preventDefault();
+                      } else {
+                        // For kg, only block negative and scientific notation
+                        if (["-", "e", "E"].includes(e.key)) e.preventDefault();
+                      }
+                    }}
+                    placeholder={fieldErrors.stockQuantity?.[0] || ""}
+                    className={
+                      fieldErrors.stockQuantity ? "border-red-400" : ""
+                    }
+                  />
                 </div>
 
                 {/* Status */}
@@ -354,7 +391,7 @@ export default function CreateProductPage() {
                     onChange={(e) => setExpiryDate(e.target.value)}
                   />
                 </div>
-                
+
                 {/* Category */}
                 <div className="relative md:col-span-2">
                   <label className="text-sm font-medium block mb-1">

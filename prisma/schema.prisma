@@ -32,7 +32,7 @@ model SaleItem {
   id        Int     @id @default(autoincrement()) @map("sale_item_id")
   saleId    Int     @map("sale_id")
   productId Int     @map("product_id")
-  quantity  Int
+  quantity  Decimal
   unitPrice Int     @map("unit_price")
   discount  Int     @default(0)
   subtotal  Int     @map("subtotal")
@@ -52,7 +52,7 @@ model Product {
   supplierId    Int        @map("supplier_id")
   price         Int        @map("price")
   costPrice     Int        @map("cost_price")
-  stockQuantity Int        @map("stock_quantity")
+  stockQuantity Decimal    @map("stock_quantity")
   expiryDate    DateTime?  @map("expiry_date")
   status        String     @default("ACTIVE")
   unit          String     
