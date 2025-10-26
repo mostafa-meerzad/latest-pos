@@ -9,7 +9,6 @@ const productSchema = z.object({
 
   barcode: z
     .string("Barcode is required")
-    .min(1, "Barcode cannot be empty")
     .max(255, "Barcode too long").optional(),
 
   categoryId: z
@@ -32,14 +31,17 @@ const productSchema = z.object({
     .int()
     .nonnegative("Cost price cannot be negative"),
 
-  stockQuantity: z
-    .number("Stock quantity is required")
-    .nonnegative("Stock quantity cannot be negative"),
+  stockQuantity: z.any("Stock quantity is required"),
 
   // Make expiry date optional and nullable
-  expiryDate: z.coerce.date("Expiry date must be a valid date").optional().nullable(),
+  expiryDate: z.coerce
+    .date("Expiry date must be a valid date")
+    .optional()
+    .nullable(),
 
-  status: z.enum(Object.values(STATUS), "Status is required").default(STATUS.ACTIVE),
+  status: z
+    .enum(Object.values(STATUS), "Status is required")
+    .default(STATUS.ACTIVE),
 
   unit: z.enum(["pcs", "kg"]),
 });
