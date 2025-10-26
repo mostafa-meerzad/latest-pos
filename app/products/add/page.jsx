@@ -246,6 +246,7 @@ export default function CreateProductPage() {
                   </label>
                   <Input
                     type="number"
+                    min="0"
                     value={costPrice}
                     placeholder={fieldErrors.costPrice?.[0] || ""}
                     className={fieldErrors.costPrice ? "border-red-400" : ""}

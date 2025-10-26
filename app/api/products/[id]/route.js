@@ -126,12 +126,13 @@ export const PUT = async (request, { params }) => {
     }
 
     const updateData = {};
-    if (name) updateData.name = name;
-    if (price) updateData.price = price;
-    if (costPrice) updateData.costPrice = costPrice;
-    if (status) updateData.status = status;
-    if (barcode) updateData.barcode = barcode;
-    if (stockQuantity) updateData.stockQuantity = stockQuantity;
+    // Use explicit undefined checks so falsy-but-valid values (like 0) are accepted
+    if (name !== undefined) updateData.name = name;
+    if (price !== undefined) updateData.price = price;
+    if (costPrice !== undefined) updateData.costPrice = costPrice;
+    if (status !== undefined) updateData.status = status;
+    if (barcode !== undefined) updateData.barcode = barcode;
+    if (stockQuantity !== undefined) updateData.stockQuantity = stockQuantity;
     if (expiryDate !== undefined) updateData.expiryDate = expiryDate;
 
     const updateProduct = await prisma.product.update({

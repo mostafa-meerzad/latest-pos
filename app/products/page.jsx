@@ -6,7 +6,7 @@ import ProductImg from "@/assets/product_img.png";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Pencil, Trash2, Eye, Save } from "lucide-react";
+import { Search, Pencil, Trash2, Eye, Save, Minus } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -89,7 +89,6 @@ export default function ProductsPage() {
   }
 
   async function saveEdit() {
-    toast.loading("Saving changes...");
     if (!editingId || !editValues) return;
 
     const priceNum = Number(editValues.price);
@@ -97,8 +96,7 @@ export default function ProductsPage() {
     const costNum = Number(editValues.costPrice ?? 0);
 
     if (isNaN(priceNum) || editValues.price === "" || priceNum < 0) {
-      toast.error("Price cannot be empty or negative.");
-      toast.dismiss();
+      toast.error("Price cannot be empty or negative or an invalid value.");
       return;
     }
 
@@ -112,7 +110,7 @@ export default function ProductsPage() {
       toast.error("Price cannot be less than the product’s cost price.");
       return;
     }
-
+    toast.loading("Saving changes...");
     try {
       const res = await fetch(`/api/products/${editingId}`, {
         method: "PUT",
@@ -129,6 +127,7 @@ export default function ProductsPage() {
         resetEditState(); // ← just reset state, no "canceled" toast
         toast.success("Product updated successfully.");
       } else {
+        toast.dismiss();
         toast.error("Failed to update product.");
       }
     } catch (err) {
@@ -235,15 +234,15 @@ export default function ProductsPage() {
   return (
     <motion.div
       className="p-6 space-y-6"
-      initial={{ opacity: 0,  }}
-      animate={{ opacity: 1,  }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
       {/* Header */}
       <motion.div
         className="flex items-center justify-between"
-        initial={{ opacity: 0,  }}
-        animate={{ opacity: 1, }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
       >
         <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -275,16 +274,72 @@ export default function ProductsPage() {
         </div>
       </motion.div>
 
-      {/* Filters */}
-      <motion.div
-        className="flex flex-wrap items-center gap-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-       
-      </motion.div>
+      {/* ----------------- Filters ----------------- */}
+      <div className="flex flex-wrap items-center gap-4">
+        {/* Category Filter - dynamically loaded */}
+        <Select
+          value={String(categoryFilter)}
+          onValueChange={(v) => setCategoryFilter(v)}
+        >
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Categories</SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={String(c.id)}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
+        {/* Status Filter */}
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v)}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Status</SelectItem>
+            <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="INACTIVE">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Stock Filter */}
+        <Select value={stockFilter} onValueChange={(v) => setStockFilter(v)}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue placeholder="Stock" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Stock</SelectItem>
+            <SelectItem value="in">In Stock</SelectItem>
+            <SelectItem value="out">Out of Stock</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Sort */}
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v)}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Sort (ID)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="id">Sort by ID</SelectItem>
+            <SelectItem value="stock">Sort by Stock</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Search */}
+        <div className="relative w-[250px]">
+          <Input
+            placeholder="Search by name or barcode"
+            className="pr-8 focus:!ring-[#f25500] focus:!border-[#f25500]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+        </div>
+      </div>
       {/* Table */}
       <Card>
         <CardContent>
@@ -292,8 +347,8 @@ export default function ProductsPage() {
             <motion.div
               // className="p-6 max-w-6xl mx-auto mt-8"
               className="-m-6"
-              initial={{ opacity: 0, }}
-              animate={{ opacity: 1,  }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
             >
               <Card className="overflow-hidden rounded-2xl border-none ">
@@ -303,6 +358,7 @@ export default function ProductsPage() {
                       <tr>
                         <th className="px-6 py-3">ID</th>
                         <th className="px-6 py-3">Product</th>
+                        <th className="px-6 py-3">Barcode</th>
                         <th className="px-6 py-3">Price</th>
                         <th className="px-6 py-3">Stock</th>
                         <th className="px-6 py-3">Expiry</th>
@@ -325,6 +381,11 @@ export default function ProductsPage() {
                           {/* Product */}
                           <td className="px-6 py-3">
                             <Skeleton className="h-6 w-24 rounded-md" />
+                          </td>
+
+                          {/* Barcode */}
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-6 w-20 rounded-md" />
                           </td>
 
                           {/* Price */}
@@ -366,21 +427,24 @@ export default function ProductsPage() {
                 <TableRow className="text-lg">
                   <TableHead>ID</TableHead>
                   <TableHead>Product</TableHead>
+                  <TableHead>Barcode</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Expiry</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className={editValues? "":" pl-8"}>Actions</TableHead>
+                  <TableHead className={editValues ? "" : " pl-8"}>
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody >
+              <TableBody>
                 <AnimatePresence>
                   {paginatedData.length > 0 ? (
                     paginatedData.map((p) => (
                       <motion.tr
                         key={p.id}
-                        initial={{ opacity: 0, }}
-                        animate={{ opacity: 1,  }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         className="border-b "
@@ -401,15 +465,33 @@ export default function ProductsPage() {
                             p.name
                           )}
                         </TableCell>
+
+                        <TableCell>
+                          {editingId === p.id ? (
+                            <Input
+                              value={editValues?.barcode || ""}
+                              onChange={(e) =>
+                                setEditValues((s) => ({
+                                  ...s,
+                                  barcode: e.target.value,
+                                }))
+                              }
+                            />
+                          ) : (
+                            p.barcode || <Minus />
+                          )}
+                        </TableCell>
+
                         <TableCell>
                           {editingId === p.id ? (
                             <Input
                               type="number"
+                              min="0"
                               value={editValues?.price || ""}
                               onChange={(e) =>
                                 setEditValues((s) => ({
                                   ...s,
-                                  price: e.target.value,
+                                  price: Number(e.target.value),
                                 }))
                               }
                             />
@@ -421,13 +503,28 @@ export default function ProductsPage() {
                           {editingId === p.id ? (
                             <Input
                               type="number"
-                              value={editValues?.stockQuantity || ""}
-                              onChange={(e) =>
+                              min={0}
+                              step={1}
+                              value={editValues?.stockQuantity ?? ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                // Allow clearing the field while editing
+                                if (val === "") {
+                                  setEditValues((s) => ({
+                                    ...s,
+                                    stockQuantity: "",
+                                  }));
+                                  return;
+                                }
+                                const num = Number(val);
+                                // Ignore invalid numeric input
+                                if (isNaN(num)) return;
+                                // Clamp negatives to 0
                                 setEditValues((s) => ({
                                   ...s,
-                                  stockQuantity: Number(e.target.value),
-                                }))
-                              }
+                                  stockQuantity: num < 0 ? 0 : num,
+                                }));
+                              }}
                             />
                           ) : (
                             p.stockQuantity
@@ -455,10 +552,10 @@ export default function ProductsPage() {
                               }
                             )
                           ) : (
-                            ""
+                            <Minus />
                           )}
                         </TableCell>
-                        <TableCell className={editValues ? "": " pr-8"}>
+                        <TableCell className={editValues ? "" : " pr-8"}>
                           {editingId === p.id ? (
                             <Select
                               value={editValues?.status || "ACTIVE"}
@@ -488,17 +585,29 @@ export default function ProductsPage() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell  className={editValues ? " flex gap-2": " flex gap-2 pl-8"}>
+                        <TableCell
+                          className={
+                            editValues ? " flex gap-2" : " flex gap-2 pl-8"
+                          }
+                        >
                           {editingId === p.id ? (
                             <>
-                              <Button size="sm" onClick={saveEdit} className={"bg-green-400 hover:bg-green-300 hover:text-green-800"}>
+                              <Button
+                                size="sm"
+                                onClick={saveEdit}
+                                className={
+                                  "bg-green-400 hover:bg-green-300 hover:text-green-800"
+                                }
+                              >
                                 <Save className="w-4 h-4" /> Save
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={cancelEdit}
-                                className={"hover:bg-gray-300 hover:text-gray-700"}
+                                className={
+                                  "hover:bg-gray-300 hover:text-gray-700"
+                                }
                               >
                                 Cancel
                               </Button>
@@ -509,7 +618,9 @@ export default function ProductsPage() {
                                 size="sm"
                                 variant="secondary"
                                 onClick={() => startEdit(p)}
-                                className={"hover:bg-gray-300 hover:text-gray-700"}
+                                className={
+                                  "hover:bg-gray-300 hover:text-gray-700"
+                                }
                               >
                                 <Pencil className="w-4 h-4" />
                               </Button>
@@ -517,7 +628,9 @@ export default function ProductsPage() {
                                 size="sm"
                                 variant="destructive"
                                 onClick={() => deleteProduct(p.id)}
-                                className={"hover:bg-red-300 hover:text-red-800"}
+                                className={
+                                  "hover:bg-red-300 hover:text-red-800"
+                                }
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -525,7 +638,9 @@ export default function ProductsPage() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => router.push(`/products/${p.id}`)}
-                                className={"hover:bg-gray-300 hover:text-gray-700"}
+                                className={
+                                  "hover:bg-gray-300 hover:text-gray-700"
+                                }
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
@@ -537,7 +652,7 @@ export default function ProductsPage() {
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={7}
+                        colSpan={8}
                         className="text-center text-gray-500"
                       >
                         No products found.

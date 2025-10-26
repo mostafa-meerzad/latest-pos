@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 export const GET = async () => {
   try {
     const products = await prisma.product.findMany({
-      where: {isDeleted: false},
+      where: { isDeleted: false },
       include: { category: true, supplier: true },
     });
     return NextResponse.json(
@@ -23,17 +23,18 @@ export const GET = async () => {
 
 export const POST = async (request) => {
   try {
+    // ✅ Parse and validate body
     let body;
     try {
       body = await request.json();
-    } catch (e) {
+    } catch {
       return NextResponse.json(
         { success: false, error: "Invalid or empty JSON payload" },
         { status: 400 }
       );
     }
 
-    if (Object.keys(body).length === 0) {
+    if (!body || Object.keys(body).length === 0) {
       return NextResponse.json(
         { success: false, error: "Request body cannot be empty" },
         { status: 400 }
@@ -60,7 +61,7 @@ export const POST = async (request) => {
       supplierId,
     } = validation.data;
 
-    // Ensure category exists
+    // ✅ Ensure category exists
     const category = await prisma.category.findUnique({
       where: { id: categoryId },
     });
@@ -79,7 +80,7 @@ export const POST = async (request) => {
       data: { status: STATUS.ACTIVE },
     });
 
-    //  Ensure supplier exists
+    // ✅ Ensure supplier exists (if provided)
     if (supplierId) {
       const supplier = await prisma.supplier.findUnique({
         where: { id: supplierId },
@@ -100,19 +101,21 @@ export const POST = async (request) => {
       });
     }
 
-    // Check if product already exists
-    let product = await prisma.product.findFirst({ where: { name } });
-    // or by barcode
-    if (barcode)
-      product = await prisma.product.findUnique({
-        where: { barcode: barcode },
-      });
-    if (product)
+    // ✅ Prevent duplicate product (by name or barcode)
+    const existingProduct = await prisma.product.findFirst({
+      where: {
+        OR: [{ name }, ...(barcode ? [{ barcode }] : [])],
+      },
+    });
+
+    if (existingProduct) {
       return NextResponse.json(
         { success: false, error: "Product already exists" },
         { status: 409 }
       );
+    }
 
+    // ✅ Create new product
     const newProduct = await prisma.product.create({
       data: {
         name,
@@ -132,6 +135,17 @@ export const POST = async (request) => {
       { status: 201 }
     );
   } catch (error) {
+    // ✅ Handle Prisma unique constraint or other internal errors
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Duplicate product (unique constraint failed)",
+        },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
       { success: false, error: error.message || "Internal server error" },
       { status: 500 }
