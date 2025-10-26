@@ -95,6 +95,7 @@ export default function ProductsPage() {
     const priceNum = Number(editValues.price);
     const stockNum = Number(editValues.stockQuantity);
     const costNum = Number(editValues.costPrice ?? 0);
+    const unit = editValues.unit || "pcs";
 
     if (isNaN(priceNum) || editValues.price === "" || priceNum < 0) {
       toast.error("Price cannot be empty or negative.");
@@ -108,8 +109,20 @@ export default function ProductsPage() {
       return;
     }
 
+    // Validate stock quantity based on unit type
+    if (unit === "pcs") {
+      if (!Number.isInteger(stockNum)) {
+        toast.error(
+          "Stock quantity must be a whole number for items sold by piece (pcs)."
+        );
+        toast.dismiss();
+        return;
+      }
+    }
+    // For kg, decimal values are allowed
+
     if (priceNum < costNum) {
-      toast.error("Price cannot be less than the product’s cost price.");
+      toast.error("Price cannot be less than the product's cost price.");
       return;
     }
 
@@ -126,7 +139,7 @@ export default function ProductsPage() {
         setProducts((prev) =>
           prev.map((p) => (p.id === editingId ? { ...p, ...editValues } : p))
         );
-        resetEditState(); // ← just reset state, no "canceled" toast
+        resetEditState();
         toast.success("Product updated successfully.");
       } else {
         toast.error("Failed to update product.");
@@ -235,15 +248,15 @@ export default function ProductsPage() {
   return (
     <motion.div
       className="p-6 space-y-6"
-      initial={{ opacity: 0,  }}
-      animate={{ opacity: 1,  }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
       {/* Header */}
       <motion.div
         className="flex items-center justify-between"
-        initial={{ opacity: 0,  }}
-        animate={{ opacity: 1, }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
       >
         <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -281,9 +294,7 @@ export default function ProductsPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-      >
-       
-      </motion.div>
+      ></motion.div>
 
       {/* Table */}
       <Card>
@@ -292,8 +303,8 @@ export default function ProductsPage() {
             <motion.div
               // className="p-6 max-w-6xl mx-auto mt-8"
               className="-m-6"
-              initial={{ opacity: 0, }}
-              animate={{ opacity: 1,  }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
             >
               <Card className="overflow-hidden rounded-2xl border-none ">
@@ -305,6 +316,7 @@ export default function ProductsPage() {
                         <th className="px-6 py-3">Product</th>
                         <th className="px-6 py-3">Price</th>
                         <th className="px-6 py-3">Stock</th>
+                        <th className="px-6 py-3">Unit</th>
                         <th className="px-6 py-3">Expiry</th>
                         <th className="px-6 py-3">Status</th>
                         <th className="px-6 py-3">Actions</th>
@@ -333,6 +345,11 @@ export default function ProductsPage() {
                           </td>
 
                           {/* Stock */}
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-6 w-10 rounded-md" />
+                          </td>
+
+                          {/* Unit */}
                           <td className="px-6 py-3">
                             <Skeleton className="h-6 w-10 rounded-md" />
                           </td>
@@ -368,19 +385,22 @@ export default function ProductsPage() {
                   <TableHead>Product</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
+                  <TableHead>Unit</TableHead>
                   <TableHead>Expiry</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className={editValues? "":" pl-8"}>Actions</TableHead>
+                  <TableHead className={editValues ? "" : " pl-8"}>
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody >
+              <TableBody>
                 <AnimatePresence>
                   {paginatedData.length > 0 ? (
                     paginatedData.map((p) => (
                       <motion.tr
                         key={p.id}
-                        initial={{ opacity: 0, }}
-                        animate={{ opacity: 1,  }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         className="border-b "
@@ -421,16 +441,83 @@ export default function ProductsPage() {
                           {editingId === p.id ? (
                             <Input
                               type="number"
+                              step={editValues?.unit === "kg" ? "0.01" : "1"} // Allow decimals for kg
                               value={editValues?.stockQuantity || ""}
-                              onChange={(e) =>
-                                setEditValues((s) => ({
-                                  ...s,
-                                  stockQuantity: Number(e.target.value),
-                                }))
-                              }
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                const unit = editValues?.unit || p.unit;
+
+                                if (value === "") {
+                                  setEditValues((s) => ({
+                                    ...s,
+                                    stockQuantity: "",
+                                  }));
+                                  return;
+                                }
+
+                                const numValue = Number(value);
+
+                                // Validate based on unit type
+                                if (unit === "pcs") {
+                                  // For pcs, only allow integers
+                                  if (
+                                    Number.isInteger(numValue) &&
+                                    numValue >= 0
+                                  ) {
+                                    setEditValues((s) => ({
+                                      ...s,
+                                      stockQuantity: numValue,
+                                    }));
+                                  }
+                                } else {
+                                  // For kg, allow decimals
+                                  if (numValue >= 0) {
+                                    setEditValues((s) => ({
+                                      ...s,
+                                      stockQuantity: numValue,
+                                    }));
+                                  }
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                const unit = editValues?.unit || p.unit;
+
+                                if (unit === "pcs") {
+                                  // For pcs, block decimal point
+                                  if (["-", ".", "e", "E"].includes(e.key))
+                                    e.preventDefault();
+                                } else {
+                                  // For kg, only block negative and scientific notation
+                                  if (["-", "e", "E"].includes(e.key))
+                                    e.preventDefault();
+                                }
+                              }}
                             />
+                          ) : // Display with proper formatting
+                          p.unit === "kg" ? (
+                            Number(p.stockQuantity).toFixed(2)
                           ) : (
                             p.stockQuantity
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === p.id ? (
+                            <Select
+                              value={editValues?.unit || "pcs"}
+                              onValueChange={(v) =>
+                                setEditValues((s) => ({ ...s, unit: v }))
+                              }
+                            >
+                              <SelectTrigger className="w-[100px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pcs">pcs</SelectItem>
+                                <SelectItem value="kg">kg</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            p.unit || "-"
                           )}
                         </TableCell>
                         <TableCell>
@@ -458,7 +545,7 @@ export default function ProductsPage() {
                             ""
                           )}
                         </TableCell>
-                        <TableCell className={editValues ? "": " pr-8"}>
+                        <TableCell className={editValues ? "" : " pr-8"}>
                           {editingId === p.id ? (
                             <Select
                               value={editValues?.status || "ACTIVE"}
@@ -488,17 +575,29 @@ export default function ProductsPage() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell  className={editValues ? " flex gap-2": " flex gap-2 pl-8"}>
+                        <TableCell
+                          className={
+                            editValues ? " flex gap-2" : " flex gap-2 pl-8"
+                          }
+                        >
                           {editingId === p.id ? (
                             <>
-                              <Button size="sm" onClick={saveEdit} className={"bg-green-400 hover:bg-green-300 hover:text-green-800"}>
+                              <Button
+                                size="sm"
+                                onClick={saveEdit}
+                                className={
+                                  "bg-green-400 hover:bg-green-300 hover:text-green-800"
+                                }
+                              >
                                 <Save className="w-4 h-4" /> Save
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={cancelEdit}
-                                className={"hover:bg-gray-300 hover:text-gray-700"}
+                                className={
+                                  "hover:bg-gray-300 hover:text-gray-700"
+                                }
                               >
                                 Cancel
                               </Button>
@@ -509,7 +608,9 @@ export default function ProductsPage() {
                                 size="sm"
                                 variant="secondary"
                                 onClick={() => startEdit(p)}
-                                className={"hover:bg-gray-300 hover:text-gray-700"}
+                                className={
+                                  "hover:bg-gray-300 hover:text-gray-700"
+                                }
                               >
                                 <Pencil className="w-4 h-4" />
                               </Button>
@@ -517,7 +618,9 @@ export default function ProductsPage() {
                                 size="sm"
                                 variant="destructive"
                                 onClick={() => deleteProduct(p.id)}
-                                className={"hover:bg-red-300 hover:text-red-800"}
+                                className={
+                                  "hover:bg-red-300 hover:text-red-800"
+                                }
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -525,7 +628,9 @@ export default function ProductsPage() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => router.push(`/products/${p.id}`)}
-                                className={"hover:bg-gray-300 hover:text-gray-700"}
+                                className={
+                                  "hover:bg-gray-300 hover:text-gray-700"
+                                }
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>

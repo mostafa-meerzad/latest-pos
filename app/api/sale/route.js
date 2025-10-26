@@ -66,7 +66,7 @@ export async function POST(req) {
     // ✅ VALIDATE STOCK BEFORE CREATING SALE
     for (const item of items) {
       const productId = Number(item.productId);
-      const quantity = Number(item.quantity);
+      const quantity = parseFloat(item.quantity);
 
       const product = await prisma.product.findUnique({
         where: { id: productId },
@@ -99,7 +99,7 @@ export async function POST(req) {
     // ✅ Create items & update stock
     for (const item of items) {
       const productId = Number(item.productId);
-      const quantity = Number(item.quantity);
+      const quantity = parseFloat(item.quantity);
       const unitPrice = Number(item.unitPrice ?? 0);
       const discount = Number(item.discount ?? 0);
       const subtotal = Number(item.subtotal ?? unitPrice * quantity);
@@ -180,7 +180,7 @@ export async function GET(req) {
     if (search && search.trim() !== "") {
       const searchNum = Number(search);
       const isNumber = !isNaN(searchNum) && searchNum > 0;
-      
+
       where.OR = [
         // Search by customer name - removed mode: "insensitive"
         {
@@ -247,14 +247,12 @@ export async function GET(req) {
   } catch (err) {
     console.error("❌ Failed to fetch sales:", err);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: "Failed to fetch sales",
-        details: err.message 
+        details: err.message,
       },
       { status: 500 }
     );
   }
 }
-
-
