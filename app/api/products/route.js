@@ -59,9 +59,22 @@ export const POST = async (request) => {
       stockQuantity,
       expiryDate,
       supplierId,
+      unit,
     } = validation.data;
 
-    // ✅ Ensure category exists
+    // ✅ Validate allowed unit values
+    const validUnits = ["pcs", "kg"];
+    if (!validUnits.includes(unit)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Invalid unit value. Allowed values are: ${validUnits.join(", ")}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Ensure category exists
     const category = await prisma.category.findUnique({
       where: { id: categoryId },
     });
@@ -127,6 +140,7 @@ export const POST = async (request) => {
         stockQuantity,
         expiryDate: expiryDate ? new Date(expiryDate) : null,
         supplierId,
+        unit,
       },
     });
 

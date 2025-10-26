@@ -10,7 +10,7 @@ export const saleSchema = z.object({
     .array(
       z.object({
         productId: z.number().int(),
-        quantity: z.number().int().positive(),
+        quantity: z.number().positive(),
         unitPrice: z.number().int().nonnegative(),
         discount: z.number().int().nonnegative().default(0),
         subtotal: z.number().int().nonnegative(),

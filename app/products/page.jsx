@@ -94,6 +94,7 @@ export default function ProductsPage() {
     const priceNum = Number(editValues.price);
     const stockNum = Number(editValues.stockQuantity);
     const costNum = Number(editValues.costPrice ?? 0);
+    const unit = editValues.unit || "pcs";
 
     if (isNaN(priceNum) || editValues.price === "" || priceNum < 0) {
       toast.error("Price cannot be empty or negative or an invalid value.");
@@ -106,8 +107,20 @@ export default function ProductsPage() {
       return;
     }
 
+    // Validate stock quantity based on unit type
+    if (unit === "pcs") {
+      if (!Number.isInteger(stockNum)) {
+        toast.error(
+          "Stock quantity must be a whole number for items sold by piece (pcs)."
+        );
+        toast.dismiss();
+        return;
+      }
+    }
+    // For kg, decimal values are allowed
+
     if (priceNum < costNum) {
-      toast.error("Price cannot be less than the product’s cost price.");
+      toast.error("Price cannot be less than the product's cost price.");
       return;
     }
     toast.loading("Saving changes...");
@@ -124,7 +137,7 @@ export default function ProductsPage() {
         setProducts((prev) =>
           prev.map((p) => (p.id === editingId ? { ...p, ...editValues } : p))
         );
-        resetEditState(); // ← just reset state, no "canceled" toast
+        resetEditState();
         toast.success("Product updated successfully.");
       } else {
         toast.dismiss();
@@ -361,6 +374,7 @@ export default function ProductsPage() {
                         <th className="px-6 py-3">Barcode</th>
                         <th className="px-6 py-3">Price</th>
                         <th className="px-6 py-3">Stock</th>
+                        <th className="px-6 py-3">Unit</th>
                         <th className="px-6 py-3">Expiry</th>
                         <th className="px-6 py-3">Status</th>
                         <th className="px-6 py-3">Actions</th>
@@ -398,6 +412,11 @@ export default function ProductsPage() {
                             <Skeleton className="h-6 w-10 rounded-md" />
                           </td>
 
+                          {/* Unit */}
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-6 w-10 rounded-md" />
+                          </td>
+
                           {/* Expiry */}
                           <td className="px-6 py-3">
                             <Skeleton className="h-6 w-24 rounded-md" />
@@ -430,6 +449,7 @@ export default function ProductsPage() {
                   <TableHead>Barcode</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
+                  <TableHead>Unit</TableHead>
                   <TableHead>Expiry</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className={editValues ? "" : " pl-8"}>
@@ -503,31 +523,83 @@ export default function ProductsPage() {
                           {editingId === p.id ? (
                             <Input
                               type="number"
-                              min={0}
-                              step={1}
-                              value={editValues?.stockQuantity ?? ""}
+                              step={editValues?.unit === "kg" ? "0.01" : "1"} // Allow decimals for kg
+                              value={editValues?.stockQuantity || ""}
                               onChange={(e) => {
-                                const val = e.target.value;
-                                // Allow clearing the field while editing
-                                if (val === "") {
+                                const value = e.target.value;
+                                const unit = editValues?.unit || p.unit;
+
+                                if (value === "") {
                                   setEditValues((s) => ({
                                     ...s,
                                     stockQuantity: "",
                                   }));
                                   return;
                                 }
-                                const num = Number(val);
-                                // Ignore invalid numeric input
-                                if (isNaN(num)) return;
-                                // Clamp negatives to 0
-                                setEditValues((s) => ({
-                                  ...s,
-                                  stockQuantity: num < 0 ? 0 : num,
-                                }));
+
+                                const numValue = Number(value);
+
+                                // Validate based on unit type
+                                if (unit === "pcs") {
+                                  // For pcs, only allow integers
+                                  if (
+                                    Number.isInteger(numValue) &&
+                                    numValue >= 0
+                                  ) {
+                                    setEditValues((s) => ({
+                                      ...s,
+                                      stockQuantity: numValue,
+                                    }));
+                                  }
+                                } else {
+                                  // For kg, allow decimals
+                                  if (numValue >= 0) {
+                                    setEditValues((s) => ({
+                                      ...s,
+                                      stockQuantity: numValue,
+                                    }));
+                                  }
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                const unit = editValues?.unit || p.unit;
+
+                                if (unit === "pcs") {
+                                  // For pcs, block decimal point
+                                  if (["-", ".", "e", "E"].includes(e.key))
+                                    e.preventDefault();
+                                } else {
+                                  // For kg, only block negative and scientific notation
+                                  if (["-", "e", "E"].includes(e.key))
+                                    e.preventDefault();
+                                }
                               }}
                             />
+                          ) : // Display with proper formatting
+                          p.unit === "kg" ? (
+                            Number(p.stockQuantity).toFixed(2)
                           ) : (
                             p.stockQuantity
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === p.id ? (
+                            <Select
+                              value={editValues?.unit || "pcs"}
+                              onValueChange={(v) =>
+                                setEditValues((s) => ({ ...s, unit: v }))
+                              }
+                            >
+                              <SelectTrigger className="w-[100px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pcs">pcs</SelectItem>
+                                <SelectItem value="kg">kg</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            p.unit || "-"
                           )}
                         </TableCell>
                         <TableCell>

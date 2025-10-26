@@ -34,13 +34,14 @@ const productSchema = z.object({
 
   stockQuantity: z
     .number("Stock quantity is required")
-    .int()
     .nonnegative("Stock quantity cannot be negative"),
 
   // Make expiry date optional and nullable
   expiryDate: z.coerce.date("Expiry date must be a valid date").optional().nullable(),
 
   status: z.enum(Object.values(STATUS), "Status is required").default(STATUS.ACTIVE),
+
+  unit: z.enum(["pcs", "kg"]),
 });
 
 // Create schema (all fields required)

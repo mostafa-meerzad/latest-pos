@@ -1,22 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import "./numeric-keyboard.css";
 
 const NumericKeyboard = ({ onInput }) => {
-  const [inputValue, setInputValue] = useState("");
-
-  const handleInput = (value) => {
-    if (value === "backspace") {
-      const newValue = inputValue.slice(0, -1);
-      setInputValue(newValue);
-      onInput && onInput("backspace");
-    } else if (value === "clear") {
-      setInputValue("");
-      onInput && onInput("clear");
-    } else {
-      const newValue = inputValue + value;
-      setInputValue(newValue);
-      onInput && onInput(value);
-    }
+  const handleButtonClick = (value, e) => {
+    e.preventDefault(); // Prevent default behavior
+    e.stopPropagation(); // Stop event bubbling
+    onInput(value);
   };
 
   return (
@@ -24,32 +13,37 @@ const NumericKeyboard = ({ onInput }) => {
       {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
         <button
           key={num}
-          onClick={() => handleInput(num)}
+          onClick={(e) => handleButtonClick(num, e)}
           className="numeric-key"
+          type="button"
         >
           {num}
         </button>
       ))}
 
-      
-
       <button
-        onClick={() => handleInput("backspace")}
+        onClick={(e) => handleButtonClick("backspace", e)}
         className="numeric-key"
         title="Backspace"
+        type="button"
       >
         ⌫
       </button>
 
-      <button onClick={() => handleInput("0")} className="numeric-key zero">
+      <button 
+        onClick={(e) => handleButtonClick("0", e)} 
+        className="numeric-key zero"
+        type="button"
+      >
         0
       </button>
 
       <button
-        onClick={() => handleInput("clear")}
-        className="numeric-key clear"
+        onClick={(e) => handleButtonClick(".", e)}
+        className="numeric-key decimal"
+        type="button"
       >
-        Clear
+        .
       </button>
     </div>
   );

@@ -15,7 +15,7 @@ export const GET = async (request, { params }) => {
     }
 
     const product = await prisma.product.findUnique({
-      where: { id : Number(id) },
+      where: { id: Number(id) },
       include: { category: true, supplier: true },
     });
 
@@ -81,6 +81,7 @@ export const PUT = async (request, { params }) => {
       stockQuantity,
       expiryDate,
       supplierId,
+      unit,
     } = validation.data;
 
     // Ensure product exists
@@ -134,6 +135,16 @@ export const PUT = async (request, { params }) => {
     if (barcode !== undefined) updateData.barcode = barcode;
     if (stockQuantity !== undefined) updateData.stockQuantity = stockQuantity;
     if (expiryDate !== undefined) updateData.expiryDate = expiryDate;
+    if (unit) {
+      const allowedUnits = ["pcs", "kg"];
+      if (!allowedUnits.includes(unit)) {
+        return NextResponse.json(
+          { success: false, error: "Invalid unit. Allowed values: pcs or kg." },
+          { status: 400 }
+        );
+      }
+      updateData.unit = unit;
+    }
 
     const updateProduct = await prisma.product.update({
       where: { id: Number(id) },

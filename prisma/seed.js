@@ -134,77 +134,77 @@ async function main() {
     console.log("ℹ️ WALK-IN CUSTOMER already exists.");
   }
 
-  // === SUPPLIERS ===
-  const suppliersData = Array.from({ length: 10 }).map((_, i) => ({
-    name: `Supplier ${i + 1}`,
-    contactPerson: `Contact ${i + 1}`,
-    phone: `0900${100000 + i}`,
-    email: `supplier${i + 1}@example.com`,
-    address: `Supplier Address ${i + 1}`,
-  }));
+//   // === SUPPLIERS ===
+//   const suppliersData = Array.from({ length: 10 }).map((_, i) => ({
+//     name: `Supplier ${i + 1}`,
+//     contactPerson: `Contact ${i + 1}`,
+//     phone: `0900${100000 + i}`,
+//     email: `supplier${i + 1}@example.com`,
+//     address: `Supplier Address ${i + 1}`,
+//   }));
 
-  await prisma.supplier.createMany({
-    data: suppliersData,
-    skipDuplicates: true,
-  });
-  console.log("✅ 10 suppliers seeded.");
+//   await prisma.supplier.createMany({
+//     data: suppliersData,
+//     skipDuplicates: true,
+//   });
+//   console.log("✅ 10 suppliers seeded.");
 
-  // === CATEGORIES ===
-  const categoriesData = [
-    "Dog Food",
-    "Cat Food",
-    "Fish Supplies",
-    "Bird Supplies",
-    "Reptile Supplies",
-    "Small Animal Toys",
-    "Pet Grooming",
-    "Pet Medicine",
-    "Pet Accessories",
-    "Aquarium Equipment",
-  ].map((name) => ({ name }));
+//   // === CATEGORIES ===
+//   const categoriesData = [
+//     "Dog Food",
+//     "Cat Food",
+//     "Fish Supplies",
+//     "Bird Supplies",
+//     "Reptile Supplies",
+//     "Small Animal Toys",
+//     "Pet Grooming",
+//     "Pet Medicine",
+//     "Pet Accessories",
+//     "Aquarium Equipment",
+//   ].map((name) => ({ name }));
 
-  await prisma.category.createMany({
-    data: categoriesData,
-    skipDuplicates: true,
-  });
-  console.log("✅ 10 categories seeded.");
+//   await prisma.category.createMany({
+//     data: categoriesData,
+//     skipDuplicates: true,
+//   });
+//   console.log("✅ 10 categories seeded.");
 
-  // === PRODUCTS ===
-  const categories = await prisma.category.findMany();
-  const suppliers = await prisma.supplier.findMany();
+//   // === PRODUCTS ===
+//   const categories = await prisma.category.findMany();
+//   const suppliers = await prisma.supplier.findMany();
 
-  const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+//   const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-  const productsData = Array.from({ length: 20 }).map((_, i) => ({
-    name: `Product ${i + 1}`,
-    barcode: `P${1000 + i}`,
-    categoryId: randomFrom(categories).id,
-    supplierId: randomFrom(suppliers).id,
-    price: Math.floor(Math.random() * 2000) + 500, // between 500 - 2500
-    costPrice: Math.floor(Math.random() * 500) + 200, // between 200 - 700
-    stockQuantity: Math.floor(Math.random() * 50) + 50, // 50 - 100 units
-    expiryDate: null,
-  }));
+//   const productsData = Array.from({ length: 20 }).map((_, i) => ({
+//     name: `Product ${i + 1}`,
+//     barcode: `P${1000 + i}`,
+//     categoryId: randomFrom(categories).id,
+//     supplierId: randomFrom(suppliers).id,
+//     price: Math.floor(Math.random() * 2000) + 500, // between 500 - 2500
+//     costPrice: Math.floor(Math.random() * 500) + 200, // between 200 - 700
+//     stockQuantity: Math.floor(Math.random() * 50) + 50, // 50 - 100 units
+//     expiryDate: null,
+//   }));
 
-  await prisma.product.createMany({
-    data: productsData,
-    skipDuplicates: true,
-  });
-  console.log("✅ 20 products seeded.");
+//   await prisma.product.createMany({
+//     data: productsData,
+//     skipDuplicates: true,
+//   });
+//   console.log("✅ 20 products seeded.");
 
-  // === DELIVERY DRIVERS ===
-  const driversData = Array.from({ length: 8 }).map((_, i) => ({
-    name: `Driver ${i + 1}`,
-    phone: `0912${100000 + i}`,
-  }));
+//   // === DELIVERY DRIVERS ===
+//   const driversData = Array.from({ length: 8 }).map((_, i) => ({
+//     name: `Driver ${i + 1}`,
+//     phone: `0912${100000 + i}`,
+//   }));
 
-  await prisma.deliveryDriver.createMany({
-    data: driversData,
-    skipDuplicates: true,
-  });
-  console.log("✅ 8 delivery drivers seeded.");
+//   await prisma.deliveryDriver.createMany({
+//     data: driversData,
+//     skipDuplicates: true,
+//   });
+//   console.log("✅ 8 delivery drivers seeded.");
 
-  console.log("🎉 All seed data created successfully!");
+//   console.log("🎉 All seed data created successfully!");
 }
 
 main()

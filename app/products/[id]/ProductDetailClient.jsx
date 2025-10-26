@@ -170,6 +170,7 @@ export default function ProductDetailClient({ id }) {
     expiryDate,
     status,
     isDeleted,
+    unit,
   } = product;
 
   return (
@@ -223,6 +224,7 @@ export default function ProductDetailClient({ id }) {
                 value={`AFG ${Number(costPrice).toLocaleString()}`}
               />
               <Detail label="Stock Quantity" value={stockQuantity} />
+              <Detail label="Unit" value={unit || ""} />
               <Detail label="Expiry Date" value={formatDate(expiryDate)} />
               <Detail
                 label="Status"
