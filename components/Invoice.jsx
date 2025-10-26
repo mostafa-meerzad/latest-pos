@@ -3,12 +3,10 @@
 import React, { forwardRef } from "react";
 
 const Invoice = forwardRef(({ items, customer, totals, saleId, date }, ref) => {
-
   // ✅ Format date to YYYY/MM/DD
   const formattedDate = date
     ? new Date(date).toISOString().split("T")[0].replace(/-/g, "/")
     : "";
-
 
   return (
     <div
@@ -38,9 +36,10 @@ const Invoice = forwardRef(({ items, customer, totals, saleId, date }, ref) => {
           {items.map((it) => (
             <tr key={it.tempId}>
               <td>{it.name}</td>
-              <td className="text-right">{it.quantity}</td>
-              <td className="text-right">AFN {it.unitPrice.toFixed(2)}</td>
-              <td className="text-right">AFN {it.subtotal.toFixed(2)}</td>
+              <td className="text-right">{it.quantity}
+              {it.unit === "pcs" ? " pcs " : it.unit === "kg" ? " kg " : ""} </td>
+              <td className="text-right">AFN {it.unitPrice}</td>
+              <td className="text-right">AFN {it.subtotal}</td>
             </tr>
           ))}
         </tbody>
@@ -49,15 +48,15 @@ const Invoice = forwardRef(({ items, customer, totals, saleId, date }, ref) => {
       <div className="mt-2 space-y-1">
         <div className="flex justify-between text-xs">
           <span>Subtotal:</span>
-          <span>AFN {totals.subtotal.toFixed(2)}</span>
+          <span>AFN {totals.subtotal}</span>
         </div>
         <div className="flex justify-between text-xs">
           <span>Discount:</span>
-          <span>-AFN {totals.discount.toFixed(2)}</span>
+          <span>-AFN {totals.discount}</span>
         </div>
         <div className="flex justify-between font-bold">
           <span>Total:</span>
-          <span>AFN {totals.final.toFixed(2)}</span>
+          <span>AFN {totals.final}</span>
         </div>
       </div>
 

@@ -205,7 +205,7 @@ export default function AddSalePage() {
 
     const unitPrice = Number(selectedProduct.price || 0);
     const discount = Number(itemDiscount || 0);
-    const subtotal = +(unitPrice * quantity - discount);
+    const subtotal = Math.floor(unitPrice * quantity - discount);
 
     const item = {
       tempId: genTempId(),
@@ -215,7 +215,7 @@ export default function AddSalePage() {
       unitPrice,
       quantity,
       discount,
-      subtotal: +subtotal.toFixed(2),
+      subtotal: subtotal,
       expiryDate: selectedProduct.expiryDate || null,
       unit: productUnit,
     };
@@ -252,10 +252,10 @@ export default function AddSalePage() {
 
     const updated = {
       ...editValues,
-      subtotal: +(
+      subtotal: Math.floor(
         Number(editValues.unitPrice || 0) * Number(editValues.quantity || 0) -
-        Number(editValues.discount || 0)
-      ).toFixed(2),
+          Number(editValues.discount || 0)
+      ),
     };
     updateItem(editingId, updated);
     toast.success("Item updated");
@@ -264,12 +264,16 @@ export default function AddSalePage() {
   }
 
   const totals = useMemo(() => {
-    const subtotal = items.reduce(
-      (s, it) => s + Number(it.unitPrice || 0) * Number(it.quantity || 0),
-      0
+    const subtotal = Math.floor(
+      items.reduce(
+        (s, it) => s + Number(it.unitPrice || 0) * Number(it.quantity || 0),
+        0
+      )
     );
-    const discount = items.reduce((s, it) => s + Number(it.discount || 0), 0);
-    const final = +(subtotal - discount).toFixed(2);
+    const discount = Math.floor(
+      items.reduce((s, it) => s + Number(it.discount || 0), 0)
+    );
+    const final = Math.floor(subtotal - discount);
     return { subtotal, discount, final };
   }, [items]);
 
@@ -288,15 +292,18 @@ export default function AddSalePage() {
     const payload = {
       customerId: customer?.id ?? 1,
       paymentMethod: paymentMethod || "cash",
-      taxAmount: Number(taxAmount || 0),
+      taxAmount: Math.floor(Number(taxAmount || 0)),
       items: items.map((it) => ({
         productId: it.productId,
-        quantity: Number(it.quantity),
-        unitPrice: Number(it.unitPrice),
-        discount: Number(it.discount || 0),
-        subtotal: Number(it.subtotal),
+        quantity:
+          it.unit === "kg"
+            ? Number(it.quantity)
+            : Math.floor(Number(it.quantity)), // Preserve decimals for kg, integer for pcs
+        unitPrice: Math.floor(Number(it.unitPrice)),
+        discount: Math.floor(Number(it.discount || 0)),
+        subtotal: Math.floor(Number(it.subtotal)),
       })),
-      totalAmount: Number((totals.final + Number(taxAmount || 0)).toFixed(2)),
+      totalAmount: Math.floor(totals.final + Number(taxAmount || 0)),
     };
 
     setIsSubmitting(true);
@@ -357,15 +364,18 @@ export default function AddSalePage() {
     const payload = {
       customerId: customer?.id ?? 1,
       paymentMethod: paymentMethod || "cash",
-      taxAmount: Number(taxAmount || 0),
+      taxAmount: Math.floor(Number(taxAmount || 0)),
       items: items.map((it) => ({
         productId: it.productId,
-        quantity: Number(it.quantity),
-        unitPrice: Number(it.unitPrice),
-        discount: Number(it.discount || 0),
-        subtotal: Number(it.subtotal),
+        quantity:
+          it.unit === "kg"
+            ? Number(it.quantity)
+            : Math.floor(Number(it.quantity)), // Preserve decimals for kg, integer for pcs
+        unitPrice: Math.floor(Number(it.unitPrice)),
+        discount: Math.floor(Number(it.discount || 0)),
+        subtotal: Math.floor(Number(it.subtotal)),
       })),
-      totalAmount: Number((totals.final + Number(taxAmount || 0)).toFixed(2)),
+      totalAmount: Math.floor(totals.final + Number(taxAmount || 0)),
     };
 
     setIsSubmitting(true);
@@ -848,7 +858,8 @@ export default function AddSalePage() {
                         }
                       }}
                       onKeyDown={(e) => {
-                        if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault();
+                        if (["-", ".", "e", "E"].includes(e.key))
+                          e.preventDefault();
                       }}
                     />
                   </div>
@@ -932,7 +943,8 @@ export default function AddSalePage() {
                         }
                       }}
                       onKeyDown={(e) => {
-                        if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault();
+                        if (["-", ".", "e", "E"].includes(e.key))
+                          e.preventDefault();
                       }}
                     />
                   </div>
@@ -1026,7 +1038,9 @@ export default function AddSalePage() {
                               type="number"
                               step="1"
                               min={0}
-                              value={String(editValues?.unitPrice ?? row.unitPrice)}
+                              value={String(
+                                editValues?.unitPrice ?? row.unitPrice
+                              )}
                               readOnly
                               inputMode="none"
                               onChange={(e) =>
@@ -1037,7 +1051,7 @@ export default function AddSalePage() {
                               }
                             />
                           ) : (
-                            "AFN " + Number(row.unitPrice).toFixed(2)
+                            "AFN " + Number(row.unitPrice)
                           )}
                         </TableCell>
                         <TableCell className="w-28">
@@ -1117,7 +1131,9 @@ export default function AddSalePage() {
                               type="number"
                               min={0}
                               step="1"
-                              value={String(editValues?.discount ?? row.discount)}
+                              value={String(
+                                editValues?.discount ?? row.discount
+                              )}
                               readOnly
                               inputMode="none"
                               onChange={(e) =>
@@ -1128,18 +1144,18 @@ export default function AddSalePage() {
                               }
                             />
                           ) : (
-                            "AFN " + Number(row.discount || 0).toFixed(2)
+                            "AFN " + Number(row.discount || 0)
                           )}
                         </TableCell>
                         <TableCell>
                           {editingId === row.tempId
                             ? "AFN " +
-                              (
+                              Math.floor(
                                 Number(editValues?.unitPrice || 0) *
                                   Number(editValues?.quantity || 0) -
-                                Number(editValues?.discount || 0)
-                              ).toFixed(2)
-                            : "AFN " + Number(row.subtotal).toFixed(2)}
+                                  Number(editValues?.discount || 0)
+                              )
+                            : "AFN " + row.subtotal}
                         </TableCell>
                         <TableCell className="w-36">
                           {editingId === row.tempId ? (
@@ -1182,17 +1198,16 @@ export default function AddSalePage() {
               <div className="mt-4 flex justify-end gap-4">
                 <div className="bg-slate-50 p-3 rounded border text-right">
                   <div className="text-sm text-gray-600">
-                    Subtotal: AFN {totals.subtotal.toFixed(2)}
+                    Subtotal: AFN {Math.floor(totals.subtotal)}
                   </div>
                   <div className="text-sm text-gray-600">
-                    Discounts: -AFN {totals.discount.toFixed(2)}
+                    Discounts: -AFN {Math.floor(totals.discount)}
                   </div>
                   <div className="text-sm text-gray-600">
-                    Tax: AFN {Number(taxAmount || 0).toFixed(2)}
+                    Tax: AFN {Math.floor(Number(taxAmount || 0))}
                   </div>
                   <div className="text-xl font-semibold mt-1">
-                    Total: AFN{" "}
-                    {(totals.final + Number(taxAmount || 0)).toFixed(2)}
+                    Total: AFN {Math.floor(totals.final + (taxAmount || 0))}
                   </div>
                 </div>
               </div>
