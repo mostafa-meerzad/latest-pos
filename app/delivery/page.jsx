@@ -2,7 +2,7 @@
 
 import DeliveryImg from "@/assets/delivery_img.png";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,9 @@ import { Pencil, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast"; // ✅ Added Toaster import
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import Delivery from "@/components/Delivery";
+import { useReactToPrint } from "react-to-print";
 
 export default function DeliveryPage() {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -44,6 +47,9 @@ export default function DeliveryPage() {
   const [driverSuggestionsVisible, setDriverSuggestionsVisible] =
     useState(false);
   const [user, setUser] = useState(null);
+  const [lastPrintedDelivery, setLastPrintedDelivery] = useState(null);
+  const deliveryRef = useRef(null);
+  const handlePrintDelivery = useReactToPrint({ contentRef: deliveryRef });
 
   const itemsPerPage = 6;
 
@@ -289,6 +295,21 @@ export default function DeliveryPage() {
       toast.error("Something went wrong while deleting.", { id: toastId });
     }
   }
+
+  // Trigger print when hidden component is mounted
+  useEffect(() => {
+    if (lastPrintedDelivery && deliveryRef.current) {
+      try {
+        handlePrintDelivery();
+      } catch (e) {
+        console.error("Print failed:", e);
+        toast.error("Failed to print delivery.");
+      } finally {
+        // clear after attempting to print
+        setLastPrintedDelivery(null);
+      }
+    }
+  }, [lastPrintedDelivery, handlePrintDelivery]);
 
   // ----------------------------
   // 🔹 Pagination
@@ -606,16 +627,16 @@ export default function DeliveryPage() {
                               }))
                             }
                             placeholder="Enter customer phone"
-                            className="w-[220px]"
+                            className="w-[130px]"
                           />
                         ) : (
                           d.customerPhone || "—"
                         )}
                       </TableCell>
                       {/* Address */}
-                      <TableCell>
+                      <TableCell className={"whitespace-normal "}>
                         {editingId === d.id ? (
-                          <Input
+                          <Textarea
                             value={editValues?.deliveryAddress || ""}
                             onChange={(e) =>
                               setEditValues((s) => ({
@@ -794,6 +815,21 @@ export default function DeliveryPage() {
                             <>
                               <Button
                                 size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  // Prepare the delivery data for printing
+                                  setLastPrintedDelivery({
+                                    ...d,
+                                  });
+                                }}
+                                className={
+                                  "hover:bg-gray-200 hover:text-gray-700"
+                                }
+                              >
+                                Print
+                              </Button>
+                              <Button
+                                size="sm"
                                 variant="secondary"
                                 onClick={() => startEdit(d)}
                                 className={
@@ -802,6 +838,9 @@ export default function DeliveryPage() {
                               >
                                 <Pencil className="w-4 h-4" />
                               </Button>
+{
+  console.log(user)
+}
                               <Button
                                 disabled={user?.role !== "ADMIN"}
                                 size="sm"
@@ -841,6 +880,22 @@ export default function DeliveryPage() {
           {renderPaginationButtons()}
         </div>
       )}
+
+      {/* Hidden delivery print area */}
+      <div className="hidden">
+        {lastPrintedDelivery && (
+          <Delivery
+            ref={deliveryRef}
+            customer={lastPrintedDelivery.customer || "—"}
+            address={lastPrintedDelivery.deliveryAddress || "—"}
+            deliveryDate={lastPrintedDelivery.deliveryDate || "—"}
+            deliveryFee={lastPrintedDelivery.deliveryFee || "—"}
+            saleId={lastPrintedDelivery.saleId ?? lastPrintedDelivery.id}
+            phone={lastPrintedDelivery.customerPhone || "—"}
+            driver={lastPrintedDelivery.driver || "—"}
+          />
+        )}
+      </div>
     </div>
   );
 }
