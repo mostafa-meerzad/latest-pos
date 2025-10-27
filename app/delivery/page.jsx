@@ -838,9 +838,6 @@ export default function DeliveryPage() {
                               >
                                 <Pencil className="w-4 h-4" />
                               </Button>
-{
-  console.log(user)
-}
                               <Button
                                 disabled={user?.role !== "ADMIN"}
                                 size="sm"
