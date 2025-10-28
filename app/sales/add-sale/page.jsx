@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, {
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
+import { flushSync } from "react-dom";
 import Image from "next/image";
 import { Plus, Trash2, Edit, Save } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { toast } from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
@@ -53,7 +60,7 @@ export default function AddSalePage() {
     useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [barcodeInput, setBarcodeInput] = useState("");
-  const [quantity, setQuantity] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const [itemDiscount, setItemDiscount] = useState(0);
   const [customer, setCustomer] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("Cash");
@@ -72,6 +79,197 @@ export default function AddSalePage() {
   const deliveryRef = useRef(null);
   const barcodeRef = useRef(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  // 🔹 EDIT MODE STATE AND EFFECTS
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editSaleId, setEditSaleId] = useState(null);
+  const [originalSaleData, setOriginalSaleData] = useState(null);
+  const [hasFetchedEditData, setHasFetchedEditData] = useState(false);
+
+  // 🔹 COMPLETE RESET FUNCTION - Handles all scenarios
+  const resetAllStates = useCallback(() => {
+    console.log("Resetting all states to normal...");
+
+    // Reset edit mode
+    setIsEditMode(false);
+    setEditSaleId(null);
+    setOriginalSaleData(null);
+    setHasFetchedEditData(false);
+
+    // Reset form states
+    setCustomer(null);
+    setCustomerQuery("");
+    setProductQuery("");
+    setBarcodeInput("");
+    setQuantity(1);
+    setItemDiscount(0);
+    setPaymentMethod("Cash");
+    setTaxAmount(0);
+    setEditingId(null);
+    setEditValues(null);
+    setSelectedProduct(null);
+    setShowPaymentOptions(false);
+
+    // Clear cart
+    clear();
+
+    // Refocus barcode input for new sales
+    setTimeout(() => {
+      if (barcodeRef.current) {
+        barcodeRef.current.focus();
+      }
+    }, 100);
+  }, [clear]);
+
+  // 🔹 Check for edit mode in URL
+  useEffect(() => {
+    const edit = searchParams.get("edit");
+    const id = searchParams.get("id");
+
+    if (edit === "true" && id) {
+      console.log("Entering edit mode for sale:", id);
+      setIsEditMode(true);
+      setEditSaleId(id);
+      setHasFetchedEditData(false);
+    } else {
+      
+        resetAllStates();
+     
+    }
+  }, [searchParams, isEditMode, resetAllStates]); // Use searchParams as dependency
+
+  // 🔹 RESET ON ROUTE CHANGE - This handles ALL navigation scenarios
+  useEffect(() => {
+    // This effect runs when the pathname or search params change
+    const currentParams = new URLSearchParams(window.location.search);
+    const edit = currentParams.get("edit");
+    const id = currentParams.get("id");
+
+    // If we're NOT in edit mode anymore but our state thinks we are, reset
+    if (!edit && !id && isEditMode) {
+      console.log("Route changed away from edit mode, resetting states...");
+      resetAllStates();
+    }
+
+    // If we're on a completely different page, reset
+    if (!pathname.includes("/sales/add-sale") && isEditMode) {
+      console.log("Left add-sale page, resetting states...");
+      resetAllStates();
+    }
+  }, [pathname, searchParams, isEditMode, resetAllStates]);
+
+  // 🔹 Reset edit mode function
+  const resetEditMode = useCallback(() => {
+    flushSync(() => {
+      setIsEditMode(false);
+      setEditSaleId(null);
+      setOriginalSaleData(null);
+      setHasFetchedEditData(false);
+    });
+  }, []);
+
+  // 🔹 Fetch sale data for editing
+  const fetchSaleData = useCallback(
+    async (saleId) => {
+      if (!saleId || hasFetchedEditData) return;
+
+      const loadingToast = toast.loading("Loading sale data...");
+      try {
+        console.log("Fetching sale data for:", saleId);
+        const res = await fetch(`/api/sale/editSale/${saleId}`);
+        const data = await res.json();
+
+        if (data.success) {
+          setOriginalSaleData(data.data);
+          setHasFetchedEditData(true);
+          populateFormWithSaleData(data.data);
+          toast.success("Sale loaded for editing", { id: loadingToast });
+        } else {
+          toast.error("Failed to fetch sale data", { id: loadingToast });
+          resetAllStates();
+        }
+      } catch (error) {
+        console.error("Error fetching sale data:", error);
+        toast.error("Error loading sale for editing", { id: loadingToast });
+        resetAllStates();
+      }
+    },
+    [hasFetchedEditData, resetAllStates]
+  );
+
+  // 🔹 Trigger fetch when edit mode is active
+  useEffect(() => {
+    const edit = searchParams.get("edit");
+    const id = searchParams.get("id");
+
+    if (edit === "true" && id && !hasFetchedEditData) {
+      fetchSaleData(id);
+    }
+  }, [searchParams, hasFetchedEditData, fetchSaleData]);
+
+  // 🔹 Populate form with existing sale data
+  const populateFormWithSaleData = useCallback(
+    (saleData) => {
+      console.log("Populating form with sale data:", saleData);
+
+      // Clear current cart first
+      clear();
+
+      // Reset all form states
+      setCustomerQuery("");
+      setProductQuery("");
+      setBarcodeInput("");
+      setQuantity(1);
+      setItemDiscount(0);
+      setEditingId(null);
+      setEditValues(null);
+
+      // Set customer with null check
+      if (saleData.customer) {
+        setCustomer(saleData.customer);
+        setCustomerQuery(saleData.customer.name || "");
+      } else {
+        setCustomer(null);
+        setCustomerQuery("");
+      }
+
+      // Set payment method and tax with fallbacks
+      setPaymentMethod(saleData.paymentMethod || "Cash");
+      setTaxAmount(Number(saleData.taxAmount) || 0);
+
+      // Add items to cart with proper error handling
+      if (saleData.items && Array.isArray(saleData.items)) {
+        saleData.items.forEach((item) => {
+          if (item && item.product) {
+            const cartItem = {
+              tempId: genTempId(),
+              productId: item.productId,
+              name: item.product.name,
+              barcode: item.product.barcode,
+              unitPrice: Number(item.unitPrice) || 0,
+              quantity: Number(item.quantity) || 0,
+              discount: Number(item.discount) || 0,
+              subtotal: Number(item.subtotal) || 0,
+              expiryDate: item.product.expiryDate || null,
+              unit: item.product.unit || "pcs",
+            };
+            addItem(cartItem);
+          }
+        });
+      }
+
+      // Refocus barcode input after a short delay
+      setTimeout(() => {
+        if (barcodeRef.current) {
+          barcodeRef.current.focus();
+        }
+      }, 100);
+    },
+    [clear, addItem]
+  );
+
   const [keyboardPosition, setKeyboardPosition] = useState({ top: 0, left: 0 });
   const keyboardRef = useRef(null);
   const handlePrint = useReactToPrint({ contentRef: invoiceRef });
@@ -97,26 +295,34 @@ export default function AddSalePage() {
 
   // fetch customers
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchCustomers() {
       try {
         const res = await fetch("/api/customer/");
         const data = await res.json();
-        if (data.success) setCustomers(data.data);
+        if (data.success && isMounted) setCustomers(data.data);
       } catch (err) {
         toast.error("Failed to fetch customers");
       }
     }
     fetchCustomers();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // fetch products
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchProducts() {
       try {
         const res = await fetch("/api/products/");
         const data = await res.json();
 
-        if (data.success) {
+        if (data.success && isMounted) {
           const filtered = data.data.filter(
             (p) => p.status === "ACTIVE" && !p.isDeleted && p.stockQuantity > 0
           );
@@ -128,12 +334,18 @@ export default function AddSalePage() {
     }
 
     fetchProducts();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isEditMode]); // Refetch when edit mode changes
 
   // focus barcode input
   useEffect(() => {
-    if (barcodeRef.current) barcodeRef.current.focus();
-  }, []);
+    if (barcodeRef.current && !isEditMode) {
+      barcodeRef.current.focus();
+    }
+  }, [isEditMode]);
 
   // auto print when ready
   useEffect(() => {
@@ -308,15 +520,28 @@ export default function AddSalePage() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/sale", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      let res;
+      if (isEditMode && editSaleId) {
+        // Use PUT for editing
+        res = await fetch(`/api/sale/editSale/${editSaleId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // Use POST for new sale
+        res = await fetch("/api/sale", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        toast.error(data?.error || "Failed to create sale");
+        toast.error(
+          data?.error || `Failed to ${isEditMode ? "update" : "create"} sale`
+        );
         return;
       }
 
@@ -339,16 +564,25 @@ export default function AddSalePage() {
         date: finalized.date,
         serverSale,
       };
-      addFinalizedSale(localSale);
 
-      setTimeout(() => {
-        clear();
-        setCustomer(null);
-        setCustomerQuery("");
-        setPaymentMethod("cash");
-        setTaxAmount(0);
-        toast.success("Sale finalized successfully!");
-      }, 800);
+      if (!isEditMode) {
+        addFinalizedSale(localSale);
+      }
+
+      clear();
+      setCustomer(null);
+      setCustomerQuery("");
+      setPaymentMethod("Cash");
+      setTaxAmount(0);
+
+      toast.success(
+        `Sale ${isEditMode ? "updated" : "finalized"} successfully!`
+      );
+
+      if (isEditMode) {
+        resetEditMode();
+        router.push("/sales");
+      }
     } catch (err) {
       console.error("Finalize sale error:", err);
       toast.error("Network or unexpected error");
@@ -603,7 +837,7 @@ export default function AddSalePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold flex items-center gap-2 w-fit text-nowrap">
           <Image src={salesImage} width={80} height={80} alt="sales" />
-          New Sale
+          {isEditMode ? `Edit Sale #${editSaleId}` : "New Sale"}
         </h1>
 
         <div className="flex gap-2 max-2xl:flex-wrap max-2xl:justify-end">
@@ -626,7 +860,7 @@ export default function AddSalePage() {
           <Button
             onClick={handleFinalizeSaleWithDelivery}
             className="bg-orange-500 text-md hover:bg-orange-400"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isEditMode}
           >
             {isSubmitting ? "Saving..." : "Finalize Sale + Delivery"}
           </Button>
@@ -634,17 +868,25 @@ export default function AddSalePage() {
           <Button
             onClick={handlePrint}
             className="bg-blue-500 text-md hover:bg-blue-400"
+            disabled={isEditMode}
           >
             Print Invoice
           </Button>
           <Button
             onClick={handlePrintDelivery}
             className="bg-cyan-400 text-md hover:bg-cyan-300"
+            disabled={isEditMode}
           >
             Print Delivery
           </Button>
+          {/* Updated Back Button */}
           <Link href="/sales">
-            <Button variant="outline">Back to Sales</Button>
+            <Button
+              variant="outline"
+              onClick={resetAllStates} // This handles button click
+            >
+              Back to Sales
+            </Button>
           </Link>
         </div>
       </div>

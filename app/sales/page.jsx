@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Pencil, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -141,12 +141,7 @@ export default function SalesPage() {
     // First page and ellipsis if needed
     if (startPage > 1) {
       buttons.push(
-        <Button
-          key={1}
-          variant="outline"
-          size="sm"
-          onClick={() => goToPage(1)}
-        >
+        <Button key={1} variant="outline" size="sm" onClick={() => goToPage(1)}>
           1
         </Button>
       );
@@ -227,7 +222,9 @@ export default function SalesPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/sales/add-sale">
-            <Button className={"bg-green-500 text-md hover:bg-green-400 "}>New Sale</Button>
+            <Button className={"bg-green-500 text-md hover:bg-green-400 "}>
+              New Sale
+            </Button>
           </Link>
           <BackToDashboardButton />
         </div>
@@ -253,7 +250,10 @@ export default function SalesPage() {
         </div>
 
         {/* Payment Filter */}
-        <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v)}>
+        <Select
+          value={paymentFilter}
+          onValueChange={(v) => setPaymentFilter(v)}
+        >
           <SelectTrigger className="w-[120px]">
             <SelectValue placeholder="Payment" />
           </SelectTrigger>
@@ -290,15 +290,19 @@ export default function SalesPage() {
         <CardContent className={loading ? "p-0" : ""}>
           {loading ? (
             <Card className="p-4 rounded-2xl border-none shadow-sm border">
-              <table className="min-w-full text-lg">
+              <table className="min-w-full text-lg overflow-x-auto">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-2 px-3 font-medium">Sale ID</th>
-                    <th className="text-left py-2 px-3 font-medium">Customer</th>
+                    <th className="text-left py-2 px-3 font-medium">
+                      Customer
+                    </th>
                     <th className="text-left py-2 px-3 font-medium">Total</th>
                     <th className="text-left py-2 px-3 font-medium">Date</th>
-                    <th className="text-left py-2 px-3 font-medium">Payment Method</th>
-                    <th className="text-left py-2 px-3 font-medium">Action</th>
+                    <th className="text-left py-2 px-3 font-medium">
+                      Payment Method
+                    </th>
+                    <th className="px-6 py-3 font-medium">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -362,12 +366,26 @@ export default function SalesPage() {
                             View Details
                           </Button>
                         </Link>
+                        <Link
+                          href={`/sales/add-sale?edit=true&id=${order.rawId}`}
+                        >
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className={"bg-yellow-500 hover:bg-gray-300 hover:text-gray-700 ml-3"}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </Link>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-500">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center text-gray-500"
+                    >
                       No sales found.
                     </TableCell>
                   </TableRow>
