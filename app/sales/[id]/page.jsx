@@ -24,6 +24,7 @@ export default function SaleDetailsPage() {
       try {
         const res = await fetch(`/api/sale/${id}`);
         const json = await res.json();
+        console.log("Data from endpoint: "+ JSON.stringify(json.data));
         if (json.success) {
           setSale(json.data);
         } else {

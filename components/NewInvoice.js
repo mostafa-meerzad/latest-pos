@@ -43,7 +43,7 @@ const NewInvoice = forwardRef(({ sale }, ref) => {
           {sale.items.map((it) => (
             <tr key={it.id}>
               <td>{it.product?.name}</td>
-              <td className="text-right">{it.quantity}</td>
+              <td className="text-right">{it.quantity} {it.product.unit === "pcs" ? " pcs " : it.product.unit === "kg" ? " kg " : ""} </td>
               <td className="text-right">AFN {it.unitPrice?.toFixed(2) || it.price?.toFixed(2)}</td>
               <td className="text-right">AFN {it.subtotal.toFixed(2)}</td>
             </tr>
