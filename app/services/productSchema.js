@@ -12,12 +12,12 @@ const productSchema = z.object({
     .max(255, "Barcode too long").optional(),
 
   categoryId: z
-    .number("Category is required")
+    .number("A valid Category is required")
     .int()
     .positive("Category ID must be a positive number"),
 
   supplierId: z
-    .number("Supplier is required")
+    .number("A valid Supplier is required")
     .int()
     .positive("Supplier ID must be a positive number"),
 
