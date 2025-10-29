@@ -216,62 +216,6 @@ export default function CreateProductPage() {
     }
   }
 
-  // async function handleSubmit(e) {
-  //   e.preventDefault();
-  //   setError(null);
-  //   setFieldErrors({});
-  //   setSubmitting(true);
-
-  //   try {
-  //     const validUnits = ["pcs", "kg"];
-  //     if (!validUnits.includes(unit)) {
-  //       setError("Invalid unit value. Must be 'pcs' or 'kg'.");
-  //       setSubmitting(false);
-  //       return;
-  //     }
-
-  //     // Validate stock quantity based on unit
-  //     const stockNum = Number(stockQuantity);
-  //     if (unit === "pcs" && !Number.isInteger(stockNum)) {
-  //       setError(
-  //         "Stock quantity must be a whole number for items sold by piece (pcs)."
-  //       );
-  //       setSubmitting(false);
-  //       return;
-  //     }
-
-  //     const body = buildRequestBody();
-  //     const res = await fetch("/api/products", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify(body),
-  //     });
-
-  //     const data = await res.json();
-  //     if (res.ok && data.success) {
-  //       router.push("/products");
-  //     } else {
-  //       // console.error("Error creating product:", data);
-  //       const fieldErrs = data?.error?.fieldErrors || {};
-  //       const formErrs = data?.error?.formErrors || [];
-  //       setFieldErrors(fieldErrs);
-  //       console.log("form errors: ", formErrs)
-  //       console.log("-----------------")
-  //       console.log("field errors: ", fieldErrs)
-  //       setError(
-  //         formErrs.length
-  //           ? formErrs.join(", ")
-  //           : "Please correct the highlighted fields."
-  //       );
-  //     }
-  //   } catch (err) {
-  //     console.error("Network or unexpected error:", err);
-  //     setError("Network error. Please try again.");
-  //   } finally {
-  //     setSubmitting(false);
-  //   }
-  // }
-
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
