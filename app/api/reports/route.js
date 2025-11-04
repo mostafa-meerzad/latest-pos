@@ -143,10 +143,18 @@ export async function GET(request) {
     );
 
     // Total sold items (from all sales)
-    const totalSoldItems = sales.reduce(
-      (sum, sale) =>
-        sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
-      0
+    const totalSoldItems = Number(
+      sales
+        .reduce(
+          (sum, sale) =>
+            sum +
+            sale.items.reduce(
+              (itemSum, item) => itemSum + Number(item.quantity),
+              0
+            ),
+          0
+        )
+        .toFixed(2)
     );
 
     // Delivery revenue is now sum of delivery_fee values (from deliveries table)
@@ -277,18 +285,33 @@ async function getHourlyData(startDate, endDate) {
   // sales by sale.date (all sales)
   const sales = await prisma.sale.findMany({
     where: { date: { gte: startDate, lte: endDate } },
-    include: { items: { include: { product: { select: { costPrice: true } } } }, delivery: true },
+    include: {
+      items: { include: { product: { select: { costPrice: true } } } },
+      delivery: true,
+    },
   });
 
   // deliveries by deliveryDate (delivery_fee)
   const deliveries = await prisma.delivery.findMany({
     where: { deliveryDate: { gte: startDate, lte: endDate } },
-    include: { sale: { include: { items: { include: { product: { select: { costPrice: true } } } } } } },
+    include: {
+      sale: {
+        include: {
+          items: { include: { product: { select: { costPrice: true } } } },
+        },
+      },
+    },
   });
 
   const hourlyData = {};
   for (let hour = 0; hour < 24; hour++) {
-    hourlyData[hour] = { revenue: 0, cost: 0, profit: 0, count: 0, itemsSold: 0 };
+    hourlyData[hour] = {
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+      count: 0,
+      itemsSold: 0,
+    };
   }
 
   // sales (revenue = sale.totalAmount, cost = sale items cost)
@@ -303,7 +326,10 @@ async function getHourlyData(startDate, endDate) {
     hourlyData[hour].cost += cost;
     hourlyData[hour].profit += revenue - cost;
     hourlyData[hour].count += 1;
-    hourlyData[hour].itemsSold += sale.items.reduce((s, i) => s + i.quantity, 0);
+    hourlyData[hour].itemsSold += sale.items.reduce(
+      (s, i) => s + i.quantity,
+      0
+    );
   });
 
   // deliveries (revenue = delivery.deliveryFee, cost = 0 here)
@@ -317,7 +343,8 @@ async function getHourlyData(startDate, endDate) {
     hourlyData[hour].profit += revenue - cost;
     hourlyData[hour].count += 1;
     // itemsSold: we can optionally add delivered items count if you want delivery items metric:
-    hourlyData[hour].itemsSold += delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
+    hourlyData[hour].itemsSold +=
+      delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
   });
 
   return hourlyData;
@@ -326,12 +353,21 @@ async function getHourlyData(startDate, endDate) {
 async function getWeeklyData(startDate, endDate) {
   const sales = await prisma.sale.findMany({
     where: { date: { gte: startDate, lte: endDate } },
-    include: { items: { include: { product: { select: { costPrice: true } } } }, delivery: true },
+    include: {
+      items: { include: { product: { select: { costPrice: true } } } },
+      delivery: true,
+    },
   });
 
   const deliveries = await prisma.delivery.findMany({
     where: { deliveryDate: { gte: startDate, lte: endDate } },
-    include: { sale: { include: { items: { include: { product: { select: { costPrice: true } } } } } } },
+    include: {
+      sale: {
+        include: {
+          items: { include: { product: { select: { costPrice: true } } } },
+        },
+      },
+    },
   });
 
   const weeklyData = {};
@@ -342,7 +378,9 @@ async function getWeeklyData(startDate, endDate) {
     const saturday = 6;
     let daysSinceSaturday = currentDay - saturday;
     if (daysSinceSaturday < 0) daysSinceSaturday += 7;
-    const weekStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    const weekStart = new Date(
+      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+    );
     weekStart.setUTCDate(weekStart.getUTCDate() - daysSinceSaturday);
     weekStart.setUTCHours(0, 0, 0, 0);
     return weekStart.toISOString().split("T")[0];
@@ -400,7 +438,8 @@ async function getWeeklyData(startDate, endDate) {
     weeklyData[wk].cost += cost;
     weeklyData[wk].profit += revenue - cost;
     weeklyData[wk].count += 1;
-    weeklyData[wk].itemsSold += delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
+    weeklyData[wk].itemsSold +=
+      delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
   });
 
   return weeklyData;
@@ -409,44 +448,91 @@ async function getWeeklyData(startDate, endDate) {
 async function getMonthlyData(startDate, endDate) {
   const sales = await prisma.sale.findMany({
     where: { date: { gte: startDate, lte: endDate } },
-    include: { items: { include: { product: { select: { costPrice: true } } } }, delivery: true },
+    include: {
+      items: { include: { product: { select: { costPrice: true } } } },
+      delivery: true,
+    },
   });
 
   const deliveries = await prisma.delivery.findMany({
     where: { deliveryDate: { gte: startDate, lte: endDate } },
-    include: { sale: { include: { items: { include: { product: { select: { costPrice: true } } } } } } },
+    include: {
+      sale: {
+        include: {
+          items: { include: { product: { select: { costPrice: true } } } },
+        },
+      },
+    },
   });
 
   const monthlyData = {};
   const monthNames = [
-    "January","February","March","April","May","June","July","August","September","October","November","December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const startMonth = new Date(startDate).getUTCMonth();
   const endMonth = new Date(endDate).getUTCMonth();
   for (let month = startMonth; month <= endMonth; month++) {
-    monthlyData[month] = { name: monthNames[month], revenue: 0, cost: 0, profit: 0, count: 0, itemsSold: 0 };
+    monthlyData[month] = {
+      name: monthNames[month],
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+      count: 0,
+      itemsSold: 0,
+    };
   }
 
   sales.forEach((sale) => {
     const month = new Date(sale.date).getUTCMonth();
     if (!monthlyData[month]) {
-      monthlyData[month] = { name: monthNames[month], revenue: 0, cost: 0, profit: 0, count: 0, itemsSold: 0 };
+      monthlyData[month] = {
+        name: monthNames[month],
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+        count: 0,
+        itemsSold: 0,
+      };
     }
     const revenue = Number(sale.totalAmount);
-    const cost = sale.items.reduce((sum, item) => sum + item.quantity * Number(item.product.costPrice), 0);
+    const cost = sale.items.reduce(
+      (sum, item) => sum + item.quantity * Number(item.product.costPrice),
+      0
+    );
     monthlyData[month].revenue += revenue;
     monthlyData[month].cost += cost;
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
-    monthlyData[month].itemsSold += sale.items.reduce((s, i) => s + i.quantity, 0);
+    monthlyData[month].itemsSold += sale.items.reduce(
+      (s, i) => s + i.quantity,
+      0
+    );
   });
 
   deliveries.forEach((delivery) => {
     if (!delivery.deliveryDate) return;
     const month = new Date(delivery.deliveryDate).getUTCMonth();
     if (!monthlyData[month]) {
-      monthlyData[month] = { name: monthNames[month], revenue: 0, cost: 0, profit: 0, count: 0, itemsSold: 0 };
+      monthlyData[month] = {
+        name: monthNames[month],
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+        count: 0,
+        itemsSold: 0,
+      };
     }
     const revenue = Number(delivery.deliveryFee || 0);
     const cost = 0;
@@ -454,7 +540,8 @@ async function getMonthlyData(startDate, endDate) {
     monthlyData[month].cost += cost;
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
-    monthlyData[month].itemsSold += delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
+    monthlyData[month].itemsSold +=
+      delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
   });
 
   return monthlyData;
@@ -466,33 +553,67 @@ async function getYearlyMonthlyData(year) {
 
   const sales = await prisma.sale.findMany({
     where: { date: { gte: yearStart, lte: yearEnd } },
-    include: { items: { include: { product: { select: { costPrice: true } } } }, delivery: true },
+    include: {
+      items: { include: { product: { select: { costPrice: true } } } },
+      delivery: true,
+    },
   });
   const undelivered = sales; // we count all sales for yearly monthly; deliveries handled separately below
 
   const deliveries = await prisma.delivery.findMany({
     where: { deliveryDate: { gte: yearStart, lte: yearEnd } },
-    include: { sale: { include: { items: { include: { product: { select: { costPrice: true } } } } } } },
+    include: {
+      sale: {
+        include: {
+          items: { include: { product: { select: { costPrice: true } } } },
+        },
+      },
+    },
   });
 
   const monthlyData = {};
   const monthNames = [
-    "January","February","March","April","May","June","July","August","September","October","November","December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
   for (let month = 0; month < 12; month++) {
-    monthlyData[month] = { name: monthNames[month], revenue: 0, cost: 0, profit: 0, count: 0, itemsSold: 0, deliveries: 0 };
+    monthlyData[month] = {
+      name: monthNames[month],
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+      count: 0,
+      itemsSold: 0,
+      deliveries: 0,
+    };
   }
 
   // sales (all sales)
   sales.forEach((sale) => {
     const month = new Date(sale.date).getUTCMonth();
     const revenue = Number(sale.totalAmount);
-    const cost = sale.items.reduce((sum, item) => sum + item.quantity * Number(item.product.costPrice), 0);
+    const cost = sale.items.reduce(
+      (sum, item) => sum + item.quantity * Number(item.product.costPrice),
+      0
+    );
     monthlyData[month].revenue += revenue;
     monthlyData[month].cost += cost;
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
-    monthlyData[month].itemsSold += sale.items.reduce((s, i) => s + i.quantity, 0);
+    monthlyData[month].itemsSold += sale.items.reduce(
+      (s, i) => s + i.quantity,
+      0
+    );
 
     // Note: we don't increment deliveries here; deliveries are counted from deliveries list below
   });
@@ -506,13 +627,13 @@ async function getYearlyMonthlyData(year) {
     monthlyData[month].revenue += revenue;
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
-    monthlyData[month].itemsSold += delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
+    monthlyData[month].itemsSold +=
+      delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
     monthlyData[month].deliveries += 1;
   });
 
   return monthlyData;
 }
-
 
 // Function for year-over-year comparison
 async function getYearlyComparison(currentYear) {
