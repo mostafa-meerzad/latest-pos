@@ -3,6 +3,7 @@
 import React, { forwardRef } from "react";
 
 const Invoice = forwardRef(({ items, customer, totals, saleId, date }, ref) => {
+
   // ✅ Format date to YYYY/MM/DD
   const formattedDate = date
     ? new Date(date).toISOString().split("T")[0].replace(/-/g, "/")
