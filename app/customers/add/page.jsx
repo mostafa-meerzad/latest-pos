@@ -25,12 +25,28 @@ export default function AddCustomerPage() {
     e.preventDefault();
     setError(null);
 
-    if (!name.trim()) {
-      const msg = "Customer name is required.";
+    if (name?.trim().length < 2) {
+      const msg = "Customer name should be at least 2 character.";
       setError(msg);
       toast.error(msg);
       return;
     }
+
+    if (address?.trim().length == 0) {
+      setAddress(undefined);
+    } else if (address.trim().length < 5) {
+      const msg = "Address should be at least 10 character.";
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+    if (phone?.trim().length > 0)
+      if (!parseInt(phone)) {
+        const msg = "Invalid phone number.";
+        setError(msg);
+        toast.error(msg);
+        return;
+      }
 
     setSubmitting(true);
     try {
