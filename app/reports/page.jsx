@@ -85,7 +85,9 @@ export default function ReportsPage() {
 
       const res = await fetch(`/api/reports?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch report");
+      
       const json = await res.json();
+      console.log(json);
       setReport(json);
 
       toast.success("Report data loaded successfully!", { id: toastId });
