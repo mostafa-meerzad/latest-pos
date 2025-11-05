@@ -103,7 +103,7 @@ export default function ProductsPage() {
 
     if (isNaN(stockNum) || editValues.stockQuantity === "" || stockNum < 0) {
       toast.error("Stock cannot be empty or negative.");
-      toast.dismiss();
+      // toast.dismiss();
       return;
     }
 
@@ -210,9 +210,9 @@ export default function ProductsPage() {
     }
     if (stockFilter !== "all") {
       if (stockFilter === "in")
-        result = result.filter((p) => p.stockQuantity > 0);
+        result = result.filter((p) => Number(p.stockQuantity) > 0);
       if (stockFilter === "out")
-        result = result.filter((p) => p.stockQuantity === 0);
+        result = result.filter((p) => Number(p.stockQuantity) === 0);
     }
     if (searchQuery) {
       result = result.filter(
@@ -524,7 +524,7 @@ export default function ProductsPage() {
                             <Input
                               type="number"
                               step={editValues?.unit === "kg" ? "0.01" : "1"} // Allow decimals for kg
-                              value={editValues?.stockQuantity || ""}
+                              value={editValues?.stockQuantity || 0}
                               onChange={(e) => {
                                 const value = e.target.value;
                                 const unit = editValues?.unit || p.unit;
@@ -532,7 +532,7 @@ export default function ProductsPage() {
                                 if (value === "") {
                                   setEditValues((s) => ({
                                     ...s,
-                                    stockQuantity: "",
+                                    stockQuantity: 0,
                                   }));
                                   return;
                                 }

@@ -61,13 +61,11 @@ export const PUT = async (request, { params }) => {
       );
     }
 
-    if(body.barcode === null){
+    if (body.barcode === null) {
       body.barcode = "";
     }
-    console.log("body: ", body)
 
     const validation = updateProductSchema.safeParse(body);
-    console.log("validation: ", validation)
     if (!validation.success)
       return NextResponse.json(
         {
@@ -138,8 +136,9 @@ export const PUT = async (request, { params }) => {
     if (price !== undefined) updateData.price = price;
     if (costPrice !== undefined) updateData.costPrice = costPrice;
     if (status !== undefined) updateData.status = status;
-    if (barcode !== undefined) updateData.barcode = barcode;
-    if (stockQuantity !== undefined) updateData.stockQuantity = Number(stockQuantity);
+    if (barcode !== undefined && barcode !== "") updateData.barcode = barcode;
+    if (stockQuantity !== undefined)
+      updateData.stockQuantity = Number(stockQuantity);
     if (expiryDate !== undefined) updateData.expiryDate = expiryDate;
     if (unit) {
       const allowedUnits = ["pcs", "kg"];

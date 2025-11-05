@@ -9,7 +9,7 @@ const productSchema = z.object({
 
   barcode: z
     .string("Barcode is required")
-    .max(255, "Barcode too long").optional(),
+    .max(400, "Barcode too long").optional().nullable(),
 
   categoryId: z
     .number("A valid Category is required")
