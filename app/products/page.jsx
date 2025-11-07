@@ -75,7 +75,10 @@ export default function ProductsPage() {
 
   function startEdit(row) {
     setEditingId(row.id);
-    setEditValues({ ...row });
+    setEditValues({
+      ...row,
+      categoryId: row.category?.id || row.categoryId || null,
+    });
   }
 
   function resetEditState() {
@@ -125,17 +128,28 @@ export default function ProductsPage() {
     }
     toast.loading("Saving changes...");
     try {
+      const updateData = {
+        name: editValues.name,
+        barcode: editValues.barcode,
+        price: priceNum,
+        stockQuantity: stockNum,
+        unit: editValues.unit,
+        expiryDate: editValues.expiryDate,
+        status: editValues.status,
+        categoryId: editValues.categoryId || editValues.category?.id || null,
+      };
+
       const res = await fetch(`/api/products/${editingId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editValues),
+        body: JSON.stringify(updateData),
       });
       const data = await res.json();
 
       if (data.success) {
         toast.dismiss();
         setProducts((prev) =>
-          prev.map((p) => (p.id === editingId ? { ...p, ...editValues } : p))
+          prev.map((p) => (p.id === editingId ? { ...p, ...data.data } : p))
         );
         resetEditState();
         toast.success("Product updated successfully.");
@@ -203,7 +217,9 @@ export default function ProductsPage() {
     let result = [...products];
     if (categoryFilter !== "all") {
       const catId = Number(categoryFilter);
-      result = result.filter((p) => p.category && p.category.id === catId);
+      result =
+        result.filter((p) => p.category && p.category.id === catId) ||
+        p.categoryId === catId;
     }
     if (statusFilter !== "all") {
       result = result.filter((p) => p.status === statusFilter);
@@ -372,6 +388,7 @@ export default function ProductsPage() {
                         <th className="px-6 py-3">ID</th>
                         <th className="px-6 py-3">Product</th>
                         <th className="px-6 py-3">Barcode</th>
+                        <th className="px-6 py-3">Category</th>
                         <th className="px-6 py-3">Price</th>
                         <th className="px-6 py-3">Stock</th>
                         <th className="px-6 py-3">Unit</th>
@@ -398,6 +415,11 @@ export default function ProductsPage() {
                           </td>
 
                           {/* Barcode */}
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-6 w-20 rounded-md" />
+                          </td>
+
+                          {/* Category */}
                           <td className="px-6 py-3">
                             <Skeleton className="h-6 w-20 rounded-md" />
                           </td>
@@ -447,6 +469,7 @@ export default function ProductsPage() {
                   <TableHead>ID</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead>Barcode</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Unit</TableHead>
@@ -499,6 +522,47 @@ export default function ProductsPage() {
                             />
                           ) : (
                             p.barcode || <Minus />
+                          )}
+                        </TableCell>
+
+                        <TableCell>
+                          {editingId === p.id ? (
+                            <Select
+                              value={
+                                editValues.categoryId
+                                  ? String(editValues.categoryId)
+                                  : "no-category"
+                              }
+                              onValueChange={(v) => {
+                                const categoryId =
+                                  v === "no-category" ? null : Number(v);
+                                setEditValues((s) => ({
+                                  ...s,
+                                  categoryId: categoryId,
+                                }));
+                              }}
+                            >
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="no-category">
+                                  No category
+                                </SelectItem>
+                                {categories.map((category) => (
+                                  <SelectItem
+                                    key={category.id}
+                                    value={String(category.id)}
+                                  >
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            p.category?.name || (
+                              <span className="text-gray-400">No category</span>
+                            )
                           )}
                         </TableCell>
 
