@@ -546,9 +546,6 @@ export default function ProductsPage() {
                                 <SelectValue placeholder="Select category" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="no-category">
-                                  No category
-                                </SelectItem>
                                 {categories.map((category) => (
                                   <SelectItem
                                     key={category.id}
