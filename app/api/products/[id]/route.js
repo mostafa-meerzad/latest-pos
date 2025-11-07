@@ -88,7 +88,7 @@ export const PUT = async (request, { params }) => {
       unit,
     } = validation.data;
 
-    // Ensure product exists
+    // Ensure product exists - using the correct field name
     const product = await prisma.product.findUnique({
       where: { id: Number(id) },
     });
@@ -98,49 +98,41 @@ export const PUT = async (request, { params }) => {
         { status: 404 }
       );
 
-    if (categoryId) {
-      // Ensure category exists
-      const category = await prisma.category.findUnique({
-        where: { id: categoryId },
-      });
-      if (!category) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Category not found. Please create a category first.",
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (supplierId) {
-      //  Ensure supplier exists
-      const supplier = await prisma.supplier.findUnique({
-        where: { id: supplierId },
-      });
-      if (!supplier) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Supplier not found. Please create a supplier first.",
-          },
-          { status: 400 }
-        );
-      }
-    }
-
     const updateData = {};
-    // Use explicit undefined checks so falsy-but-valid values (like 0) are accepted
+
+    // Handle categoryId validation and update
+    if (categoryId !== undefined) {
+      if (categoryId === null || categoryId === "") {
+        // Allow clearing the category
+        updateData.categoryId = null;
+      } else {
+        // Ensure category exists - using the correct field name from your schema
+        const category = await prisma.category.findUnique({
+          where: { id: Number(categoryId) }, // Use 'id' because of @map("category_id")
+        });
+        if (!category) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Category not found. Please create a category first.",
+            },
+            { status: 400 }
+          );
+        }
+        updateData.categoryId = Number(categoryId);
+      }
+    }
+
+    // Add other fields - using the correct field names from your schema
     if (name !== undefined) updateData.name = name;
     if (price !== undefined) updateData.price = price;
     if (costPrice !== undefined) updateData.costPrice = costPrice;
     if (status !== undefined) updateData.status = status;
-    if (barcode !== undefined && barcode !== "") updateData.barcode = barcode;
+    if (barcode !== undefined) updateData.barcode = barcode;
     if (stockQuantity !== undefined)
       updateData.stockQuantity = Number(stockQuantity);
     if (expiryDate !== undefined) updateData.expiryDate = expiryDate;
-    if (unit) {
+    if (unit !== undefined) {
       const allowedUnits = ["pcs", "kg"];
       if (!allowedUnits.includes(unit)) {
         return NextResponse.json(
@@ -154,6 +146,10 @@ export const PUT = async (request, { params }) => {
     const updateProduct = await prisma.product.update({
       where: { id: Number(id) },
       data: updateData,
+      include: {
+        category: true,
+        supplier: true,
+      },
     });
 
     return NextResponse.json(
@@ -161,6 +157,7 @@ export const PUT = async (request, { params }) => {
       { status: 200 }
     );
   } catch (error) {
+    console.error("Error updating product:", error);
     return NextResponse.json(
       { success: false, error: error.message || "Internal server error" },
       { status: 500 }
