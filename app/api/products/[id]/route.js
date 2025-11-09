@@ -61,8 +61,8 @@ export const PUT = async (request, { params }) => {
       );
     }
 
-    if (body.barcode === null) {
-      body.barcode = "";
+    if (body.barcode === '') {
+      body.barcode = null;
     }
 
     const validation = updateProductSchema.safeParse(body);
@@ -128,7 +128,7 @@ export const PUT = async (request, { params }) => {
     if (price !== undefined) updateData.price = price;
     if (costPrice !== undefined) updateData.costPrice = costPrice;
     if (status !== undefined) updateData.status = status;
-    if (barcode !== undefined) updateData.barcode = barcode;
+       if (barcode !== undefined && barcode !== "") updateData.barcode = barcode;
     if (stockQuantity !== undefined)
       updateData.stockQuantity = Number(stockQuantity);
     if (expiryDate !== undefined) updateData.expiryDate = expiryDate;
