@@ -28,6 +28,8 @@ export async function PUT(req, { params }) {
   try {
     // If frontend sends role as name, convert it to roleId
     let roleId;
+    let password;
+
     if (body.role) {
       const role = await prisma.role.findUnique({
         where: { name: body.role },
@@ -38,6 +40,11 @@ export async function PUT(req, { params }) {
       roleId = role.id;
     }
 
+    if(body.password){
+
+      password = await hashPassword(body.password);
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
@@ -45,13 +52,12 @@ export async function PUT(req, { params }) {
         fullName: body.fullName,
         status: body.status,
         ...(roleId && { roleId }), // only update role if provided
+        ...(password && {password: password})
       },
       include: { role: true },
     });
-console.log("sending response", { updatedUser });
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error("Update error:", error);
     return NextResponse.json(
       { error: "Failed to update user" },
       { status: 500 }

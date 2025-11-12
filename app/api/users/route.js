@@ -39,9 +39,9 @@ export const POST = async (request) => {
 
     // ✅ Validate with Zod
 
-    console.log("Body before validation:", body);
+    // console.log("Body before validation:", body);
     const validation = createUserSchema.safeParse(body);
-    console.log("Validation result:", validation);
+    // console.log("Validation result:", validation);
 
     if (!validation.success) {
       const errors = validation.error?.errors;

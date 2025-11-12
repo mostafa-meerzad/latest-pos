@@ -99,12 +99,13 @@ export default function SettingsPage() {
       toast.error("Full name is required.");
       return;
     }
-    if (!password.trim()) {
-      toast.error("Password is required.");
-      return;
-    }
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+    if (password.length > 0 && password.length < 6) {
+
+      if(password.match(/" "/ig)){
+        toast.error("' ' white space character cannot be included in the password!")
+        return 
+      }
+      toast.error("Password is required and must be at least 6 characters.");
       return;
     }
     if (!role || role === "") {
@@ -356,9 +357,7 @@ export default function SettingsPage() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="ADMIN">ADMIN</SelectItem>
-                                <SelectItem value="CASHIER">
-                                  CASHIER
-                                </SelectItem>
+                                <SelectItem value="CASHIER">CASHIER</SelectItem>
                               </SelectContent>
                             </Select>
                           ) : (
