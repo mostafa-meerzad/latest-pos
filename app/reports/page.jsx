@@ -699,7 +699,7 @@ export default function ReportsPage() {
                         <TableRow key={idx}>
                           <TableCell>{idx + 1}</TableCell>
                           <TableCell>{p.product?.name}</TableCell>
-                          <TableCell>{p.quantity}</TableCell>
+                          <TableCell>{Number(p.quantity).toFixed(2)}</TableCell>
                           <TableCell>{fmtCurrency(p.revenue)}</TableCell>
                           <TableCell>
                             {fmtCurrency(p.product?.costPrice)}

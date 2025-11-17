@@ -136,7 +136,7 @@ export async function GET(request) {
         sum +
         sale.items.reduce(
           (itemSum, item) =>
-            itemSum + item.quantity * Number(item.product.costPrice),
+            itemSum + Number(item.quantity) * Number(item.product.costPrice),
           0
         ),
       0
@@ -188,7 +188,7 @@ export async function GET(request) {
             revenue: 0,
           };
         }
-        productSales[productId].quantity += item.quantity;
+        productSales[productId].quantity += Number(item.quantity);
         productSales[productId].revenue += Number(item.subtotal);
       });
     });
@@ -319,7 +319,7 @@ async function getHourlyData(startDate, endDate) {
     const hour = new Date(sale.date).getUTCHours();
     const revenue = Number(sale.totalAmount);
     const cost = sale.items.reduce(
-      (sum, item) => sum + item.quantity * Number(item.product.costPrice),
+      (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
       0
     );
     hourlyData[hour].revenue += revenue;
@@ -327,7 +327,7 @@ async function getHourlyData(startDate, endDate) {
     hourlyData[hour].profit += revenue - cost;
     hourlyData[hour].count += 1;
     hourlyData[hour].itemsSold += sale.items.reduce(
-      (s, i) => s + i.quantity,
+      (s, i) => s + Number(i.quantity),
       0
     );
   });
@@ -344,7 +344,7 @@ async function getHourlyData(startDate, endDate) {
     hourlyData[hour].count += 1;
     // itemsSold: we can optionally add delivered items count if you want delivery items metric:
     hourlyData[hour].itemsSold +=
-      delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
+      delivery.sale?.items?.reduce((s, i) => s + Number(i.quantity), 0) || 0;
   });
 
   return hourlyData;
@@ -418,14 +418,14 @@ async function getWeeklyData(startDate, endDate) {
     ensureWeekKey(wk);
     const revenue = Number(sale.totalAmount);
     const cost = sale.items.reduce(
-      (sum, item) => sum + item.quantity * Number(item.product.costPrice),
+      (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
       0
     );
     weeklyData[wk].revenue += revenue;
     weeklyData[wk].cost += cost;
     weeklyData[wk].profit += revenue - cost;
     weeklyData[wk].count += 1;
-    weeklyData[wk].itemsSold += sale.items.reduce((s, i) => s + i.quantity, 0);
+    weeklyData[wk].itemsSold += sale.items.reduce((s, i) => s + Number(i.quantity), 0);
   });
 
   deliveries.forEach((delivery) => {
@@ -439,7 +439,7 @@ async function getWeeklyData(startDate, endDate) {
     weeklyData[wk].profit += revenue - cost;
     weeklyData[wk].count += 1;
     weeklyData[wk].itemsSold +=
-      delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
+      delivery.sale?.items?.reduce((s, i) => s + Number(i.quantity), 0) || 0;
   });
 
   return weeklyData;
@@ -508,7 +508,7 @@ async function getMonthlyData(startDate, endDate) {
     }
     const revenue = Number(sale.totalAmount);
     const cost = sale.items.reduce(
-      (sum, item) => sum + item.quantity * Number(item.product.costPrice),
+      (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
       0
     );
     monthlyData[month].revenue += revenue;
@@ -516,7 +516,7 @@ async function getMonthlyData(startDate, endDate) {
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
     monthlyData[month].itemsSold += sale.items.reduce(
-      (s, i) => s + i.quantity,
+      (s, i) => s + Number(i.quantity),
       0
     );
   });
@@ -541,7 +541,7 @@ async function getMonthlyData(startDate, endDate) {
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
     monthlyData[month].itemsSold +=
-      delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
+      delivery.sale?.items?.reduce((s, i) => s + Number(i.quantity), 0) || 0;
   });
 
   return monthlyData;
@@ -603,7 +603,7 @@ async function getYearlyMonthlyData(year) {
     const month = new Date(sale.date).getUTCMonth();
     const revenue = Number(sale.totalAmount);
     const cost = sale.items.reduce(
-      (sum, item) => sum + item.quantity * Number(item.product.costPrice),
+      (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
       0
     );
     monthlyData[month].revenue += revenue;
@@ -611,7 +611,7 @@ async function getYearlyMonthlyData(year) {
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
     monthlyData[month].itemsSold += sale.items.reduce(
-      (s, i) => s + i.quantity,
+      (s, i) => s + Number(i.quantity),
       0
     );
 
@@ -628,7 +628,7 @@ async function getYearlyMonthlyData(year) {
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
     monthlyData[month].itemsSold +=
-      delivery.sale?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
+      delivery.sale?.items?.reduce((s, i) => s + Number(i.quantity), 0) || 0;
     monthlyData[month].deliveries += 1;
   });
 
