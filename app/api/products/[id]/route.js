@@ -65,6 +65,8 @@ export const PUT = async (request, { params }) => {
       body.barcode = null;
     }
 
+    
+
     const validation = updateProductSchema.safeParse(body);
     if (!validation.success)
       return NextResponse.json(
@@ -87,6 +89,8 @@ export const PUT = async (request, { params }) => {
       supplierId,
       unit,
     } = validation.data;
+
+    console.log("costPrice: " + costPrice);
 
     // Ensure product exists - using the correct field name
     const product = await prisma.product.findUnique({

@@ -111,10 +111,10 @@ export default function ProductsPage() {
     }
 
     // Validate cost price
-        if (isNaN(costNum) || editValues.costPrice === "" || costNum < 0) {
-          toast.error("Cost price cannot be empty or negative.");
-          return;
-        }
+    if (isNaN(costNum) || editValues.costPrice === "" || costNum < 0) {
+      toast.error("Cost price cannot be empty or negative.");
+      return;
+    }
 
     // Validate stock quantity based on unit type
     if (unit === "pcs") {
@@ -122,11 +122,9 @@ export default function ProductsPage() {
         toast.error(
           "Stock quantity must be a whole number for items sold by piece (pcs)."
         );
-        toast.dismiss();
         return;
       }
     }
-    // For kg, decimal values are allowed
 
     if (priceNum < costNum) {
       toast.error("Price cannot be less than the product's cost price.");
@@ -138,7 +136,7 @@ export default function ProductsPage() {
       const updateData = {
         name: editValues.name,
         barcode: editValues.barcode,
-        costPrice: costNum, 
+        costPrice: costNum,
         price: priceNum,
         stockQuantity: stockNum,
         unit: editValues.unit,
@@ -382,7 +380,6 @@ export default function ProductsPage() {
         <CardContent>
           {loading ? (
             <motion.div
-              // className="p-6 max-w-6xl mx-auto mt-8"
               className="-m-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -540,7 +537,7 @@ export default function ProductsPage() {
                           )}
                         </TableCell>
 
-{/* Cost Price Cell */}
+                        {/* Cost Price Cell */}
                         <TableCell>
                           {editingId === p.id ? (
                             <Input
@@ -558,7 +555,7 @@ export default function ProductsPage() {
                             "AFN " + (p.costPrice || 0)
                           )}
                         </TableCell>
-                        
+
                         <TableCell>
                           {editingId === p.id ? (
                             <Select
@@ -618,7 +615,7 @@ export default function ProductsPage() {
                           {editingId === p.id ? (
                             <Input
                               type="number"
-                              step={editValues?.unit === "kg" ? "0.01" : "1"} // Allow decimals for kg
+                              step={editValues?.unit === "kg" ? "0.01" : "1"}
                               value={editValues?.stockQuantity || 0}
                               onChange={(e) => {
                                 const value = e.target.value;
@@ -819,7 +816,7 @@ export default function ProductsPage() {
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={11}
+                        colSpan={11} 
                         className="text-center text-gray-500"
                       >
                         No products found.
