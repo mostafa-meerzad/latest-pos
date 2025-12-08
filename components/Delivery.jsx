@@ -61,6 +61,9 @@ const Delivery = forwardRef(
         <p className="text-center text-xs mt-4">
           Thank you for choosing our delivery service!
         </p>
+        <p className="text-center text-[8pt] mt-4 text-gray-500 tracking-wide border-t pt-1">
+  EasySale • Powered by Webistan
+</p>
 
         {/* ✅ Correct print CSS syntax for Next.js */}
         <style jsx>{`
