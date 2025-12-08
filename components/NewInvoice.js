@@ -25,9 +25,13 @@ const NewInvoice = forwardRef(({ sale }, ref) => {
       }}
     >
       <h2 className="text-center text-lg font-bold">Afghan Pets</h2>
-      <p className="text-center text-xs mb-2">Invoice #{sale.invoice?.invoiceNumber || sale.id}</p>
+      <p className="text-center text-xs mb-2">
+        Invoice #{sale.invoice?.invoiceNumber || sale.id}
+      </p>
       <p className="text-xs">Customer: {sale.customer?.name || "Walk-in"}</p>
-      {sale.customer?.phone && <p className="text-xs mb-1">Phone: {sale.customer.phone}</p>}
+      {sale.customer?.phone && (
+        <p className="text-xs mb-1">Phone: {sale.customer.phone}</p>
+      )}
       <p className="text-xs mb-2">Date: {formattedDate}</p>
 
       <table className="w-full border-t border-b text-xs my-2">
@@ -43,8 +47,17 @@ const NewInvoice = forwardRef(({ sale }, ref) => {
           {sale.items.map((it) => (
             <tr key={it.id}>
               <td>{it.product?.name}</td>
-              <td className="text-right">{it.quantity} {it.product.unit === "pcs" ? " pcs " : it.product.unit === "kg" ? " kg " : ""} </td>
-              <td className="text-right">AFN {it.unitPrice?.toFixed(2) || it.price?.toFixed(2)}</td>
+              <td className="text-right">
+                {it.quantity}{" "}
+                {it.product.unit === "pcs"
+                  ? " pcs "
+                  : it.product.unit === "kg"
+                  ? " kg "
+                  : ""}{" "}
+              </td>
+              <td className="text-right">
+                AFN {it.unitPrice?.toFixed(2) || it.price?.toFixed(2)}
+              </td>
               <td className="text-right">AFN {it.subtotal.toFixed(2)}</td>
             </tr>
           ))}
@@ -76,16 +89,20 @@ const NewInvoice = forwardRef(({ sale }, ref) => {
 
       {sale.delivery && (
         <div className="mt-3 text-xs">
-          <p><strong>Delivery:</strong> {sale.delivery.deliveryAddress}</p>
-          <p><strong>Delivery Fee:</strong> AFG {sale.delivery.deliveryFee}</p>
+          <p>
+            <strong>Delivery:</strong> {sale.delivery.deliveryAddress}
+          </p>
+          <p>
+            <strong>Delivery Fee:</strong> AFG {sale.delivery.deliveryFee}
+          </p>
           <p>Driver: {sale.delivery.driver?.name}</p>
         </div>
       )}
 
       <p className="text-center text-xs mt-4">Thank you for shopping!</p>
       <p className="text-center text-[8pt] mt-4 text-gray-500 tracking-wide border-t pt-1">
-  EasySale • Powered by Webistan
-</p>
+        EasySale • Powered by Webistan
+      </p>
 
       <style jsx>{`
         @media print {

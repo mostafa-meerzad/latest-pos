@@ -3,7 +3,6 @@
 import React, { forwardRef } from "react";
 
 const Invoice = forwardRef(({ items, customer, totals, saleId, date }, ref) => {
-
   // ✅ Format date to YYYY/MM/DD
   const formattedDate = date
     ? new Date(date).toISOString().split("T")[0].replace(/-/g, "/")
@@ -37,8 +36,14 @@ const Invoice = forwardRef(({ items, customer, totals, saleId, date }, ref) => {
           {items.map((it) => (
             <tr key={it.tempId}>
               <td>{it.name}</td>
-              <td className="text-right">{it.quantity}
-              {it.unit === "pcs" ? " pcs " : it.unit === "kg" ? " kg " : ""} </td>
+              <td className="text-right">
+                {it.quantity}
+                {it.unit === "pcs"
+                  ? " pcs "
+                  : it.unit === "kg"
+                  ? " kg "
+                  : ""}{" "}
+              </td>
               <td className="text-right">AFN {it.unitPrice}</td>
               <td className="text-right">AFN {it.subtotal}</td>
             </tr>
@@ -63,8 +68,8 @@ const Invoice = forwardRef(({ items, customer, totals, saleId, date }, ref) => {
 
       <p className="text-center text-xs mt-4">Thank you for shopping!</p>
       <p className="text-center text-[8pt] mt-4 text-gray-500 tracking-wide border-t pt-1">
-  EasySale • Powered by Webistan
-</p>
+        EasySale • Powered by Webistan
+      </p>
 
       {/* ✅ Correct print CSS syntax for Next.js */}
       <style jsx>{`
