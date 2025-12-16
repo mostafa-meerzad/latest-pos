@@ -844,8 +844,43 @@ export default function AddSalePage() {
           <Button
             variant="secondary"
             className={"bg-red-500 text-white text-md hover:bg-red-400"}
-            onClick={() => {
-              if (confirm("Clear cart?")) clear();
+            onClick={async () => {
+              // Use react-hot-toast confirmation instead of window.confirm
+              const confirmClear = await new Promise((resolve) => {
+                toast(
+                  (t) => (
+                    <div className="flex flex-col gap-2">
+                      <p>Are you sure you want to clear the cart?</p>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          onClick={() => {
+                            toast.dismiss(t.id);
+                            resolve(true);
+                          }}
+                          className="bg-red-500 hover:bg-red-600 text-white"
+                        >
+                          Yes, clear
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            toast.dismiss(t.id);
+                            resolve(false);
+                          }}
+                          variant="outline"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ),
+                  { duration: Infinity, position: "top-center" }
+                );
+              });
+
+              if (confirmClear) {
+                clear();
+                toast.success("Cart cleared");
+              }
             }}
           >
             Clear Cart

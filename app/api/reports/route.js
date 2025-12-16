@@ -8,6 +8,10 @@ export async function GET(request) {
     const date =
       searchParams.get("date") || new Date().toISOString().split("T")[0];
     const year = searchParams.get("year") || new Date().getFullYear();
+    const from = searchParams.get("from"); // yyyy-MM-dd
+    const to = searchParams.get("to"); // yyyy-MM-dd
+    const productIdParam = searchParams.get("productId");
+    const productId = productIdParam ? Number(productIdParam) : null;
 
     const baseDate = new Date(date);
     let startDate, endDate;
@@ -15,46 +19,63 @@ export async function GET(request) {
     // Calculate date ranges based on period (UTC fix)
     switch (period) {
       case "day":
-        startDate = new Date(
-          Date.UTC(
-            baseDate.getUTCFullYear(),
-            baseDate.getUTCMonth(),
-            baseDate.getUTCDate()
-          )
-        );
-        endDate = new Date(
-          Date.UTC(
-            baseDate.getUTCFullYear(),
-            baseDate.getUTCMonth(),
-            baseDate.getUTCDate() + 1
-          )
-        );
-        endDate.setUTCMilliseconds(-1);
+        if (from && to) {
+          const fromDate = new Date(from + "T00:00:00.000Z");
+          const toDate = new Date(to + "T23:59:59.999Z");
+          startDate = fromDate;
+          endDate = toDate;
+        } else {
+          startDate = new Date(
+            Date.UTC(
+              baseDate.getUTCFullYear(),
+              baseDate.getUTCMonth(),
+              baseDate.getUTCDate()
+            )
+          );
+          endDate = new Date(
+            Date.UTC(
+              baseDate.getUTCFullYear(),
+              baseDate.getUTCMonth(),
+              baseDate.getUTCDate() + 1
+            )
+          );
+          endDate.setUTCMilliseconds(-1);
+        }
         break;
 
       case "week":
-        // Custom week: Saturday to Friday
-        const dayOfWeek = baseDate.getUTCDay(); // 0=Sunday, 6=Saturday
-        let daysSinceSaturday = dayOfWeek - 6; // 6 = Saturday
-        if (daysSinceSaturday < 0) daysSinceSaturday += 7;
+        if (from && to) {
+          startDate = new Date(from + "T00:00:00.000Z");
+          endDate = new Date(to + "T23:59:59.999Z");
+        } else {
+          // Custom week: Saturday to Friday
+          const dayOfWeek = baseDate.getUTCDay(); // 0=Sunday, 6=Saturday
+          let daysSinceSaturday = dayOfWeek - 6; // 6 = Saturday
+          if (daysSinceSaturday < 0) daysSinceSaturday += 7;
 
-        startDate = new Date(baseDate);
-        startDate.setUTCDate(baseDate.getUTCDate() - daysSinceSaturday);
-        startDate.setUTCHours(0, 0, 0, 0);
+          startDate = new Date(baseDate);
+          startDate.setUTCDate(baseDate.getUTCDate() - daysSinceSaturday);
+          startDate.setUTCHours(0, 0, 0, 0);
 
-        endDate = new Date(startDate);
-        endDate.setUTCDate(startDate.getUTCDate() + 6); // Friday (6 days after Saturday)
-        endDate.setUTCHours(23, 59, 59, 999);
+          endDate = new Date(startDate);
+          endDate.setUTCDate(startDate.getUTCDate() + 6); // Friday (6 days after Saturday)
+          endDate.setUTCHours(23, 59, 59, 999);
+        }
         break;
 
       case "month":
-        startDate = new Date(
-          Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), 1)
-        );
-        endDate = new Date(
-          Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + 1, 0)
-        );
-        endDate.setUTCHours(23, 59, 59, 999);
+        if (from && to) {
+          startDate = new Date(from + "T00:00:00.000Z");
+          endDate = new Date(to + "T23:59:59.999Z");
+        } else {
+          startDate = new Date(
+            Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), 1)
+          );
+          endDate = new Date(
+            Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + 1, 0)
+          );
+          endDate.setUTCHours(23, 59, 59, 999);
+        }
         break;
 
       case "year":
@@ -77,6 +98,15 @@ export async function GET(request) {
           gte: startDate,
           lte: endDate,
         },
+        ...(productId
+          ? {
+              items: {
+                some: {
+                  productId: productId,
+                },
+              },
+            }
+          : {}),
       },
       include: {
         items: {
@@ -101,6 +131,15 @@ export async function GET(request) {
           gte: startDate,
           lte: endDate,
         },
+        ...(productId
+          ? {
+              sale: {
+                items: {
+                  some: { productId: productId },
+                },
+              },
+            }
+          : {}),
       },
       include: {
         sale: {
@@ -124,36 +163,40 @@ export async function GET(request) {
     // Calculate totals
     const undeliveredSales = sales.filter((sale) => !sale.delivery);
 
-    // Sales revenue: include ALL sales (with and without deliveries)
-    const totalSalesRevenue = sales.reduce(
-      (sum, sale) => sum + Number(sale.totalAmount),
-      0
-    );
+    // Sales revenue
+    // If productId is provided, sum only matching items' subtotals; else use full sale totalAmount
+    const totalSalesRevenue = sales.reduce((sum, sale) => {
+      if (productId) {
+        const itemsRevenue = sale.items
+          .filter((it) => it.productId === productId)
+          .reduce((s, it) => s + Number(it.subtotal || 0), 0);
+        return sum + itemsRevenue;
+      }
+      return sum + Number(sale.totalAmount);
+    }, 0);
 
     // Sales cost: cost of items for ALL sales (count once)
-    const totalSalesCost = sales.reduce(
-      (sum, sale) =>
-        sum +
-        sale.items.reduce(
-          (itemSum, item) =>
-            itemSum + Number(item.quantity) * Number(item.product.costPrice),
-          0
-        ),
-      0
-    );
+    const totalSalesCost = sales.reduce((sum, sale) => {
+      const items = productId
+        ? sale.items.filter((it) => it.productId === productId)
+        : sale.items;
+      const cost = items.reduce(
+        (itemSum, item) =>
+          itemSum + Number(item.quantity) * Number(item.product.costPrice),
+        0
+      );
+      return sum + cost;
+    }, 0);
 
     // Total sold items (from all sales)
     const totalSoldItems = Number(
       sales
-        .reduce(
-          (sum, sale) =>
-            sum +
-            sale.items.reduce(
-              (itemSum, item) => itemSum + Number(item.quantity),
-              0
-            ),
-          0
-        )
+        .reduce((sum, sale) => {
+          const items = productId
+            ? sale.items.filter((it) => it.productId === productId)
+            : sale.items;
+          return sum + items.reduce((itemSum, item) => itemSum + Number(item.quantity), 0);
+        }, 0)
         .toFixed(2)
     );
 
@@ -170,32 +213,54 @@ export async function GET(request) {
     const totalCost = totalSalesCost; // don't double-count sale item costs
     const totalProfit = totalRevenue - totalCost;
 
-    // Top sold products - count items from all sales
-    const productSales = {};
-
-    // Count from all sales (each sale has items)
-    const countedSaleIds = new Set();
-    sales.forEach((sale) => {
-      if (countedSaleIds.has(sale.id)) return;
-      countedSaleIds.add(sale.id);
-
-      sale.items.forEach((item) => {
-        const productId = item.productId;
-        if (!productSales[productId]) {
-          productSales[productId] = {
-            product: item.product,
-            quantity: 0,
-            revenue: 0,
-          };
-        }
-        productSales[productId].quantity += Number(item.quantity);
-        productSales[productId].revenue += Number(item.subtotal);
+    // Top sold products
+    let topProducts = [];
+    if (productId) {
+      // Summarize only the selected product
+      let quantity = 0;
+      let revenue = 0;
+      let productInfo = null;
+      sales.forEach((sale) => {
+        sale.items
+          .filter((it) => it.productId === productId)
+          .forEach((item) => {
+            quantity += Number(item.quantity);
+            revenue += Number(item.subtotal || 0);
+            productInfo = item.product || productInfo;
+          });
       });
-    });
-
-    const topProducts = Object.values(productSales)
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 10);
+      if (productInfo) {
+        topProducts = [
+          {
+            product: productInfo,
+            quantity,
+            revenue,
+          },
+        ];
+      }
+    } else {
+      const productSales = {};
+      const countedSaleIds = new Set();
+      sales.forEach((sale) => {
+        if (countedSaleIds.has(sale.id)) return;
+        countedSaleIds.add(sale.id);
+        sale.items.forEach((item) => {
+          const pid = item.productId;
+          if (!productSales[pid]) {
+            productSales[pid] = {
+              product: item.product,
+              quantity: 0,
+              revenue: 0,
+            };
+          }
+          productSales[pid].quantity += Number(item.quantity);
+          productSales[pid].revenue += Number(item.subtotal);
+        });
+      });
+      topProducts = Object.values(productSales)
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 10);
+    }
 
     // Get time-based breakdowns
     let hourlyData = {};
@@ -204,14 +269,14 @@ export async function GET(request) {
     let yearlyData = {};
 
     if (period === "day") {
-      hourlyData = await getHourlyData(startDate, endDate);
+      hourlyData = await getHourlyData(startDate, endDate, productId);
     } else if (period === "week") {
-      weeklyData = await getWeeklyData(startDate, endDate);
+      weeklyData = await getWeeklyData(startDate, endDate, productId);
     } else if (period === "month") {
-      monthlyData = await getMonthlyData(startDate, endDate);
+      monthlyData = await getMonthlyData(startDate, endDate, productId);
     } else if (period === "year") {
-      monthlyData = await getYearlyMonthlyData(parseInt(year));
-      yearlyData = await getYearlyComparison(parseInt(year));
+      monthlyData = await getYearlyMonthlyData(parseInt(year), productId);
+      yearlyData = await getYearlyComparison(parseInt(year), productId);
     }
 
     const response = {
@@ -281,10 +346,15 @@ export async function GET(request) {
 // Helper: build unified aggregates for a given period by using sales (undelivered) + deliveries (by deliveryDate)
 // NOTES: use UTC consistently
 
-async function getHourlyData(startDate, endDate) {
+async function getHourlyData(startDate, endDate, productId) {
   // sales by sale.date (all sales)
   const sales = await prisma.sale.findMany({
-    where: { date: { gte: startDate, lte: endDate } },
+    where: {
+      date: { gte: startDate, lte: endDate },
+      ...(productId
+        ? { items: { some: { productId: productId } } }
+        : {}),
+    },
     include: {
       items: { include: { product: { select: { costPrice: true } } } },
       delivery: true,
@@ -293,7 +363,12 @@ async function getHourlyData(startDate, endDate) {
 
   // deliveries by deliveryDate (delivery_fee)
   const deliveries = await prisma.delivery.findMany({
-    where: { deliveryDate: { gte: startDate, lte: endDate } },
+    where: {
+      deliveryDate: { gte: startDate, lte: endDate },
+      ...(productId
+        ? { sale: { items: { some: { productId: productId } } } }
+        : {}),
+    },
     include: {
       sale: {
         include: {
@@ -314,11 +389,16 @@ async function getHourlyData(startDate, endDate) {
     };
   }
 
-  // sales (revenue = sale.totalAmount, cost = sale items cost)
+  // sales (revenue = sale.totalAmount OR sum of matching items; cost = corresponding items cost)
   sales.forEach((sale) => {
     const hour = new Date(sale.date).getUTCHours();
-    const revenue = Number(sale.totalAmount);
-    const cost = sale.items.reduce(
+    const items = productId
+      ? sale.items.filter((it) => it.productId === productId)
+      : sale.items;
+    const revenue = productId
+      ? items.reduce((s, it) => s + Number(it.subtotal || 0), 0)
+      : Number(sale.totalAmount);
+    const cost = items.reduce(
       (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
       0
     );
@@ -326,10 +406,7 @@ async function getHourlyData(startDate, endDate) {
     hourlyData[hour].cost += cost;
     hourlyData[hour].profit += revenue - cost;
     hourlyData[hour].count += 1;
-    hourlyData[hour].itemsSold += sale.items.reduce(
-      (s, i) => s + Number(i.quantity),
-      0
-    );
+    hourlyData[hour].itemsSold += items.reduce((s, i) => s + Number(i.quantity), 0);
   });
 
   // deliveries (revenue = delivery.deliveryFee, cost = 0 here)
@@ -342,17 +419,23 @@ async function getHourlyData(startDate, endDate) {
     hourlyData[hour].cost += cost;
     hourlyData[hour].profit += revenue - cost;
     hourlyData[hour].count += 1;
-    // itemsSold: we can optionally add delivered items count if you want delivery items metric:
-    hourlyData[hour].itemsSold +=
-      delivery.sale?.items?.reduce((s, i) => s + Number(i.quantity), 0) || 0;
+    const dItems = productId
+      ? delivery.sale?.items?.filter((it) => it.productId === productId) || []
+      : delivery.sale?.items || [];
+    hourlyData[hour].itemsSold += dItems.reduce((s, i) => s + Number(i.quantity), 0);
   });
 
   return hourlyData;
 }
 
-async function getWeeklyData(startDate, endDate) {
+async function getWeeklyData(startDate, endDate, productId) {
   const sales = await prisma.sale.findMany({
-    where: { date: { gte: startDate, lte: endDate } },
+    where: {
+      date: { gte: startDate, lte: endDate },
+      ...(productId
+        ? { items: { some: { productId: productId } } }
+        : {}),
+    },
     include: {
       items: { include: { product: { select: { costPrice: true } } } },
       delivery: true,
@@ -360,7 +443,12 @@ async function getWeeklyData(startDate, endDate) {
   });
 
   const deliveries = await prisma.delivery.findMany({
-    where: { deliveryDate: { gte: startDate, lte: endDate } },
+    where: {
+      deliveryDate: { gte: startDate, lte: endDate },
+      ...(productId
+        ? { sale: { items: { some: { productId: productId } } } }
+        : {}),
+    },
     include: {
       sale: {
         include: {
@@ -416,8 +504,13 @@ async function getWeeklyData(startDate, endDate) {
   sales.forEach((sale) => {
     const wk = getCustomWeek(sale.date);
     ensureWeekKey(wk);
-    const revenue = Number(sale.totalAmount);
-    const cost = sale.items.reduce(
+    const items = productId
+      ? sale.items.filter((it) => it.productId === productId)
+      : sale.items;
+    const revenue = productId
+      ? items.reduce((s, it) => s + Number(it.subtotal || 0), 0)
+      : Number(sale.totalAmount);
+    const cost = items.reduce(
       (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
       0
     );
@@ -425,7 +518,7 @@ async function getWeeklyData(startDate, endDate) {
     weeklyData[wk].cost += cost;
     weeklyData[wk].profit += revenue - cost;
     weeklyData[wk].count += 1;
-    weeklyData[wk].itemsSold += sale.items.reduce((s, i) => s + Number(i.quantity), 0);
+    weeklyData[wk].itemsSold += items.reduce((s, i) => s + Number(i.quantity), 0);
   });
 
   deliveries.forEach((delivery) => {
@@ -438,16 +531,23 @@ async function getWeeklyData(startDate, endDate) {
     weeklyData[wk].cost += cost;
     weeklyData[wk].profit += revenue - cost;
     weeklyData[wk].count += 1;
-    weeklyData[wk].itemsSold +=
-      delivery.sale?.items?.reduce((s, i) => s + Number(i.quantity), 0) || 0;
+    const dItems = productId
+      ? delivery.sale?.items?.filter((it) => it.productId === productId) || []
+      : delivery.sale?.items || [];
+    weeklyData[wk].itemsSold += dItems.reduce((s, i) => s + Number(i.quantity), 0);
   });
 
   return weeklyData;
 }
 
-async function getMonthlyData(startDate, endDate) {
+async function getMonthlyData(startDate, endDate, productId) {
   const sales = await prisma.sale.findMany({
-    where: { date: { gte: startDate, lte: endDate } },
+    where: {
+      date: { gte: startDate, lte: endDate },
+      ...(productId
+        ? { items: { some: { productId: productId } } }
+        : {}),
+    },
     include: {
       items: { include: { product: { select: { costPrice: true } } } },
       delivery: true,
@@ -455,7 +555,12 @@ async function getMonthlyData(startDate, endDate) {
   });
 
   const deliveries = await prisma.delivery.findMany({
-    where: { deliveryDate: { gte: startDate, lte: endDate } },
+    where: {
+      deliveryDate: { gte: startDate, lte: endDate },
+      ...(productId
+        ? { sale: { items: { some: { productId: productId } } } }
+        : {}),
+    },
     include: {
       sale: {
         include: {
@@ -506,8 +611,13 @@ async function getMonthlyData(startDate, endDate) {
         itemsSold: 0,
       };
     }
-    const revenue = Number(sale.totalAmount);
-    const cost = sale.items.reduce(
+    const items = productId
+      ? sale.items.filter((it) => it.productId === productId)
+      : sale.items;
+    const revenue = productId
+      ? items.reduce((s, it) => s + Number(it.subtotal || 0), 0)
+      : Number(sale.totalAmount);
+    const cost = items.reduce(
       (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
       0
     );
@@ -515,10 +625,7 @@ async function getMonthlyData(startDate, endDate) {
     monthlyData[month].cost += cost;
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
-    monthlyData[month].itemsSold += sale.items.reduce(
-      (s, i) => s + Number(i.quantity),
-      0
-    );
+    monthlyData[month].itemsSold += items.reduce((s, i) => s + Number(i.quantity), 0);
   });
 
   deliveries.forEach((delivery) => {
@@ -540,19 +647,26 @@ async function getMonthlyData(startDate, endDate) {
     monthlyData[month].cost += cost;
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
-    monthlyData[month].itemsSold +=
-      delivery.sale?.items?.reduce((s, i) => s + Number(i.quantity), 0) || 0;
+    const dItems = productId
+      ? delivery.sale?.items?.filter((it) => it.productId === productId) || []
+      : delivery.sale?.items || [];
+    monthlyData[month].itemsSold += dItems.reduce((s, i) => s + Number(i.quantity), 0);
   });
 
   return monthlyData;
 }
 
-async function getYearlyMonthlyData(year) {
+async function getYearlyMonthlyData(year, productId) {
   const yearStart = new Date(Date.UTC(year, 0, 1));
   const yearEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
 
   const sales = await prisma.sale.findMany({
-    where: { date: { gte: yearStart, lte: yearEnd } },
+    where: {
+      date: { gte: yearStart, lte: yearEnd },
+      ...(productId
+        ? { items: { some: { productId: productId } } }
+        : {}),
+    },
     include: {
       items: { include: { product: { select: { costPrice: true } } } },
       delivery: true,
@@ -561,7 +675,12 @@ async function getYearlyMonthlyData(year) {
   const undelivered = sales; // we count all sales for yearly monthly; deliveries handled separately below
 
   const deliveries = await prisma.delivery.findMany({
-    where: { deliveryDate: { gte: yearStart, lte: yearEnd } },
+    where: {
+      deliveryDate: { gte: yearStart, lte: yearEnd },
+      ...(productId
+        ? { sale: { items: { some: { productId: productId } } } }
+        : {}),
+    },
     include: {
       sale: {
         include: {
@@ -601,8 +720,13 @@ async function getYearlyMonthlyData(year) {
   // sales (all sales)
   sales.forEach((sale) => {
     const month = new Date(sale.date).getUTCMonth();
-    const revenue = Number(sale.totalAmount);
-    const cost = sale.items.reduce(
+    const items = productId
+      ? sale.items.filter((it) => it.productId === productId)
+      : sale.items;
+    const revenue = productId
+      ? items.reduce((s, it) => s + Number(it.subtotal || 0), 0)
+      : Number(sale.totalAmount);
+    const cost = items.reduce(
       (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
       0
     );
@@ -610,10 +734,7 @@ async function getYearlyMonthlyData(year) {
     monthlyData[month].cost += cost;
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
-    monthlyData[month].itemsSold += sale.items.reduce(
-      (s, i) => s + Number(i.quantity),
-      0
-    );
+    monthlyData[month].itemsSold += items.reduce((s, i) => s + Number(i.quantity), 0);
 
     // Note: we don't increment deliveries here; deliveries are counted from deliveries list below
   });
@@ -627,8 +748,10 @@ async function getYearlyMonthlyData(year) {
     monthlyData[month].revenue += revenue;
     monthlyData[month].profit += revenue - cost;
     monthlyData[month].count += 1;
-    monthlyData[month].itemsSold +=
-      delivery.sale?.items?.reduce((s, i) => s + Number(i.quantity), 0) || 0;
+    const dItems = productId
+      ? delivery.sale?.items?.filter((it) => it.productId === productId) || []
+      : delivery.sale?.items || [];
+    monthlyData[month].itemsSold += dItems.reduce((s, i) => s + Number(i.quantity), 0);
     monthlyData[month].deliveries += 1;
   });
 
@@ -636,11 +759,11 @@ async function getYearlyMonthlyData(year) {
 }
 
 // Function for year-over-year comparison
-async function getYearlyComparison(currentYear) {
+async function getYearlyComparison(currentYear, productId) {
   const previousYear = currentYear - 1;
 
-  const currentYearData = await getYearlyMonthlyData(currentYear);
-  const previousYearData = await getYearlyMonthlyData(previousYear);
+  const currentYearData = await getYearlyMonthlyData(currentYear, productId);
+  const previousYearData = await getYearlyMonthlyData(previousYear, productId);
 
   // Calculate totals for comparison
   const currentYearTotal = Object.values(currentYearData).reduce(

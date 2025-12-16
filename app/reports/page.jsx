@@ -62,8 +62,13 @@ const COLORS = [
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState("day");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  // Replaced single date with from/to range (defaults to today -> today)
+  const today = new Date().toISOString().split("T")[0];
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [products, setProducts] = useState([]);
+  const [selectedProductId, setSelectedProductId] = useState("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [report, setReport] = useState(null);
@@ -71,17 +76,55 @@ export default function ReportsPage() {
   useEffect(() => {
     fetchReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period, date, year]);
+  }, [period, fromDate, toDate, year, selectedProductId]);
+
+  // Load products once for the product filter
+  useEffect(() => {
+    let ignore = false;
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/products");
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = data?.data || data?.products || [];
+        if (!ignore) setProducts(Array.isArray(list) ? list : []);
+      } catch (e) {
+        // silent fail for filter list
+        console.error("Failed to load products for filter", e);
+      }
+    }
+    loadProducts();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   async function fetchReport() {
     setLoading(true);
     setError(null);
     const toastId = toast.loading("Loading report data...");
     try {
+      // Basic validation for date range when using range periods
+      if (period !== "year") {
+        if (!fromDate || !toDate) {
+          throw new Error("Please select both From and To dates");
+        }
+        if (new Date(fromDate) > new Date(toDate)) {
+          throw new Error("From date cannot be after To date");
+        }
+      }
+
       const params = new URLSearchParams();
       params.set("period", period);
-      if (period === "year") params.set("year", String(year));
-      else params.set("date", date);
+      if (period === "year") {
+        params.set("year", String(year));
+      } else {
+        params.set("from", fromDate);
+        params.set("to", toDate);
+      }
+      if (selectedProductId && selectedProductId !== "all") {
+        params.set("productId", String(selectedProductId));
+      }
 
       const res = await fetch(`/api/reports?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch report");
@@ -225,8 +268,8 @@ export default function ReportsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 ">
+        <div className="flex items-center justify-between  self-center">
           <Image
             src={ReportsImg}
             width={70}
@@ -236,44 +279,101 @@ export default function ReportsPage() {
           <h1 className="text-2xl font-semibold">Reports Dashboard</h1>
         </div>
 
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-wrap-reverse gap-3 items-center justify-end self-center">
           <Button onClick={fetchReport} variant="outline">
             <RefreshCcw />
             Refresh
           </Button>
 
-          <label className="flex flex-col">
-            <Select onValueChange={(v) => setPeriod(v)} value={period}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="day">Day</SelectItem>
-                <SelectItem value="week">Week</SelectItem>
-                <SelectItem value="month">Month</SelectItem>
-                <SelectItem value="year">Year</SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
+          {/*<label className="flex flex-col">*/}
+          {/*  <Select onValueChange={(v) => setPeriod(v)} value={period}>*/}
+          {/*    <SelectTrigger className="w-36">*/}
+          {/*      <SelectValue placeholder="Select period" />*/}
+          {/*    </SelectTrigger>*/}
+          {/*    <SelectContent>*/}
+          {/*      <SelectItem value="day">Day</SelectItem>*/}
+          {/*      <SelectItem value="week">Week</SelectItem>*/}
+          {/*      <SelectItem value="month">Month</SelectItem>*/}
+          {/*      <SelectItem value="year">Year</SelectItem>*/}
+          {/*    </SelectContent>*/}
+          {/*  </Select>*/}
+          {/*</label>*/}
 
           {period === "year" ? (
-            <label className="flex flex-col">
-              <Input
-                type="number"
-                className="w-36"
-                value={year}
-                onChange={(e) => setYear(Number(e.target.value))}
-              />
-            </label>
+            <div className="flex items-center gap-2">
+              <label className="flex flex-col">
+                <Input
+                  type="number"
+                  className="w-36"
+                  value={year}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                />
+              </label>
+              {/* Product filter for yearly as well */}
+              <span className="px-1 text-blue-700">product</span>
+              <label className="flex flex-col">
+                <Select
+                  value={String(selectedProductId)}
+                  onValueChange={(v) => setSelectedProductId(v)}
+                >
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="All products" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All products</SelectItem>
+                    {products?.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+            </div>
           ) : (
-            <label className="flex flex-col">
-              <Input
-                type="date"
-                className="w-44"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </label>
+            <div className="flex items-center gap-2">
+                <span className="px-1 text-blue-700">from</span>
+
+              <label className="flex flex-col">
+                {/*<span className="text-xs text-muted-foreground">From</span>*/}
+                <Input
+                  type="date"
+                  className="w-40"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </label>
+              <span className="px-1 text-blue-700">to</span>
+              <label className="flex flex-col">
+                {/*<span className="text-xs text-muted-foreground">To</span>*/}
+                <Input
+                  type="date"
+                  className="w-40"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </label>
+              {/* Product filter */}
+              <span className="px-1 text-blue-700">product</span>
+              <label className="flex flex-col">
+                <Select
+                  value={String(selectedProductId)}
+                  onValueChange={(v) => setSelectedProductId(v)}
+                >
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="All products" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All products</SelectItem>
+                    {products?.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+            </div>
           )}
 
           <div className="mr-3">
