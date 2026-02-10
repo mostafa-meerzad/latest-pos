@@ -13,6 +13,7 @@ model Sale {
   date           DateTime   @default(now()) @map("sale_date")
   userId         Int        @map("user_id")
   customerId     Int?       @map("customer_id")
+  branchId       Int        @default(1) @map("branch_id")
   totalAmount    Int        @map("total_amount")
   taxAmount      Int        @default(0) @map("tax_amount")
   paymentMethod  String     @map("payment_method")
@@ -22,9 +23,11 @@ model Sale {
   items          SaleItem[]
   customer       Customer?  @relation(fields: [customerId], references: [id])
   user           User       @relation(fields: [userId], references: [id])
+  branch         Branch     @relation(fields: [branchId], references: [id])
 
   @@index([customerId], map: "sales_customer_id_fkey")
   @@index([userId], map: "sales_user_id_fkey")
+  @@index([branchId], map: "sales_branch_id_fkey")
   @@map("sales")
 }
 
@@ -47,45 +50,55 @@ model SaleItem {
 model Product {
   id            Int        @id @default(autoincrement()) @map("product_id")
   name          String     @map("product_name")
-  barcode       String?    @unique
+  barcode       String?
   categoryId    Int        @map("category_id")
   supplierId    Int        @map("supplier_id")
+  branchId      Int        @default(1) @map("branch_id")
   price         Int        @map("price")
   costPrice     Int        @map("cost_price")
   stockQuantity Decimal    @map("stock_quantity")
   expiryDate    DateTime?  @map("expiry_date")
   status        String     @default("ACTIVE")
-  unit          String     
+  unit          String
   isDeleted     Boolean    @default(false)
   category      Category   @relation(fields: [categoryId], references: [id])
   supplier      Supplier   @relation(fields: [supplierId], references: [id])
+  branch        Branch     @relation(fields: [branchId], references: [id])
   saleItems     SaleItem[]
 
+  @@unique([barcode, branchId])
   @@index([categoryId], map: "products_category_id_fkey")
   @@index([supplierId], map: "products_supplier_id_fkey")
+  @@index([branchId], map: "products_branch_id_fkey")
   @@map("products")
 }
 
 model Category {
   id         Int       @id @default(autoincrement()) @map("category_id")
-  name       String    @unique @map("category_name")
+  name       String    @map("category_name")
+  branchId   Int       @default(1) @map("branch_id")
   status     String    @default("ACTIVE")
   is_deleted Boolean   @default(false)
   products   Product[]
+  branch     Branch    @relation(fields: [branchId], references: [id])
 
+  @@unique([name, branchId])
   @@map("categories")
 }
 
 model Supplier {
   id            Int       @id @default(autoincrement()) @map("supplier_id")
-  name          String    @unique @map("supplier_name")
+  name          String    @map("supplier_name")
+  branchId      Int       @default(1) @map("branch_id")
   contactPerson String?   @map("contact_person")
   phone         String?
   email         String?
   address       String?
   status        String    @default("ACTIVE")
   products      Product[]
+  branch        Branch    @relation(fields: [branchId], references: [id])
 
+  @@unique([name, branchId])
   @@map("suppliers")
 }
 
@@ -95,11 +108,14 @@ model User {
   password String @map("password_hash")
   fullName String @map("full_name")
   roleId   Int    @map("role_id")
+  branchId Int    @default(1) @map("branch_id")
   status   String @default("ACTIVE")
   sales    Sale[]
   role     Role   @relation(fields: [roleId], references: [id])
+  branch   Branch @relation(fields: [branchId], references: [id])
 
   @@index([roleId], map: "users_role_id_fkey")
+  @@index([branchId], map: "users_branch_id_fkey")
   @@map("users")
 }
 
@@ -116,14 +132,18 @@ model Customer {
   id         Int        @id @default(autoincrement()) @map("customer_id")
   name       String
   lastName   String?    @map("last_name") // 🆕 optional last name field
-  phone      String?    @unique
-  email      String?    @unique
+  phone      String?
+  email      String?
+  branchId   Int        @default(1) @map("branch_id")
   address    String?
   createdAt  DateTime   @default(now()) @map("created_at")
   status     String     @default("ACTIVE")
   deliveries Delivery[]
   sales      Sale[]
+  branch     Branch     @relation(fields: [branchId], references: [id])
 
+  @@unique([phone, branchId])
+  @@unique([email, branchId])
   @@map("customers")
 }
 
@@ -140,11 +160,14 @@ model Invoice {
 model DeliveryDriver {
   id         Int        @id @default(autoincrement()) @map("driver_id")
   name       String
-  phone      String     @unique
+  phone      String
+  branchId   Int        @default(1) @map("branch_id")
   joinDate   DateTime   @default(now()) @map("join_date")
   isDeleted  Boolean    @default(false)
   deliveries Delivery[]
+  branch     Branch     @relation(fields: [branchId], references: [id])
 
+  @@unique([phone, branchId])
   @@map("delivery_drivers")
 }
 
@@ -152,6 +175,7 @@ model Delivery {
   id              Int             @id @default(autoincrement()) @map("delivery_id")
   saleId          Int             @unique @map("sale_id")
   customerId      Int             @map("customer_id")
+  branchId        Int             @default(1) @map("branch_id")
   deliveryAddress String          @map("delivery_address")
   deliveryDate    DateTime?       @map("delivery_date")
   status          String          @default("pending") @map("delivery_status")
@@ -162,8 +186,30 @@ model Delivery {
   customer        Customer        @relation(fields: [customerId], references: [id])
   driver          DeliveryDriver? @relation(fields: [driverId], references: [id])
   sale            Sale            @relation(fields: [saleId], references: [id])
+  branch          Branch          @relation(fields: [branchId], references: [id])
 
   @@index([customerId], map: "deliveries_customer_id_fkey")
   @@index([driverId], map: "deliveries_driver_id_fkey")
+  @@index([branchId], map: "deliveries_branch_id_fkey")
   @@map("deliveries")
+}
+
+model Branch {
+  id              Int              @id @default(autoincrement()) @map("branch_id")
+  name            String           @unique
+  location        String?
+  phone           String?
+  isMain          Boolean          @default(false) @map("is_main")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  status          String           @default("ACTIVE")
+  users           User[]
+  sales           Sale[]
+  products        Product[]
+  categories      Category[]
+  suppliers       Supplier[]
+  customers       Customer[]
+  deliveryDrivers DeliveryDriver[]
+  deliveries      Delivery[]
+
+  @@map("branches")
 }

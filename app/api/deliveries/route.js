@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getAuthFromRequest } from "@/lib/auth";
 
 // Create a new delivery
 export async function POST(request) {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const branchId = auth.branchId || 1;
+
     const body = await request.json();
     const {
       saleId,
@@ -56,10 +61,52 @@ export async function POST(request) {
       );
     }
 
+    // Ensure sale belongs to the same branch
+    if (existingSale.branchId !== branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Sale belongs to another branch" },
+        { status: 403 }
+      );
+    }
+
+    // Ensure customer exists
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      return NextResponse.json(
+        { success: false, error: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
+    // Ensure driver belongs to the same branch (if provided)
+    if (driverId) {
+      const driver = await prisma.deliveryDriver.findUnique({
+        where: { id: driverId },
+      });
+
+      if (!driver) {
+        return NextResponse.json(
+          { success: false, error: "Driver not found" },
+          { status: 404 }
+        );
+      }
+
+      if (driver.branchId !== branchId) {
+        return NextResponse.json(
+          { success: false, error: "Forbidden: Driver belongs to another branch" },
+          { status: 403 }
+        );
+      }
+    }
+
     const delivery = await prisma.delivery.create({
       data: {
         saleId,
         customerId,
+        branchId,
         deliveryAddress,
         driverId: driverId || null,
         deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
@@ -89,6 +136,9 @@ export async function POST(request) {
 // Get all deliveries with pagination and filtering
 export async function GET(req) {
   try {
+    const auth = await getAuthFromRequest(req);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "all";
@@ -99,7 +149,7 @@ export async function GET(req) {
     const skip = (page - 1) * limit;
 
     // Build where conditions
-    const where = { deleted: false };
+    const where = { deleted: false, branchId: auth.branchId };
 
     // Status filter
     if (status !== "all") {

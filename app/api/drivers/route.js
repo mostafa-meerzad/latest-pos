@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getAuthFromRequest } from "@/lib/auth";
 
 // Create a new driver
 export async function POST(request) {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const branchId = auth.branchId || 1;
+
     const body = await request.json();
     const { name, phone } = body;
 
@@ -22,19 +27,19 @@ export async function POST(request) {
       );
     }
 
-    const existingDriver = await prisma.deliveryDriver.findUnique({
-      where: { phone },
+    const existingDriver = await prisma.deliveryDriver.findFirst({
+      where: { phone, branchId },
     });
 
     if (existingDriver) {
       return NextResponse.json(
-        { success: false, error: "Driver with this phone already exists" },
+        { success: false, error: "Driver with this phone already exists in this branch" },
         { status: 400 }
       );
     }
 
     const driver = await prisma.deliveryDriver.create({
-      data: { name, phone },
+      data: { name, phone, branchId },
     });
 
     return NextResponse.json({ success: true, data: driver }, { status: 201 });
@@ -49,10 +54,15 @@ export async function POST(request) {
 
 
 // Get all drivers
-export async function GET() {
+export async function GET(request) {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const where = { isDeleted: false, branchId: auth.branchId };
+
     const drivers = await prisma.deliveryDriver.findMany({
-      where: { isDeleted: false },
+      where,
       include: { deliveries: true },
       orderBy: { id: "desc" },
     });

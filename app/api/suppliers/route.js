@@ -1,11 +1,17 @@
 import { createSupplierSchema } from "@/app/services/supplierSchema";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getAuthFromRequest } from "@/lib/auth";
 
-export const GET = async () => {
+export const GET = async (request) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const where = { status: "ACTIVE", branchId: auth.branchId };
+
     const suppliers = await prisma.supplier.findMany({
-      where: {status: "ACTIVE"},
+      where,
       include: { products: true },
     });
 
@@ -49,19 +55,22 @@ export const POST = async (request) => {
       );
 
     const { name, email, address, contactPerson, phone } = validation.data;
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const branchId = auth.branchId || 1;
 
     const existingSupplier = await prisma.supplier.findFirst({
-      where: { name: name },
+      where: { name: name, branchId: branchId },
     });
 
     if (existingSupplier)
       return NextResponse.json(
-        { success: false, error: "supplier already exist" },
+        { success: false, error: "supplier already exist in this branch" },
         { status: 409 }
       );
 
     const newSupplier = await prisma.supplier.create({
-      data: { name, email, address, contactPerson, phone },
+      data: { name, email, address, contactPerson, phone, branchId },
     });
 
     return NextResponse.json(

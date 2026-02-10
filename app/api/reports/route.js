@@ -1,9 +1,36 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getAuthFromRequest } from "@/lib/auth";
 
 export async function GET(request) {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
+    const branchIdParam = searchParams.get("branchId");
+    
+    // Check if user's branch is main
+    const userBranch = await prisma.branch.findUnique({
+      where: { id: auth.branchId },
+      select: { isMain: true }
+    });
+    const isMainBranch = userBranch?.isMain || false;
+
+    let filterBranchId = auth.branchId;
+    if (isMainBranch) {
+      if (branchIdParam === "all") {
+        filterBranchId = null;
+      } else if (branchIdParam) {
+        filterBranchId = parseInt(branchIdParam);
+      } else {
+        // Default for main branch: see everything
+        filterBranchId = null; 
+      }
+    } else {
+      // Regular branches only see their own data
+      filterBranchId = auth.branchId;
+    }
     const period = searchParams.get("period") || "day";
     const date =
       searchParams.get("date") || new Date().toISOString().split("T")[0];
@@ -98,6 +125,7 @@ export async function GET(request) {
           gte: startDate,
           lte: endDate,
         },
+        ...(filterBranchId ? { branchId: filterBranchId } : {}),
         ...(productId
           ? {
               items: {
@@ -116,6 +144,12 @@ export async function GET(request) {
                 id: true,
                 name: true,
                 costPrice: true,
+                branch: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
           },
@@ -131,6 +165,7 @@ export async function GET(request) {
           gte: startDate,
           lte: endDate,
         },
+        ...(filterBranchId ? { branchId: filterBranchId } : {}),
         ...(productId
           ? {
               sale: {
@@ -151,6 +186,12 @@ export async function GET(request) {
                     id: true,
                     name: true,
                     costPrice: true,
+                    branch: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
                   },
                 },
               },
@@ -269,14 +310,14 @@ export async function GET(request) {
     let yearlyData = {};
 
     if (period === "day") {
-      hourlyData = await getHourlyData(startDate, endDate, productId);
+      hourlyData = await getHourlyData(startDate, endDate, productId, filterBranchId);
     } else if (period === "week") {
-      weeklyData = await getWeeklyData(startDate, endDate, productId);
+      weeklyData = await getWeeklyData(startDate, endDate, productId, filterBranchId);
     } else if (period === "month") {
-      monthlyData = await getMonthlyData(startDate, endDate, productId);
+      monthlyData = await getMonthlyData(startDate, endDate, productId, filterBranchId);
     } else if (period === "year") {
-      monthlyData = await getYearlyMonthlyData(parseInt(year), productId);
-      yearlyData = await getYearlyComparison(parseInt(year), productId);
+      monthlyData = await getYearlyMonthlyData(parseInt(year), productId, filterBranchId);
+      yearlyData = await getYearlyComparison(parseInt(year), productId, filterBranchId);
     }
 
     const response = {
@@ -346,17 +387,18 @@ export async function GET(request) {
 // Helper: build unified aggregates for a given period by using sales (undelivered) + deliveries (by deliveryDate)
 // NOTES: use UTC consistently
 
-async function getHourlyData(startDate, endDate, productId) {
+async function getHourlyData(startDate, endDate, productId, branchId) {
   // sales by sale.date (all sales)
   const sales = await prisma.sale.findMany({
     where: {
       date: { gte: startDate, lte: endDate },
+      ...(branchId ? { branchId } : {}),
       ...(productId
         ? { items: { some: { productId: productId } } }
         : {}),
     },
     include: {
-      items: { include: { product: { select: { costPrice: true } } } },
+      items: { include: { product: { select: { costPrice: true, branch: { select: { id: true, name: true } } } } } },
       delivery: true,
     },
   });
@@ -365,6 +407,7 @@ async function getHourlyData(startDate, endDate, productId) {
   const deliveries = await prisma.delivery.findMany({
     where: {
       deliveryDate: { gte: startDate, lte: endDate },
+      ...(branchId ? { branchId } : {}),
       ...(productId
         ? { sale: { items: { some: { productId: productId } } } }
         : {}),
@@ -372,7 +415,7 @@ async function getHourlyData(startDate, endDate, productId) {
     include: {
       sale: {
         include: {
-          items: { include: { product: { select: { costPrice: true } } } },
+          items: { include: { product: { select: { costPrice: true, branch: { select: { id: true, name: true } } } } } },
         },
       },
     },
@@ -428,16 +471,17 @@ async function getHourlyData(startDate, endDate, productId) {
   return hourlyData;
 }
 
-async function getWeeklyData(startDate, endDate, productId) {
+async function getWeeklyData(startDate, endDate, productId, branchId) {
   const sales = await prisma.sale.findMany({
     where: {
       date: { gte: startDate, lte: endDate },
+      ...(branchId ? { branchId } : {}),
       ...(productId
         ? { items: { some: { productId: productId } } }
         : {}),
     },
     include: {
-      items: { include: { product: { select: { costPrice: true } } } },
+      items: { include: { product: { select: { costPrice: true, branch: { select: { id: true, name: true } } } } } },
       delivery: true,
     },
   });
@@ -445,6 +489,7 @@ async function getWeeklyData(startDate, endDate, productId) {
   const deliveries = await prisma.delivery.findMany({
     where: {
       deliveryDate: { gte: startDate, lte: endDate },
+      ...(branchId ? { branchId } : {}),
       ...(productId
         ? { sale: { items: { some: { productId: productId } } } }
         : {}),
@@ -540,10 +585,11 @@ async function getWeeklyData(startDate, endDate, productId) {
   return weeklyData;
 }
 
-async function getMonthlyData(startDate, endDate, productId) {
+async function getMonthlyData(startDate, endDate, productId, branchId) {
   const sales = await prisma.sale.findMany({
     where: {
       date: { gte: startDate, lte: endDate },
+      ...(branchId ? { branchId } : {}),
       ...(productId
         ? { items: { some: { productId: productId } } }
         : {}),
@@ -557,6 +603,7 @@ async function getMonthlyData(startDate, endDate, productId) {
   const deliveries = await prisma.delivery.findMany({
     where: {
       deliveryDate: { gte: startDate, lte: endDate },
+      ...(branchId ? { branchId } : {}),
       ...(productId
         ? { sale: { items: { some: { productId: productId } } } }
         : {}),
@@ -656,13 +703,14 @@ async function getMonthlyData(startDate, endDate, productId) {
   return monthlyData;
 }
 
-async function getYearlyMonthlyData(year, productId) {
+async function getYearlyMonthlyData(year, productId, branchId) {
   const yearStart = new Date(Date.UTC(year, 0, 1));
   const yearEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
 
   const sales = await prisma.sale.findMany({
     where: {
       date: { gte: yearStart, lte: yearEnd },
+      ...(branchId ? { branchId } : {}),
       ...(productId
         ? { items: { some: { productId: productId } } }
         : {}),
@@ -677,6 +725,7 @@ async function getYearlyMonthlyData(year, productId) {
   const deliveries = await prisma.delivery.findMany({
     where: {
       deliveryDate: { gte: yearStart, lte: yearEnd },
+      ...(branchId ? { branchId } : {}),
       ...(productId
         ? { sale: { items: { some: { productId: productId } } } }
         : {}),

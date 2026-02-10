@@ -1,13 +1,28 @@
 import { createUserSchema } from "@/app/services/userSchema";
-import { hashPassword } from "@/lib/auth";
+import { hashPassword, getAuthFromRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export const GET = async () => {
+export const GET = async (request) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const where = { status: "ACTIVE" };
+    
+    // Check if user belongs to main branch
+    const currentUser = await prisma.user.findUnique({
+      where: { id: auth.id },
+      include: { branch: true }
+    });
+
+    if (auth.role !== "ADMIN" || !currentUser?.branch?.isMain) {
+      where.branchId = auth.branchId;
+    }
+
     const users = await prisma.user.findMany({
-      where: { status: "ACTIVE" },
-      include: { role: true },
+      where,
+      include: { role: true, branch: true },
     });
     return NextResponse.json({ success: true, data: users }, { status: 200 });
   } catch (error) {
@@ -61,7 +76,21 @@ export const POST = async (request) => {
       );
     }
 
-    const { username, password, fullName, role } = validation.data;
+    const { username, password, fullName, role, branchId } = validation.data;
+
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    // Check if user belongs to main branch
+    const currentUser = await prisma.user.findUnique({
+      where: { id: auth.id },
+      include: { branch: true }
+    });
+
+    const isMainBranchAdmin = auth.role === "ADMIN" && currentUser?.branch?.isMain;
+
+    // Use branchId from body if provided and user is main branch ADMIN, otherwise use auth.branchId
+    const targetBranchId = isMainBranchAdmin && branchId ? branchId : (auth.branchId || 1);
 
     const user = await prisma.user.findFirst({ where: { username } });
     if (user)
@@ -85,6 +114,7 @@ export const POST = async (request) => {
         fullName,
         password: hashedPassword,
         roleId: dbRole.id,
+        branchId: targetBranchId,
       },
     });
 

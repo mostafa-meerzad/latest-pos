@@ -60,6 +60,10 @@ export async function POST(req) {
       });
       if (!customer) {
         customer = await getOrCreateWalkInCustomer(prisma);
+      } else {
+        if (session.role !== "ADMIN" && customer.branchId !== session.branchId) {
+          throw new ApiError(`Customer belongs to another branch`, 403);
+        }
       }
     }
 
@@ -76,6 +80,16 @@ export async function POST(req) {
         throw new ApiError(`Product with id ${productId} not found`, 404);
       }
 
+      const userBranch = await prisma.branch.findUnique({
+        where: { id: session.branchId },
+        select: { isMain: true }
+      });
+      const isMainBranch = userBranch?.isMain || false;
+
+      if ((session.role !== "ADMIN" || !isMainBranch) && product.branchId !== session.branchId) {
+        throw new ApiError(`Product ${product.name} belongs to another branch`, 403);
+      }
+
       if (product.stockQuantity < quantity) {
         throw new ApiError(
           `Not enough stock for product ${product.name}. Available: ${product.stockQuantity}, Requested: ${quantity}`,
@@ -89,6 +103,7 @@ export async function POST(req) {
       data: {
         userId,
         customerId: customer.id,
+        branchId: session.branchId || 1,
         paymentMethod,
         taxAmount,
         totalAmount,
@@ -158,6 +173,14 @@ export async function POST(req) {
 
 export async function GET(req) {
   try {
+    const session = await getAuthFromRequest(req);
+    if (!session || !session.id) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: missing session" },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
     const payment = searchParams.get("payment") || "all";
@@ -169,7 +192,7 @@ export async function GET(req) {
     const skip = (page - 1) * limit;
 
     // 🔍 Build Prisma where conditions
-    const where = {};
+    const where = { branchId: session.branchId };
 
     // payment filter
     if (payment !== "all") {

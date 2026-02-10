@@ -1,13 +1,17 @@
 import { createCustomerSchema } from "@/app/services/customerSchema";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getAuthFromRequest } from "@/lib/auth";
 
-export const GET = async () => {
+export const GET = async (request) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const where = { status: "ACTIVE", branchId: auth.branchId };
+
     const customers = await prisma.customer.findMany({
-      where: {
-        status: "ACTIVE",
-      },
+      where,
       include: {
         sales: true, // include all sales for this customer
       },
@@ -68,6 +72,9 @@ export const POST = async (request) => {
     }
 
     let { name, email, address, phone } = validation.data;
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const branchId = auth.branchId || 1;
 
     // ✅ Ensure name is provided
     if (!name || name.trim() === "") {
@@ -81,6 +88,7 @@ export const POST = async (request) => {
     if (name.toLowerCase() === "walk-in") {
       const count = await prisma.customer.count({
         where: {
+          branchId: branchId,
           name: {
             startsWith: "Walk-in",
           },
@@ -89,24 +97,28 @@ export const POST = async (request) => {
       name = `Walk-in #${count + 1}`;
     }
 
-    // ✅ Check duplicates for email & phone
+    // ✅ Check duplicates for email & phone within branch
     if (email) {
-      const existing = await prisma.customer.findUnique({ where: { email } });
+      const existing = await prisma.customer.findFirst({ 
+        where: { email, branchId } 
+      });
       if (existing) {
         return NextResponse.json(
-          { success: false, error: "Customer with given email already exists" },
+          { success: false, error: "Customer with given email already exists in this branch" },
           { status: 409 }
         );
       }
     }
 
     if (phone) {
-      const existing = await prisma.customer.findUnique({ where: { phone } });
+      const existing = await prisma.customer.findFirst({ 
+        where: { phone, branchId } 
+      });
       if (existing) {
         return NextResponse.json(
           {
             success: false,
-            error: "Customer with given phone number already exists",
+            error: "Customer with given phone number already exists in this branch",
           },
           { status: 409 }
         );
@@ -115,7 +127,7 @@ export const POST = async (request) => {
 
     // ✅ Create customer
     const newCustomer = await prisma.customer.create({
-      data: { name, email, address, phone },
+      data: { name, email, address, phone, branchId },
     });
 
     return NextResponse.json(

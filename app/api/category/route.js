@@ -1,13 +1,17 @@
 import { createCategorySchema } from "@/app/services/categorySchema";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getAuthFromRequest } from "@/lib/auth";
 
-export const GET = async () => {
+export const GET = async (request) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const where = { is_deleted: false, branchId: auth.branchId };
+
     const categories = await prisma.category.findMany({
-      where: {
-        is_deleted: false,
-      },
+      where,
     });
 
     if (!categories)
@@ -61,15 +65,23 @@ export const POST = async (request) => {
     }
 
     const { name } = validation.data;
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const category = await prisma.category.findFirst({ where: { name: name } });
+    const branchId = auth.branchId || 1;
+
+    const category = await prisma.category.findFirst({ 
+      where: { name: name, branchId: branchId } 
+    });
     if (category)
       return NextResponse.json(
-        { success: false, error: "Category already exist" },
+        { success: false, error: "Category already exist in this branch" },
         { status: 409 }
       );
 
-    const newCategory = await prisma.category.create({ data: { name } });
+    const newCategory = await prisma.category.create({ 
+      data: { name, branchId: branchId } 
+    });
     return NextResponse.json(
       { success: true, data: newCategory },
       { status: 201 }

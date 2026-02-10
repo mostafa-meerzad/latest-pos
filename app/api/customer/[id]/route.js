@@ -2,9 +2,13 @@ import { updateCustomerSchema } from "@/app/services/customerSchema";
 import prisma from "@/lib/prisma";
 import { STATUS } from "@/lib/status";
 import { NextResponse } from "next/server";
+import { getAuthFromRequest } from "@/lib/auth";
 
 export const GET = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
 
     const customer = await prisma.customer.findUnique({
@@ -15,6 +19,13 @@ export const GET = async (request, { params }) => {
         { success: false, error: "Customer not found" },
         { status: 404 }
       );
+
+    if (auth.role !== "ADMIN" && customer.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Customer belongs to another branch" },
+        { status: 403 }
+      );
+    }
 
     return NextResponse.json(
       { success: true, data: customer },
@@ -30,12 +41,14 @@ export const GET = async (request, { params }) => {
 
 export const PUT = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
 
     let body;
     try {
       body = await request.json();
-      //console.log("Incoming body:", body);
     } catch (e) {
       return NextResponse.json(
         { success: false, error: "Invalid or empty JSON payload" },
@@ -45,7 +58,6 @@ export const PUT = async (request, { params }) => {
 
     const validation = updateCustomerSchema.safeParse(body);
     if (!validation.success){
-      console.log("Validation error:", validation.error.flatten());
       return NextResponse.json(
         { success: false, error: validation.error.flatten() },
         { status: 400 }
@@ -61,6 +73,13 @@ export const PUT = async (request, { params }) => {
         { success: false, error: "Customer not found" },
         { status: 404 }
       );
+
+    if (auth.role !== "ADMIN" && customer.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Customer belongs to another branch" },
+        { status: 403 }
+      );
+    }
 
     const updateData = {};
     if (name) updateData.name = name; 
@@ -87,6 +106,9 @@ export const PUT = async (request, { params }) => {
 
 export const DELETE = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
 
     const customer = await prisma.customer.findUnique({
@@ -97,6 +119,13 @@ export const DELETE = async (request, { params }) => {
         { success: false, error: "Customer not found" },
         { status: 404 }
       );
+
+    if (auth.role !== "ADMIN" && customer.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Customer belongs to another branch" },
+        { status: 403 }
+      );
+    }
 
     const deletedCustomer = await prisma.customer.update({
       where: { id: Number(id) },

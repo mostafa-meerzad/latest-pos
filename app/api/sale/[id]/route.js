@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getAuthFromRequest } from "@/lib/auth";
 
 export async function GET(req, { params }) {
   try {
+    const auth = await getAuthFromRequest(req);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await(params);
 
     const sale = await prisma.sale.findUnique({
@@ -20,6 +24,13 @@ export async function GET(req, { params }) {
       return NextResponse.json(
         { success: false, error: "Sale not found" },
         { status: 404 }
+      );
+    }
+
+    if (auth.role !== "ADMIN" && sale.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Sale belongs to another branch" },
+        { status: 403 }
       );
     }
 

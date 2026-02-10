@@ -23,8 +23,21 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
     }
 
-    const token = await signSession({ id: user.id, username: user.username, role: user.role?.name });
-    const res = NextResponse.json({ success: true, user: { id: user.id, username: user.username, role: user.role?.name } });
+    const token = await signSession({ 
+      id: user.id, 
+      username: user.username, 
+      role: user.role?.name,
+      branchId: user.branchId 
+    });
+    const res = NextResponse.json({ 
+      success: true, 
+      user: { 
+        id: user.id, 
+        username: user.username, 
+        role: user.role?.name,
+        branchId: user.branchId 
+      } 
+    });
     res.headers.set("Set-Cookie", buildSessionCookie(token));
     return res;
   } catch (e) {

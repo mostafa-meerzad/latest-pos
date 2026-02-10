@@ -2,9 +2,13 @@ import { updateSupplierSchema } from "@/app/services/supplierSchema";
 import prisma from "@/lib/prisma";
 import { STATUS } from "@/lib/status";
 import { NextResponse } from "next/server";
+import { getAuthFromRequest } from "@/lib/auth";
 
 export const GET = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
 
     if (isNaN(id)) {
@@ -25,6 +29,13 @@ export const GET = async (request, { params }) => {
         { status: 404 }
       );
 
+    if (auth.role !== "ADMIN" && supplier.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Supplier belongs to another branch" },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
       { success: true, data: supplier },
       { status: 200 }
@@ -39,6 +50,9 @@ export const GET = async (request, { params }) => {
 
 export const PUT = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params; 
 
     if (isNaN(id)) {
@@ -88,6 +102,13 @@ export const PUT = async (request, { params }) => {
         { status: 404 }
       );
 
+    if (auth.role !== "ADMIN" && supplier.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Supplier belongs to another branch" },
+        { status: 403 }
+      );
+    }
+
     // Use typeof !== 'undefined' so falsy-but-valid values (like empty strings) aren't skipped
     const updateData = {};
     if (typeof name !== "undefined") updateData.name = name;
@@ -116,25 +137,35 @@ export const PUT = async (request, { params }) => {
 
 export const DELETE = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
 
-    const category = await prisma.category.findUnique({
+    const supplier = await prisma.supplier.findUnique({
       where: { id: Number(id) },
     });
 
-    if (!category)
+    if (!supplier)
       return NextResponse.json(
-        { success: false, error: "Category not found" },
+        { success: false, error: "Supplier not found" },
         { status: 404 }
       );
 
-    const deletedCategory = await prisma.category.update({
+    if (auth.role !== "ADMIN" && supplier.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Supplier belongs to another branch" },
+        { status: 403 }
+      );
+    }
+
+    const deletedSupplier = await prisma.supplier.update({
       where: { id: Number(id) },
-      data: { is_deleted: true },
+      data: { status: "DELETED" },
     });
 
     return NextResponse.json(
-      { success: true, data: deletedCategory },
+      { success: true, data: deletedSupplier },
       { status: 200 }
     );
   } catch (error) {

@@ -51,10 +51,11 @@ export async function PUT(req, { params }) {
         username: body.username,
         fullName: body.fullName,
         status: body.status,
+        branchId: body.branchId,
         ...(roleId && { roleId }), // only update role if provided
         ...(password && {password: password})
       },
-      include: { role: true },
+      include: { role: true, branch: true },
     });
     return NextResponse.json(updatedUser);
   } catch (error) {

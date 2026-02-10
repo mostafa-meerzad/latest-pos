@@ -80,6 +80,18 @@ import { ROLES } from "../lib/roles.js";
 const prisma = new PrismaClient();
 
 async function main() {
+  // === BRANCHES ===
+  const mainBranch = await prisma.branch.upsert({
+    where: { name: "Main Branch" },
+    update: {},
+    create: {
+      name: "Main Branch",
+      location: "Central Office",
+      isMain: true,
+    },
+  });
+  console.log("✅ Main Branch seeded");
+
   // === ROLES ===
   for (const roleName of Object.values(ROLES)) {
     await prisma.role.upsert({
@@ -103,12 +115,14 @@ async function main() {
       fullName: "System Admin",
       password: await bcrypt.hash(PLAIN_ADMIN_PASSWORD, 10),
       roleId: adminRole.id,
+      branchId: mainBranch.id,
     },
     create: {
       username: "admin",
       fullName: "System Admin",
       password: await bcrypt.hash(PLAIN_ADMIN_PASSWORD, 10),
       roleId: adminRole.id,
+      branchId: mainBranch.id,
     },
   });
 
@@ -117,7 +131,7 @@ async function main() {
 
   // === WALK-IN CUSTOMER ===
   const existingCustomer = await prisma.customer.findFirst({
-    where: { name: "WALK-IN CUSTOMER" },
+    where: { name: "WALK-IN CUSTOMER", branchId: mainBranch.id },
   });
   if (!existingCustomer) {
     await prisma.customer.create({
@@ -127,6 +141,7 @@ async function main() {
         phone: null,
         email: null,
         address: null,
+        branchId: mainBranch.id,
       },
     });
     console.log("✅ WALK-IN CUSTOMER created.");

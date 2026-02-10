@@ -72,18 +72,63 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [report, setReport] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState("all");
+
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const res = await fetch("/api/me");
+        const json = await res.json();
+        if (json.success) {
+          setCurrentUser(json.data);
+          // If not main branch, they can only see their own branch
+          if (!json.data.isMain) {
+            setSelectedBranchId(String(json.data.branchId));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch user", e);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    if (currentUser?.isMain) {
+      async function fetchBranches() {
+        try {
+          const res = await fetch("/api/branches");
+          const json = await res.json();
+          if (json.success) {
+            setBranches(json.data);
+          }
+        } catch (e) {
+          console.error("Failed to fetch branches", e);
+        }
+      }
+      fetchBranches();
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     fetchReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period, fromDate, toDate, year, selectedProductId]);
+  }, [period, fromDate, toDate, year, selectedProductId, selectedBranchId]);
 
   // Load products once for the product filter
   useEffect(() => {
     let ignore = false;
     async function loadProducts() {
       try {
-        const res = await fetch("/api/products");
+        const params = new URLSearchParams();
+        if (selectedBranchId && selectedBranchId !== "all") {
+          params.set("branchId", String(selectedBranchId));
+        } else if (selectedBranchId === "all") {
+          params.set("branchId", "all");
+        }
+        const res = await fetch(`/api/products?${params.toString()}`);
         if (!res.ok) return;
         const data = await res.json();
         const list = data?.data || data?.products || [];
@@ -97,7 +142,7 @@ export default function ReportsPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [selectedBranchId]);
 
   async function fetchReport() {
     setLoading(true);
@@ -124,6 +169,11 @@ export default function ReportsPage() {
       }
       if (selectedProductId && selectedProductId !== "all") {
         params.set("productId", String(selectedProductId));
+      }
+      if (selectedBranchId && selectedBranchId !== "all") {
+        params.set("branchId", String(selectedBranchId));
+      } else if (selectedBranchId === "all") {
+        params.set("branchId", "all");
       }
 
       const res = await fetch(`/api/reports?${params.toString()}`);
@@ -284,6 +334,30 @@ export default function ReportsPage() {
             <RefreshCcw />
             Refresh
           </Button>
+
+          {currentUser?.isMain && (
+            <div className="flex items-center gap-2">
+              <span className="px-1 text-blue-700">branch</span>
+              <label className="flex flex-col">
+                <Select
+                  value={String(selectedBranchId)}
+                  onValueChange={(v) => setSelectedBranchId(v)}
+                >
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="All Branches" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Branches</SelectItem>
+                    {branches?.map((b) => (
+                      <SelectItem key={b.id} value={String(b.id)}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+            </div>
+          )}
 
           {/*<label className="flex flex-col">*/}
           {/*  <Select onValueChange={(v) => setPeriod(v)} value={period}>*/}
@@ -788,6 +862,7 @@ export default function ReportsPage() {
                     <TableRow>
                       <TableHead>#</TableHead>
                       <TableHead>Product</TableHead>
+                      <TableHead>Branch</TableHead>
                       <TableHead>Qty</TableHead>
                       <TableHead>Revenue</TableHead>
                       <TableHead>Cost Price</TableHead>
@@ -799,6 +874,7 @@ export default function ReportsPage() {
                         <TableRow key={idx}>
                           <TableCell>{idx + 1}</TableCell>
                           <TableCell>{p.product?.name}</TableCell>
+                          <TableCell className="truncate whitespace-nowrap overflow-hidden max-w-24">{p.product?.branch?.name}</TableCell>
                           <TableCell>{Number(p.quantity).toFixed(2)}</TableCell>
                           <TableCell>{fmtCurrency(p.revenue)}</TableCell>
                           <TableCell>
@@ -808,7 +884,7 @@ export default function ReportsPage() {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center">
+                        <TableCell colSpan={6} className="text-center">
                           No top products data
                         </TableCell>
                       </TableRow>

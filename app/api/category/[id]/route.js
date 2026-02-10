@@ -2,9 +2,13 @@ import { updateCategorySchema } from "@/app/services/categorySchema";
 import prisma from "@/lib/prisma";
 import { STATUS } from "@/lib/status";
 import { NextResponse } from "next/server";
+import { getAuthFromRequest } from "@/lib/auth";
 
 export const GET = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
 
     const category = await prisma.category.findUnique({
@@ -15,6 +19,13 @@ export const GET = async (request, { params }) => {
         { success: false, error: "Category not found" },
         { status: 404 }
       );
+
+    if (category.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Category belongs to another branch" },
+        { status: 403 }
+      );
+    }
 
     return NextResponse.json(
       { success: true, data: category },
@@ -30,6 +41,9 @@ export const GET = async (request, { params }) => {
 
 export const PUT = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
 
     let body;
@@ -65,6 +79,13 @@ export const PUT = async (request, { params }) => {
         { status: 404 }
       );
 
+    if (category.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Category belongs to another branch" },
+        { status: 403 }
+      );
+    }
+
     const { name, status } = validation.data;
 
     const updatedCategory = await prisma.category.update({
@@ -87,6 +108,9 @@ export const PUT = async (request, { params }) => {
 
 export const DELETE = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
 
     const category = await prisma.category.findUnique({
@@ -97,6 +121,13 @@ export const DELETE = async (request, { params }) => {
         { success: false, error: "Category not found" },
         { status: 404 }
       );
+
+    if (auth.role !== "ADMIN" && category.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Category belongs to another branch" },
+        { status: 403 }
+      );
+    }
 
     const deletedCategory = await prisma.category.update({
       where: { id: Number(id) },

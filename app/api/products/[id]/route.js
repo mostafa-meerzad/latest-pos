@@ -2,9 +2,13 @@ import { updateProductSchema } from "@/app/services/productSchema";
 import prisma from "@/lib/prisma";
 import { STATUS } from "@/lib/status";
 import { NextResponse } from "next/server";
+import { getAuthFromRequest } from "@/lib/auth";
 
 export const GET = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
 
     if (isNaN(id)) {
@@ -24,6 +28,13 @@ export const GET = async (request, { params }) => {
         { success: false, error: "Product Not Found" },
         { status: 404 }
       );
+
+    if (auth.role !== "ADMIN" && product.branchId !== auth.branchId) {
+       return NextResponse.json(
+        { success: false, error: "Forbidden: Product belongs to another branch" },
+        { status: 403 }
+      );
+    }
 
     return NextResponse.json({ success: true, data: product }, { status: 200 });
   } catch (error) {
@@ -102,6 +113,15 @@ export const PUT = async (request, { params }) => {
         { status: 404 }
       );
 
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (auth.role !== "ADMIN" && product.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Product belongs to another branch" },
+        { status: 403 }
+      );
+    }
+
     const updateData = {};
 
     // Handle categoryId validation and update
@@ -123,7 +143,42 @@ export const PUT = async (request, { params }) => {
             { status: 400 }
           );
         }
+
+        if (auth.role !== "ADMIN" && category.branchId !== auth.branchId) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Forbidden: Category belongs to another branch",
+            },
+            { status: 403 }
+          );
+        }
+
         updateData.categoryId = Number(categoryId);
+      }
+    }
+
+    // Handle supplierId validation and update
+    if (supplierId !== undefined) {
+      if (supplierId === null || supplierId === "") {
+        updateData.supplierId = null;
+      } else {
+        const supplier = await prisma.supplier.findUnique({
+          where: { id: Number(supplierId) },
+        });
+        if (!supplier) {
+          return NextResponse.json(
+            { success: false, error: "Supplier not found" },
+            { status: 400 }
+          );
+        }
+        if (auth.role !== "ADMIN" && supplier.branchId !== auth.branchId) {
+          return NextResponse.json(
+            { success: false, error: "Forbidden: Supplier belongs to another branch" },
+            { status: 403 }
+          );
+        }
+        updateData.supplierId = Number(supplierId);
       }
     }
 
@@ -171,6 +226,9 @@ export const PUT = async (request, { params }) => {
 
 export const DELETE = async (request, { params }) => {
   try {
+    const auth = await getAuthFromRequest(request);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
 
     if (isNaN(id)) {
@@ -188,6 +246,13 @@ export const DELETE = async (request, { params }) => {
       return NextResponse.json(
         { success: false, error: "Product Not Found" },
         { status: 404 }
+      );
+    }
+
+    if (auth.role !== "ADMIN" && product.branchId !== auth.branchId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Product belongs to another branch" },
+        { status: 403 }
       );
     }
 

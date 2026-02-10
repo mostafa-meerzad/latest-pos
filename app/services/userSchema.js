@@ -29,6 +29,7 @@ const userSchema = z.object({
       `Status must be one of: ${Object.values(STATUS).join(", ")}`
     )
     .default("ACTIVE"),
+  branchId: z.number().optional(),
 });
 
 // Create schema (all fields required)

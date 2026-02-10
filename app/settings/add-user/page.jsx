@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 
 export default function AddUserPage() {
@@ -23,10 +23,21 @@ export default function AddUserPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("");
+  const [branchId, setBranchId] = useState("");
+  const [branches, setBranches] = useState([]);
 
   // ui state
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/branches")
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) setBranches(json.data);
+      })
+      .catch(err => console.error("Error fetching branches:", err));
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -75,6 +86,7 @@ export default function AddUserPage() {
         password: password.trim(),
         fullName: fullName.trim(),
         role: role.trim(),
+        branchId: branchId ? parseInt(branchId) : undefined,
       };
 
       const res = await fetch("/api/users", {
@@ -171,6 +183,25 @@ export default function AddUserPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Branch Selection for Main Admin */}
+                {branches.length > 1 && (
+                  <div>
+                    <label className="text-sm font-medium block mb-1">Branch</label>
+                    <Select value={branchId} onValueChange={(val) => setBranchId(val)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.map((b) => (
+                          <SelectItem key={b.id} value={b.id.toString()}>
+                            {b.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               {/* form actions */}
