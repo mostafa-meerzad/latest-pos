@@ -5,15 +5,16 @@ import { getAuthFromRequest } from "@/lib/auth";
 export async function GET(request) {
   try {
     const auth = await getAuthFromRequest(request);
-    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!auth)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const branchIdParam = searchParams.get("branchId");
-    
+
     // Check if user's branch is main
     const userBranch = await prisma.branch.findUnique({
       where: { id: auth.branchId },
-      select: { isMain: true }
+      select: { isMain: true },
     });
     const isMainBranch = userBranch?.isMain || false;
 
@@ -25,7 +26,7 @@ export async function GET(request) {
         filterBranchId = parseInt(branchIdParam);
       } else {
         // Default for main branch: see everything
-        filterBranchId = null; 
+        filterBranchId = null;
       }
     } else {
       // Regular branches only see their own data
@@ -56,15 +57,15 @@ export async function GET(request) {
             Date.UTC(
               baseDate.getUTCFullYear(),
               baseDate.getUTCMonth(),
-              baseDate.getUTCDate()
-            )
+              baseDate.getUTCDate(),
+            ),
           );
           endDate = new Date(
             Date.UTC(
               baseDate.getUTCFullYear(),
               baseDate.getUTCMonth(),
-              baseDate.getUTCDate() + 1
-            )
+              baseDate.getUTCDate() + 1,
+            ),
           );
           endDate.setUTCMilliseconds(-1);
         }
@@ -96,10 +97,10 @@ export async function GET(request) {
           endDate = new Date(to + "T23:59:59.999Z");
         } else {
           startDate = new Date(
-            Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), 1)
+            Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), 1),
           );
           endDate = new Date(
-            Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + 1, 0)
+            Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + 1, 0),
           );
           endDate.setUTCHours(23, 59, 59, 999);
         }
@@ -115,7 +116,7 @@ export async function GET(request) {
     }
 
     console.log(
-      `Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`
+      `Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`,
     );
 
     // Get sales data with items
@@ -224,7 +225,7 @@ export async function GET(request) {
       const cost = items.reduce(
         (itemSum, item) =>
           itemSum + Number(item.quantity) * Number(item.product.costPrice),
-        0
+        0,
       );
       return sum + cost;
     }, 0);
@@ -236,15 +237,18 @@ export async function GET(request) {
           const items = productId
             ? sale.items.filter((it) => it.productId === productId)
             : sale.items;
-          return sum + items.reduce((itemSum, item) => itemSum + Number(item.quantity), 0);
+          return (
+            sum +
+            items.reduce((itemSum, item) => itemSum + Number(item.quantity), 0)
+          );
         }, 0)
-        .toFixed(2)
+        .toFixed(2),
     );
 
     // Delivery revenue is now sum of delivery_fee values (from deliveries table)
     const totalDeliveryFee = deliveries.reduce(
       (sum, delivery) => sum + Number(delivery.deliveryFee || 0),
-      0
+      0,
     );
 
     const totalDeliveryCost = 0;
@@ -310,14 +314,37 @@ export async function GET(request) {
     let yearlyData = {};
 
     if (period === "day") {
-      hourlyData = await getHourlyData(startDate, endDate, productId, filterBranchId);
+      hourlyData = await getHourlyData(
+        startDate,
+        endDate,
+        productId,
+        filterBranchId,
+      );
     } else if (period === "week") {
-      weeklyData = await getWeeklyData(startDate, endDate, productId, filterBranchId);
+      weeklyData = await getWeeklyData(
+        startDate,
+        endDate,
+        productId,
+        filterBranchId,
+      );
     } else if (period === "month") {
-      monthlyData = await getMonthlyData(startDate, endDate, productId, filterBranchId);
+      monthlyData = await getMonthlyData(
+        startDate,
+        endDate,
+        productId,
+        filterBranchId,
+      );
     } else if (period === "year") {
-      monthlyData = await getYearlyMonthlyData(parseInt(year), productId, filterBranchId);
-      yearlyData = await getYearlyComparison(parseInt(year), productId, filterBranchId);
+      monthlyData = await getYearlyMonthlyData(
+        parseInt(year),
+        productId,
+        filterBranchId,
+      );
+      yearlyData = await getYearlyComparison(
+        parseInt(year),
+        productId,
+        filterBranchId,
+      );
     }
 
     const response = {
@@ -330,6 +357,8 @@ export async function GET(request) {
         totalRevenue,
         totalCost,
         totalProfit,
+        salesProfit: totalSalesRevenue - totalSalesCost,
+        deliveryProfit: totalDeliveryFee - totalDeliveryCost,
         profitMargin:
           totalRevenue > 0
             ? ((totalProfit / totalRevenue) * 100).toFixed(2)
@@ -361,7 +390,7 @@ export async function GET(request) {
           profitDifference: Math.abs(
             totalSalesRevenue -
               totalSalesCost -
-              (totalDeliveryFee - totalDeliveryCost)
+              (totalDeliveryFee - totalDeliveryCost),
           ),
         },
       },
@@ -379,7 +408,7 @@ export async function GET(request) {
     console.error("Error generating reports:", error);
     return NextResponse.json(
       { error: "Failed to generate reports" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -393,12 +422,19 @@ async function getHourlyData(startDate, endDate, productId, branchId) {
     where: {
       date: { gte: startDate, lte: endDate },
       ...(branchId ? { branchId } : {}),
-      ...(productId
-        ? { items: { some: { productId: productId } } }
-        : {}),
+      ...(productId ? { items: { some: { productId: productId } } } : {}),
     },
     include: {
-      items: { include: { product: { select: { costPrice: true, branch: { select: { id: true, name: true } } } } } },
+      items: {
+        include: {
+          product: {
+            select: {
+              costPrice: true,
+              branch: { select: { id: true, name: true } },
+            },
+          },
+        },
+      },
       delivery: true,
     },
   });
@@ -415,7 +451,16 @@ async function getHourlyData(startDate, endDate, productId, branchId) {
     include: {
       sale: {
         include: {
-          items: { include: { product: { select: { costPrice: true, branch: { select: { id: true, name: true } } } } } },
+          items: {
+            include: {
+              product: {
+                select: {
+                  costPrice: true,
+                  branch: { select: { id: true, name: true } },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -427,6 +472,8 @@ async function getHourlyData(startDate, endDate, productId, branchId) {
       revenue: 0,
       cost: 0,
       profit: 0,
+      salesProfit: 0,
+      deliveryProfit: 0,
       count: 0,
       itemsSold: 0,
     };
@@ -442,14 +489,19 @@ async function getHourlyData(startDate, endDate, productId, branchId) {
       ? items.reduce((s, it) => s + Number(it.subtotal || 0), 0)
       : Number(sale.totalAmount);
     const cost = items.reduce(
-      (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
-      0
+      (sum, item) =>
+        sum + Number(item.quantity) * Number(item.product.costPrice),
+      0,
     );
     hourlyData[hour].revenue += revenue;
     hourlyData[hour].cost += cost;
     hourlyData[hour].profit += revenue - cost;
+    hourlyData[hour].salesProfit += revenue - cost;
     hourlyData[hour].count += 1;
-    hourlyData[hour].itemsSold += items.reduce((s, i) => s + Number(i.quantity), 0);
+    hourlyData[hour].itemsSold += items.reduce(
+      (s, i) => s + Number(i.quantity),
+      0,
+    );
   });
 
   // deliveries (revenue = delivery.deliveryFee, cost = 0 here)
@@ -461,11 +513,15 @@ async function getHourlyData(startDate, endDate, productId, branchId) {
     hourlyData[hour].revenue += revenue;
     hourlyData[hour].cost += cost;
     hourlyData[hour].profit += revenue - cost;
+    hourlyData[hour].deliveryProfit += revenue - cost;
     hourlyData[hour].count += 1;
     const dItems = productId
       ? delivery.sale?.items?.filter((it) => it.productId === productId) || []
       : delivery.sale?.items || [];
-    hourlyData[hour].itemsSold += dItems.reduce((s, i) => s + Number(i.quantity), 0);
+    hourlyData[hour].itemsSold += dItems.reduce(
+      (s, i) => s + Number(i.quantity),
+      0,
+    );
   });
 
   return hourlyData;
@@ -476,12 +532,19 @@ async function getWeeklyData(startDate, endDate, productId, branchId) {
     where: {
       date: { gte: startDate, lte: endDate },
       ...(branchId ? { branchId } : {}),
-      ...(productId
-        ? { items: { some: { productId: productId } } }
-        : {}),
+      ...(productId ? { items: { some: { productId: productId } } } : {}),
     },
     include: {
-      items: { include: { product: { select: { costPrice: true, branch: { select: { id: true, name: true } } } } } },
+      items: {
+        include: {
+          product: {
+            select: {
+              costPrice: true,
+              branch: { select: { id: true, name: true } },
+            },
+          },
+        },
+      },
       delivery: true,
     },
   });
@@ -512,7 +575,7 @@ async function getWeeklyData(startDate, endDate, productId, branchId) {
     let daysSinceSaturday = currentDay - saturday;
     if (daysSinceSaturday < 0) daysSinceSaturday += 7;
     const weekStart = new Date(
-      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
     );
     weekStart.setUTCDate(weekStart.getUTCDate() - daysSinceSaturday);
     weekStart.setUTCHours(0, 0, 0, 0);
@@ -538,6 +601,8 @@ async function getWeeklyData(startDate, endDate, productId, branchId) {
         revenue: 0,
         cost: 0,
         profit: 0,
+        salesProfit: 0,
+        deliveryProfit: 0,
         count: 0,
         itemsSold: 0,
         name: `${startFormatted} - ${endFormatted}`,
@@ -556,14 +621,19 @@ async function getWeeklyData(startDate, endDate, productId, branchId) {
       ? items.reduce((s, it) => s + Number(it.subtotal || 0), 0)
       : Number(sale.totalAmount);
     const cost = items.reduce(
-      (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
-      0
+      (sum, item) =>
+        sum + Number(item.quantity) * Number(item.product.costPrice),
+      0,
     );
     weeklyData[wk].revenue += revenue;
     weeklyData[wk].cost += cost;
     weeklyData[wk].profit += revenue - cost;
+    weeklyData[wk].salesProfit += revenue - cost;
     weeklyData[wk].count += 1;
-    weeklyData[wk].itemsSold += items.reduce((s, i) => s + Number(i.quantity), 0);
+    weeklyData[wk].itemsSold += items.reduce(
+      (s, i) => s + Number(i.quantity),
+      0,
+    );
   });
 
   deliveries.forEach((delivery) => {
@@ -575,11 +645,15 @@ async function getWeeklyData(startDate, endDate, productId, branchId) {
     weeklyData[wk].revenue += revenue;
     weeklyData[wk].cost += cost;
     weeklyData[wk].profit += revenue - cost;
+    weeklyData[wk].deliveryProfit += revenue - cost;
     weeklyData[wk].count += 1;
     const dItems = productId
       ? delivery.sale?.items?.filter((it) => it.productId === productId) || []
       : delivery.sale?.items || [];
-    weeklyData[wk].itemsSold += dItems.reduce((s, i) => s + Number(i.quantity), 0);
+    weeklyData[wk].itemsSold += dItems.reduce(
+      (s, i) => s + Number(i.quantity),
+      0,
+    );
   });
 
   return weeklyData;
@@ -590,9 +664,7 @@ async function getMonthlyData(startDate, endDate, productId, branchId) {
     where: {
       date: { gte: startDate, lte: endDate },
       ...(branchId ? { branchId } : {}),
-      ...(productId
-        ? { items: { some: { productId: productId } } }
-        : {}),
+      ...(productId ? { items: { some: { productId: productId } } } : {}),
     },
     include: {
       items: { include: { product: { select: { costPrice: true } } } },
@@ -641,6 +713,8 @@ async function getMonthlyData(startDate, endDate, productId, branchId) {
       revenue: 0,
       cost: 0,
       profit: 0,
+      salesProfit: 0,
+      deliveryProfit: 0,
       count: 0,
       itemsSold: 0,
     };
@@ -654,6 +728,8 @@ async function getMonthlyData(startDate, endDate, productId, branchId) {
         revenue: 0,
         cost: 0,
         profit: 0,
+        salesProfit: 0,
+        deliveryProfit: 0,
         count: 0,
         itemsSold: 0,
       };
@@ -665,14 +741,19 @@ async function getMonthlyData(startDate, endDate, productId, branchId) {
       ? items.reduce((s, it) => s + Number(it.subtotal || 0), 0)
       : Number(sale.totalAmount);
     const cost = items.reduce(
-      (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
-      0
+      (sum, item) =>
+        sum + Number(item.quantity) * Number(item.product.costPrice),
+      0,
     );
     monthlyData[month].revenue += revenue;
     monthlyData[month].cost += cost;
     monthlyData[month].profit += revenue - cost;
+    monthlyData[month].salesProfit += revenue - cost;
     monthlyData[month].count += 1;
-    monthlyData[month].itemsSold += items.reduce((s, i) => s + Number(i.quantity), 0);
+    monthlyData[month].itemsSold += items.reduce(
+      (s, i) => s + Number(i.quantity),
+      0,
+    );
   });
 
   deliveries.forEach((delivery) => {
@@ -684,6 +765,8 @@ async function getMonthlyData(startDate, endDate, productId, branchId) {
         revenue: 0,
         cost: 0,
         profit: 0,
+        salesProfit: 0,
+        deliveryProfit: 0,
         count: 0,
         itemsSold: 0,
       };
@@ -693,11 +776,15 @@ async function getMonthlyData(startDate, endDate, productId, branchId) {
     monthlyData[month].revenue += revenue;
     monthlyData[month].cost += cost;
     monthlyData[month].profit += revenue - cost;
+    monthlyData[month].deliveryProfit += revenue - cost;
     monthlyData[month].count += 1;
     const dItems = productId
       ? delivery.sale?.items?.filter((it) => it.productId === productId) || []
       : delivery.sale?.items || [];
-    monthlyData[month].itemsSold += dItems.reduce((s, i) => s + Number(i.quantity), 0);
+    monthlyData[month].itemsSold += dItems.reduce(
+      (s, i) => s + Number(i.quantity),
+      0,
+    );
   });
 
   return monthlyData;
@@ -711,9 +798,7 @@ async function getYearlyMonthlyData(year, productId, branchId) {
     where: {
       date: { gte: yearStart, lte: yearEnd },
       ...(branchId ? { branchId } : {}),
-      ...(productId
-        ? { items: { some: { productId: productId } } }
-        : {}),
+      ...(productId ? { items: { some: { productId: productId } } } : {}),
     },
     include: {
       items: { include: { product: { select: { costPrice: true } } } },
@@ -760,6 +845,8 @@ async function getYearlyMonthlyData(year, productId, branchId) {
       revenue: 0,
       cost: 0,
       profit: 0,
+      salesProfit: 0,
+      deliveryProfit: 0,
       count: 0,
       itemsSold: 0,
       deliveries: 0,
@@ -776,14 +863,19 @@ async function getYearlyMonthlyData(year, productId, branchId) {
       ? items.reduce((s, it) => s + Number(it.subtotal || 0), 0)
       : Number(sale.totalAmount);
     const cost = items.reduce(
-      (sum, item) => sum + Number(item.quantity) * Number(item.product.costPrice),
-      0
+      (sum, item) =>
+        sum + Number(item.quantity) * Number(item.product.costPrice),
+      0,
     );
     monthlyData[month].revenue += revenue;
     monthlyData[month].cost += cost;
     monthlyData[month].profit += revenue - cost;
+    monthlyData[month].salesProfit += revenue - cost;
     monthlyData[month].count += 1;
-    monthlyData[month].itemsSold += items.reduce((s, i) => s + Number(i.quantity), 0);
+    monthlyData[month].itemsSold += items.reduce(
+      (s, i) => s + Number(i.quantity),
+      0,
+    );
 
     // Note: we don't increment deliveries here; deliveries are counted from deliveries list below
   });
@@ -796,11 +888,15 @@ async function getYearlyMonthlyData(year, productId, branchId) {
     const cost = 0;
     monthlyData[month].revenue += revenue;
     monthlyData[month].profit += revenue - cost;
+    monthlyData[month].deliveryProfit += revenue - cost;
     monthlyData[month].count += 1;
     const dItems = productId
       ? delivery.sale?.items?.filter((it) => it.productId === productId) || []
       : delivery.sale?.items || [];
-    monthlyData[month].itemsSold += dItems.reduce((s, i) => s + Number(i.quantity), 0);
+    monthlyData[month].itemsSold += dItems.reduce(
+      (s, i) => s + Number(i.quantity),
+      0,
+    );
     monthlyData[month].deliveries += 1;
   });
 
@@ -820,10 +916,20 @@ async function getYearlyComparison(currentYear, productId) {
       revenue: acc.revenue + month.revenue,
       cost: acc.cost + month.cost,
       profit: acc.profit + month.profit,
+      salesProfit: acc.salesProfit + month.salesProfit,
+      deliveryProfit: acc.deliveryProfit + month.deliveryProfit,
       count: acc.count + month.count,
       itemsSold: acc.itemsSold + month.itemsSold,
     }),
-    { revenue: 0, cost: 0, profit: 0, count: 0, itemsSold: 0 }
+    {
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+      salesProfit: 0,
+      deliveryProfit: 0,
+      count: 0,
+      itemsSold: 0,
+    },
   );
 
   const previousYearTotal = Object.values(previousYearData).reduce(
@@ -831,10 +937,20 @@ async function getYearlyComparison(currentYear, productId) {
       revenue: acc.revenue + month.revenue,
       cost: acc.cost + month.cost,
       profit: acc.profit + month.profit,
+      salesProfit: acc.salesProfit + month.salesProfit,
+      deliveryProfit: acc.deliveryProfit + month.deliveryProfit,
       count: acc.count + month.count,
       itemsSold: acc.itemsSold + month.itemsSold,
     }),
-    { revenue: 0, cost: 0, profit: 0, count: 0, itemsSold: 0 }
+    {
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+      salesProfit: 0,
+      deliveryProfit: 0,
+      count: 0,
+      itemsSold: 0,
+    },
   );
 
   return {
