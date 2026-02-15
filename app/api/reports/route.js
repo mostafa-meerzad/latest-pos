@@ -251,7 +251,10 @@ export async function GET(request) {
       0,
     );
 
-    const totalDeliveryCost = 0;
+    const totalDeliveryCost = deliveries.reduce(
+      (sum, d) => sum + Number(d.cost || 0),
+      0,
+    );
 
     // Combined totals
     const totalRevenue = totalSalesRevenue + totalDeliveryFee;

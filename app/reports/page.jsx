@@ -491,7 +491,7 @@ export default function ReportsPage() {
         </Card>
 
         {/* Total Profit */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>Profit</CardTitle>
             <CardDescription>Net profit for period</CardDescription>
@@ -510,7 +510,74 @@ export default function ReportsPage() {
               Margin: {report?.summary?.profitMargin}%
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
+        {/* Profit Breakdown */}
+<Card>
+  <CardHeader>
+    <CardTitle>Profit Breakdown</CardTitle>
+    <CardDescription>Sales vs Delivery profit</CardDescription>
+  </CardHeader>
+
+  <CardContent className="space-y-2">
+
+    {/* Sales Profit */}
+    <div className="flex justify-between items-center">
+      <span className="text-sm text-muted-foreground">
+        Sales Profit
+      </span>
+
+      <span
+        className={`font-semibold ${
+          report?.summary?.salesProfit < 0
+            ? "text-rose-600"
+            : "text-green-600"
+        }`}
+      >
+        {fmtCurrency(report?.summary?.salesProfit)}
+      </span>
+    </div>
+
+
+    {/* Delivery Profit */}
+    <div className="flex justify-between items-center">
+      <span className="text-sm text-muted-foreground">
+        Delivery Profit
+      </span>
+
+      <span
+        className={`font-semibold ${
+          report?.summary?.deliveryProfit < 0
+            ? "text-rose-600"
+            : "text-green-600"
+        }`}
+      >
+        {fmtCurrency(report?.summary?.deliveryProfit)}
+      </span>
+    </div>
+
+
+    {/* Optional: total small */}
+    <div className="border-t pt-2 flex justify-between items-center">
+
+      <span className="text-sm font-medium">
+        Total Profit
+      </span>
+
+      <span
+        className={`font-bold ${
+          report?.summary?.totalProfit < 0
+            ? "text-rose-600"
+            : "text-green-600"
+        }`}
+      >
+        {fmtCurrency(report?.summary?.totalProfit)}
+      </span>
+
+    </div>
+
+  </CardContent>
+</Card>
+
 
         {/* Counts */}
         <Card>
