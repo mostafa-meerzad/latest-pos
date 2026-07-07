@@ -699,9 +699,8 @@ export default function ReportsPage() {
                       <XAxis
                         dataKey={period === "week" ? "week" : "name"}
                         tick={{ fontSize: 12 }}
-                        angle={period === "week" ? 0 : -90}
+                        angle={period === "week" ? 0 : -45}
                         textAnchor="end"
-                        interval={0}
                       />
                       <YAxis />
                       <Tooltip
@@ -711,20 +710,8 @@ export default function ReportsPage() {
                       />
                       <Legend />
 
-                      {/* Use thin bars (barSize small) as requested */}
-                      <Bar dataKey="revenue" barSize={12} name="Revenue">
-                        {(period === "week" ? weeklySeries : monthlySeries).map(
-                          (entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={COLORS[index % COLORS.length]}
-                            />
-                          )
-                        )}
-                      </Bar>
-
-                      {/* Optional cost/profit overlay when available */}
-                      <Bar dataKey="profit" barSize={6} name="Profit" />
+                      <Bar dataKey="revenue" barSize={12} name="Revenue" fill={COLORS[0]} />
+                      <Bar dataKey="profit" barSize={6} name="Profit" fill={COLORS[2]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -739,9 +726,8 @@ export default function ReportsPage() {
                       <XAxis
                         dataKey="name"
                         tick={{ fontSize: 12 }}
-                        angle={-90}
+                        angle={-45}
                         textAnchor="end"
-                        interval={0}
                       />
                       <YAxis />
                       <Tooltip
@@ -750,14 +736,7 @@ export default function ReportsPage() {
                         }
                       />
                       <Legend />
-                      <Bar dataKey="revenue" barSize={12} name="Revenue">
-                        {monthlySeries.map((_, index) => (
-                          <Cell
-                            key={index}
-                            fill={COLORS[index % COLORS.length]}
-                          />
-                        ))}
-                      </Bar>
+                      <Bar dataKey="revenue" barSize={12} name="Revenue" fill={COLORS[0]} />
                       <Line
                         type="monotone"
                         dataKey="profit"
