@@ -212,11 +212,11 @@ export default function SuppliersPage() {
         </div>
       </motion.div>
 
-      {/* Table */}
+      {/* Desktop table */}
       {loading ? (
         <SuppliersTableSkeleton />
       ) : (
-        <Card>
+        <Card className="hidden md:block">
           <CardContent>
             <Table>
               <TableHeader>
@@ -307,6 +307,77 @@ export default function SuppliersPage() {
         </Card>
       )}
 
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <SuppliersMobileSkeleton />
+        ) : suppliers.length > 0 ? (
+          suppliers.map((s) => (
+            <Card key={s.id}>
+              <CardContent className="p-4">
+                {editingId === s.id ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Name</label>
+                      <Input value={editValues?.name || ""} onChange={(e) => setEditValues((p) => ({ ...p, name: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Contact Person</label>
+                      <Input value={editValues?.contactPerson || ""} onChange={(e) => setEditValues((p) => ({ ...p, contactPerson: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Phone</label>
+                      <Input value={editValues?.phone || ""} onChange={(e) => setEditValues((p) => ({ ...p, phone: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Email</label>
+                      <Input type="email" value={editValues?.email || ""} onChange={(e) => setEditValues((p) => ({ ...p, email: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Address</label>
+                      <Input value={editValues?.address || ""} onChange={(e) => setEditValues((p) => ({ ...p, address: e.target.value }))} />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button size="sm" disabled={saving} onClick={saveEdit} className="bg-green-400 hover:bg-green-300 hover:text-green-800">
+                        <Save className="w-4 h-4 mr-1" /> Save
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { toast("Edit canceled."); cancelEdit(); }}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="font-semibold">{s.name}</p>
+                    {s.contactPerson && <p className="text-sm text-muted-foreground mt-0.5">{s.contactPerson}</p>}
+                    <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                      <span>{s.phone || "—"}</span>
+                      <span>{s.email || "—"}</span>
+                    </div>
+                    {s.address && <p className="text-sm text-muted-foreground mt-1">{s.address}</p>}
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" variant="secondary" onClick={() => startEdit(s)} className="hover:bg-gray-300 hover:text-gray-700">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => deleteSupplier(s.id)} className="hover:bg-red-300 hover:text-red-800">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="py-14 text-center">
+              <p className="text-gray-500 mb-3">No suppliers found.</p>
+              <Link href="/suppliers/add-supplier"><Button>Add Supplier</Button></Link>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
       <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
     </motion.div>
   );
@@ -316,7 +387,7 @@ function SuppliersTableSkeleton() {
   const rows = Array.from({ length: 6 });
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-      <Card>
+      <Card className="hidden md:block">
         <CardContent>
           <Table>
             <TableHeader>
@@ -350,5 +421,29 @@ function SuppliersTableSkeleton() {
         </CardContent>
       </Card>
     </motion.div>
+  );
+}
+
+function SuppliersMobileSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[...Array(4)].map((_, i) => (
+        <Card key={i}>
+          <CardContent className="p-4 space-y-2">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-4 w-28" />
+            <div className="flex gap-4">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-36" />
+            </div>
+            <Skeleton className="h-4 w-48" />
+            <div className="flex gap-2 pt-1">
+              <Skeleton className="h-8 w-8 rounded-md" />
+              <Skeleton className="h-8 w-8 rounded-md" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }

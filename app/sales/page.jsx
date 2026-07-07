@@ -99,7 +99,7 @@ export default function SalesPage() {
   return (
     <div className="p-6 space-y-6">
       {/* ----------------- Header ----------------- */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Image
             src={salesImage}
@@ -110,11 +110,9 @@ export default function SalesPage() {
           />
           Sales History
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <Link href="/sales/add-sale">
-            <Button>
-              New Sale
-            </Button>
+            <Button>New Sale</Button>
           </Link>
           <BackToDashboardButton />
         </div>
@@ -166,8 +164,8 @@ export default function SalesPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <Card className={loading ? "p-0" : ""}>
+      {/* Desktop table */}
+      <Card className={`hidden md:block${loading ? " p-0" : ""}`}>
         <CardContent className={loading ? "p-0" : ""}>
           {loading ? (
             <Card className="p-4 rounded-2xl border-none shadow-sm border">
@@ -175,38 +173,22 @@ export default function SalesPage() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-2 px-3 font-medium">Sale ID</th>
-                    <th className="text-left py-2 px-3 font-medium">
-                      Customer
-                    </th>
+                    <th className="text-left py-2 px-3 font-medium">Customer</th>
                     <th className="text-left py-2 px-3 font-medium">Total</th>
                     <th className="text-left py-2 px-3 font-medium">Date</th>
-                    <th className="text-left py-2 px-3 font-medium">
-                      Payment Method
-                    </th>
+                    <th className="text-left py-2 px-3 font-medium">Payment Method</th>
                     <th className="px-6 py-3 font-medium">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[...Array(6)].map((_, i) => (
                     <tr key={i} className="border-b last:border-0">
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-10" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-40" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-20" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-40" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-16" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-8 w-24 rounded-lg" />
-                      </td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-10" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-40" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-20" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-40" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-16" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-8 w-24 rounded-lg" /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -243,18 +225,10 @@ export default function SalesPage() {
                       <TableCell>{order.payment_method}</TableCell>
                       <TableCell>
                         <Link href={`/sales/${order.rawId}`}>
-                          <Button variant="secondary" size="sm">
-                            View Details
-                          </Button>
+                          <Button variant="secondary" size="sm">View Details</Button>
                         </Link>
-                        <Link
-                          href={`/sales/add-sale?edit=true&id=${order.rawId}`}
-                        >
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className="ml-3"
-                          >
+                        <Link href={`/sales/add-sale?edit=true&id=${order.rawId}`}>
+                          <Button size="sm" variant="default" className="ml-3">
                             <Pencil className="w-4 h-4" />
                           </Button>
                         </Link>
@@ -265,9 +239,7 @@ export default function SalesPage() {
                   <TableRow>
                     <TableCell colSpan={6} className="py-14 text-center">
                       <p className="text-gray-500 mb-3">No sales found.</p>
-                      <Link href="/sales/add-sale">
-                        <Button>New Sale</Button>
-                      </Link>
+                      <Link href="/sales/add-sale"><Button>New Sale</Button></Link>
                     </TableCell>
                   </TableRow>
                 )}
@@ -276,6 +248,72 @@ export default function SalesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          [...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <Skeleton className="h-4 w-36" />
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Skeleton className="h-8 w-24 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : salesData.length > 0 ? (
+          salesData.map((order) => (
+            <Card key={order.rawId}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{order.id}</span>
+                  <span className="text-sm text-muted-foreground">{order.payment_method}</span>
+                </div>
+                <p className="text-sm mt-1 text-muted-foreground">{order.customer}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="font-medium">{order.total}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(order.date).toLocaleString("en-US", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Link href={`/sales/${order.rawId}`}>
+                    <Button variant="secondary" size="sm">View Details</Button>
+                  </Link>
+                  <Link href={`/sales/add-sale?edit=true&id=${order.rawId}`}>
+                    <Button size="sm">
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="py-14 text-center">
+              <p className="text-gray-500 mb-3">No sales found.</p>
+              <Link href="/sales/add-sale"><Button>New Sale</Button></Link>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
     </div>

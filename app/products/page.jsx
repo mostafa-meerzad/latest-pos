@@ -248,7 +248,7 @@ export default function ProductsPage() {
           <Image src={ProductImg} width={100} height={100} alt="products page logo" />
           Product Management
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <Link href="/products/add">
             <Button>Add Product</Button>
           </Link>
@@ -319,8 +319,8 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <Card>
+      {/* Desktop table */}
+      <Card className="hidden md:block">
         <CardContent>
           {loading ? (
             <motion.div
@@ -563,6 +563,171 @@ export default function ProductsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          [...Array(5)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <div className="flex gap-4">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+                <div className="flex gap-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : products.length > 0 ? (
+          products.map((p) => (
+            <Card key={p.id}>
+              <CardContent className="p-4">
+                {editingId === p.id ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Name</label>
+                      <Input value={editValues?.name || ""} onChange={(e) => setEditValues((s) => ({ ...s, name: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Barcode</label>
+                      <Input value={editValues?.barcode || ""} onChange={(e) => setEditValues((s) => ({ ...s, barcode: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Cost Price</label>
+                      <Input type="number" min="0" value={editValues?.costPrice || 0} onChange={(e) => setEditValues((s) => ({ ...s, costPrice: Number(e.target.value) }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Category</label>
+                      <Select
+                        value={editValues.categoryId ? String(editValues.categoryId) : "no-category"}
+                        onValueChange={(v) => setEditValues((s) => ({ ...s, categoryId: v === "no-category" ? null : Number(v) }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                        <SelectContent>
+                          {categories.map((c) => (
+                            <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Price</label>
+                      <Input type="number" min="0" value={editValues?.price || ""} onChange={(e) => setEditValues((s) => ({ ...s, price: Number(e.target.value) }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Stock</label>
+                      <Input
+                        type="number"
+                        step={editValues?.unit === "kg" ? "0.01" : "1"}
+                        value={editValues?.stockQuantity || 0}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const unit = editValues?.unit || p.unit;
+                          if (val === "") { setEditValues((s) => ({ ...s, stockQuantity: 0 })); return; }
+                          const num = Number(val);
+                          if (unit === "pcs") {
+                            if (Number.isInteger(num) && num >= 0) setEditValues((s) => ({ ...s, stockQuantity: num }));
+                          } else {
+                            if (num >= 0) setEditValues((s) => ({ ...s, stockQuantity: num }));
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          const unit = editValues?.unit || p.unit;
+                          if (unit === "pcs") { if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault(); }
+                          else { if (["-", "e", "E"].includes(e.key)) e.preventDefault(); }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Unit</label>
+                      <Select value={editValues?.unit || "pcs"} onValueChange={(v) => setEditValues((s) => ({ ...s, unit: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pcs">pcs</SelectItem>
+                          <SelectItem value="kg">kg</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Expiry Date</label>
+                      <Input type="date" value={editValues?.expiryDate || ""} onChange={(e) => setEditValues((s) => ({ ...s, expiryDate: e.target.value || null }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+                      <Select value={editValues?.status || "ACTIVE"} onValueChange={(v) => setEditValues((s) => ({ ...s, status: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ACTIVE">Active</SelectItem>
+                          <SelectItem value="INACTIVE">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button size="sm" onClick={saveEdit} className="bg-green-400 hover:bg-green-300 hover:text-green-800">
+                        <Save className="w-4 h-4 mr-1" /> Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={cancelEdit} className="hover:bg-gray-300 hover:text-gray-700">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold">{p.name}</p>
+                      <StatusBadge status={p.status} />
+                    </div>
+                    <div className="flex items-center gap-4 mt-1 text-sm">
+                      <span>AFN {p.price}</span>
+                      <span className="text-muted-foreground">Cost: AFN {p.costPrice || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                      <span>Stock: {p.unit === "kg" ? Number(p.stockQuantity).toFixed(2) : p.stockQuantity} {p.unit}</span>
+                      <span>{p.category?.name || "No category"}</span>
+                    </div>
+                    {(p.barcode || p.expiryDate) && (
+                      <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                        {p.barcode && <span>#{p.barcode}</span>}
+                        {p.expiryDate && <span>Exp: {new Date(p.expiryDate).toLocaleDateString("default", { year: "numeric", month: "short", day: "numeric" })}</span>}
+                      </div>
+                    )}
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" variant="secondary" onClick={() => startEdit(p)} className="hover:bg-gray-300 hover:text-gray-700">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => deleteProduct(p.id)} className="hover:bg-red-300 hover:text-red-800">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => router.push(`/products/${p.id}`)} className="hover:bg-gray-300 hover:text-gray-700">
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="py-14 text-center">
+              <p className="text-gray-500 mb-3">No products found.</p>
+              <Link href="/products/add"><Button>Add Product</Button></Link>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
     </motion.div>

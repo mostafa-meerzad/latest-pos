@@ -93,11 +93,11 @@ export default function CustomersPage() {
         <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
       </div>
 
-      {/* Table */}
+      {/* Desktop table */}
       {isLoading ? (
         <CustomersSkeleton />
       ) : (
-        <Card>
+        <Card className="hidden md:block">
           <CardContent>
             <Table>
               <TableHeader>
@@ -143,6 +143,42 @@ export default function CustomersPage() {
         </Card>
       )}
 
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <CustomersMobileSkeleton />
+        ) : customers.length > 0 ? (
+          customers.map((c) => (
+            <Card key={c.id}>
+              <CardContent className="p-4">
+                <p className="font-semibold">{c.name || "Walk in"}</p>
+                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                  <span>{c.phone || "—"}</span>
+                  <span>{c.email || "—"}</span>
+                </div>
+                <div className="mt-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="hover:bg-gray-300 hover:text-gray-700"
+                    onClick={() => router.push(`/customers/${c.id}`)}
+                  >
+                    <Eye className="w-4 h-4 mr-1" /> View Details
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="py-14 text-center">
+              <p className="text-gray-500 mb-3">No customers found.</p>
+              <Link href="/customers/add"><Button>Add Customer</Button></Link>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
       <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
     </div>
   );
@@ -150,7 +186,7 @@ export default function CustomersPage() {
 
 function CustomersSkeleton() {
   return (
-    <Card>
+    <Card className="hidden md:block">
       <CardContent>
         <Table>
           <TableHeader>
@@ -174,5 +210,24 @@ function CustomersSkeleton() {
         </Table>
       </CardContent>
     </Card>
+  );
+}
+
+function CustomersMobileSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[...Array(4)].map((_, i) => (
+        <Card key={i}>
+          <CardContent className="p-4 space-y-2">
+            <Skeleton className="h-4 w-36" />
+            <div className="flex gap-4">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-36" />
+            </div>
+            <Skeleton className="h-8 w-28 rounded-md" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }

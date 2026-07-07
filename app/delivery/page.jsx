@@ -326,14 +326,12 @@ export default function DeliveryPage() {
           />
           Deliveries
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <Link href="/drivers/add?from=deliveries">
             <Button variant="outline">Add Driver</Button>
           </Link>
           <Link href="/delivery/add?from=deliveries">
-            <Button>
-              Add Delivery
-            </Button>
+            <Button>Add Delivery</Button>
           </Link>
           <BackToDashboardButton />
         </div>
@@ -386,63 +384,37 @@ export default function DeliveryPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <Card className={loading ? "p-0" : ""}>
+      {/* Desktop table */}
+      <Card className={`hidden md:block${loading ? " p-0" : ""}`}>
         <CardContent className={loading ? "p-0" : ""}>
           {loading ? (
             <Card className="p-4 rounded-2xl border-none shadow-sm border">
               <table className="min-w-full text-lg">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-2 px-3 font-medium">
-                      Order ID
-                    </th>
-                    <th className="text-left py-2 px-3 font-medium">
-                      Customer
-                    </th>
+                    <th className="text-left py-2 px-3 font-medium">Order ID</th>
+                    <th className="text-left py-2 px-3 font-medium">Customer</th>
                     <th className="text-left py-2 px-3 font-medium">Phone</th>
                     <th className="text-left py-2 px-3 font-medium">Address</th>
                     <th className="text-left py-2 px-3 font-medium">Driver</th>
                     <th className="text-left py-2 px-3 font-medium">Status</th>
-                    <th className="text-left py-2 px-3 font-medium">
-                      Delivery Date
-                    </th>
-                    <th className="text-left py-2 px-3 font-medium">
-                      Delivery Fee
-                    </th>
+                    <th className="text-left py-2 px-3 font-medium">Delivery Date</th>
+                    <th className="text-left py-2 px-3 font-medium">Delivery Fee</th>
                     <th className="text-left py-2 px-3 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[...Array(4)].map((_, i) => (
                     <tr key={i} className="border-b last:border-0">
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-10" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-40" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-32" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-48" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-32" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-20" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-32" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-4 w-16" />
-                      </td>
-                      <td className="py-3 px-3">
-                        <Skeleton className="h-8 w-24 rounded-lg" />
-                      </td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-10" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-40" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-32" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-48" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-32" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-20" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-32" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-4 w-16" /></td>
+                      <td className="py-3 px-3"><Skeleton className="h-8 w-24 rounded-lg" /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -716,6 +688,171 @@ export default function DeliveryPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          [...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-4 w-48" />
+                <div className="flex gap-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Skeleton className="h-8 w-16 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : deliveries.length > 0 ? (
+          deliveries.map((d) => (
+            <Card key={d.id}>
+              <CardContent className="p-4">
+                {editingId === d.id ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Phone</label>
+                      <Input
+                        value={editValues?.customerPhone || ""}
+                        onChange={(e) => setEditValues((s) => ({ ...s, customerPhone: e.target.value }))}
+                        placeholder="Customer phone"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Address</label>
+                      <Textarea
+                        value={editValues?.deliveryAddress || ""}
+                        onChange={(e) => setEditValues((s) => ({ ...s, deliveryAddress: e.target.value }))}
+                        placeholder="Delivery address"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Driver</label>
+                      <div className="relative">
+                        <Input
+                          placeholder="Search driver by name..."
+                          value={driverQuery}
+                          onChange={(e) => { setDriverQuery(e.target.value); setDriverSuggestionsVisible(true); }}
+                          onFocus={() => setDriverSuggestionsVisible(true)}
+                          onBlur={() => setTimeout(() => setDriverSuggestionsVisible(false), 150)}
+                        />
+                        {driverSuggestionsVisible && driverQuery && (
+                          <div className="absolute z-20 bg-white border rounded w-full mt-1 max-h-40 overflow-auto">
+                            {drivers.filter((drv) => drv.name.toLowerCase().includes(driverQuery.toLowerCase())).map((drv) => (
+                              <div
+                                key={drv.id}
+                                className="p-2 hover:bg-slate-50 cursor-pointer"
+                                onMouseDown={() => {
+                                  setSelectedDriver(drv);
+                                  setEditValues((s) => ({ ...s, driverId: drv.id }));
+                                  setDriverQuery(`${drv.name} – ${drv.phone}`);
+                                  setDriverSuggestionsVisible(false);
+                                }}
+                              >
+                                {drv.name} – {drv.phone}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+                      <Select value={editValues?.status || d.status} onValueChange={(v) => setEditValues((s) => ({ ...s, status: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="delivered">Delivered</SelectItem>
+                          <SelectItem value="canceled">Canceled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Delivery Date</label>
+                      <Input type="date" value={editValues?.deliveryDate || ""} onChange={(e) => setEditValues((s) => ({ ...s, deliveryDate: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Delivery Time</label>
+                      <Input type="time" value={editValues?.deliveryTime || ""} onChange={(e) => setEditValues((s) => ({ ...s, deliveryTime: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Delivery Fee</label>
+                      <Input
+                        type="number" min="0" step="1"
+                        value={editValues?.deliveryFee || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (!/^\d*$/.test(value)) return;
+                          setEditValues((s) => ({ ...s, deliveryFee: value ? parseInt(value, 10) : 0 }));
+                        }}
+                        placeholder="Enter fee"
+                      />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button size="sm" onClick={saveEdit} className="bg-green-400 hover:bg-green-300 hover:text-green-800">
+                        <Save className="w-4 h-4 mr-1" /> Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={cancelEdit}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">#{d.id}</span>
+                      <StatusBadge status={d.status} />
+                    </div>
+                    <p className="text-sm mt-1">{d.customer?.name}</p>
+                    {d.deliveryAddress && <p className="text-sm text-muted-foreground mt-1">{d.deliveryAddress}</p>}
+                    <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                      <span>{d.driver?.name || "No driver"}</span>
+                      <span>{formatDateTime(d.deliveryDate)}</span>
+                    </div>
+                    {(d.deliveryFee != null) && (
+                      <p className="text-sm mt-1">Fee: AFN {d.deliveryFee}</p>
+                    )}
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        size="sm" variant="outline"
+                        onClick={() => setLastPrintedDelivery({ ...d })}
+                        className="hover:bg-gray-200 hover:text-gray-700"
+                      >
+                        Print
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={() => startEdit(d)} className="hover:bg-gray-300 hover:text-gray-700">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        disabled={user?.role !== "ADMIN"}
+                        size="sm" variant="destructive"
+                        onClick={() => deleteDelivery(d.id)}
+                        className="hover:bg-red-300 hover:text-red-800"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="py-14 text-center">
+              <p className="text-gray-500 mb-3">No deliveries found.</p>
+              <Link href="/delivery/add?from=deliveries"><Button>Add Delivery</Button></Link>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
 
