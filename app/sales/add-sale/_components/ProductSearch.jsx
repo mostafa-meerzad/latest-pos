@@ -68,6 +68,12 @@ export default function ProductSearch({
         placeholder="Scan barcode"
         value={barcodeInput}
         onChange={(e) => setBarcodeInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && selectedProduct) {
+            e.preventDefault();
+            handleAdd();
+          }
+        }}
         className="mb-2"
       />
       <Input

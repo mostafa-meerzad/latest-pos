@@ -32,6 +32,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const LIMIT = 25;
+const LOW_STOCK_THRESHOLD = 10;
+
+function StockBadge({ quantity }) {
+  const num = Number(quantity);
+  if (num === 0) return <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">Out</span>;
+  if (num <= LOW_STOCK_THRESHOLD) return <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">Low</span>;
+  return null;
+}
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
@@ -479,7 +487,10 @@ export default function ProductsPage() {
                               }}
                             />
                           ) : (
-                            p.unit === "kg" ? Number(p.stockQuantity).toFixed(2) : p.stockQuantity
+                            <span className="flex items-center gap-1">
+                              {p.unit === "kg" ? Number(p.stockQuantity).toFixed(2) : p.stockQuantity}
+                              <StockBadge quantity={p.stockQuantity} />
+                            </span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -694,7 +705,10 @@ export default function ProductsPage() {
                       <span className="text-muted-foreground">Cost: AFN {p.costPrice || 0}</span>
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                      <span>Stock: {p.unit === "kg" ? Number(p.stockQuantity).toFixed(2) : p.stockQuantity} {p.unit}</span>
+                      <span className="flex items-center gap-1">
+                        Stock: {p.unit === "kg" ? Number(p.stockQuantity).toFixed(2) : p.stockQuantity} {p.unit}
+                        <StockBadge quantity={p.stockQuantity} />
+                      </span>
                       <span>{p.category?.name || "No category"}</span>
                     </div>
                     {(p.barcode || p.expiryDate) && (

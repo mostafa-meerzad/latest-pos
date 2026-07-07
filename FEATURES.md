@@ -9,7 +9,7 @@ Status values: **Planned** | **In Progress** | **Done**
 ## Feature 1: Offline Sales Support
 
 **Priority:** High
-**Status:** In Progress
+**Status:** Done
 
 ### Goal
 Allow cashiers to continue making sales during short internet outages (up to 2–3 days). Only the sale creation flow needs to work offline. Everything else (reports, settings, delivery management) can degrade gracefully.
@@ -128,7 +128,7 @@ const [data, total] = await Promise.all([
 ## Feature 3: Responsive List Pages
 
 **Priority:** Medium
-**Status:** Planned
+**Status:** Done
 
 ### Goal
 Fix pages where the table layout breaks or becomes unusable on tablets and smaller screens. The app runs on POS hardware — screen size varies.
@@ -182,7 +182,7 @@ Standardize visual language across all pages: colors, page structure, status ind
 ## Feature 5: UX Enhancements
 
 **Priority:** Low–Medium (implement individually as capacity allows)
-**Status:** Planned
+**Status:** Done
 
 | Enhancement | Description | Effort |
 |---|---|---|

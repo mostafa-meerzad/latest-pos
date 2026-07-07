@@ -6,9 +6,12 @@ import {
   putCustomers,
   getCustomers,
   getPendingSales,
+  getMetaValue,
 } from "@/lib/offline/db";
 import useOfflineStore from "@/lib/stores/offlineStore";
 import { registerOnlineListener } from "@/lib/offline/sync";
+
+const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 
 async function fetchAllPages(buildUrl) {
   let all = [];
@@ -27,6 +30,7 @@ async function fetchAllPages(buildUrl) {
 export function useOfflineCache({ isEditMode = false } = {}) {
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [isCacheStale, setIsCacheStale] = useState(false);
   const { setIsOffline, setPendingCount, setFailedSales } = useOfflineStore();
 
   // Online/offline status tracking
@@ -72,11 +76,15 @@ export function useOfflineCache({ isEditMode = false } = {}) {
         );
       } catch {
         const cached = await getProducts();
+        const cachedAt = await getMetaValue("products_cached_at");
         if (!active) return;
         if (cached.length > 0) {
           setProducts(
             cached.filter((p) => p.status === "ACTIVE" && !p.isDeleted && Number(p.stockQuantity) > 0)
           );
+          if (cachedAt && Date.now() - new Date(cachedAt).getTime() > STALE_THRESHOLD_MS) {
+            setIsCacheStale(true);
+          }
           toast("Using cached product list — data may be outdated", { icon: "⚠️" });
         } else {
           toast.error("Failed to fetch products and no cache available");
@@ -116,5 +124,5 @@ export function useOfflineCache({ isEditMode = false } = {}) {
     return () => { active = false; };
   }, []);
 
-  return { products, customers };
+  return { products, customers, isCacheStale };
 }

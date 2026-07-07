@@ -48,7 +48,7 @@ import BackToDashboardButton from "@/components/BackToDashboardButton";
 
 // ✅ NEW: Toast import
 import toast from "react-hot-toast";
-import { RefreshCcw } from "lucide-react";
+import { RefreshCcw, Download } from "lucide-react";
 
 // Chart colors
 const COLORS = [
@@ -316,6 +316,55 @@ export default function ReportsPage() {
     }).format(v);
   }
 
+  function exportToCSV() {
+    if (!report) return;
+
+    const escape = (v) => {
+      const s = String(v ?? "");
+      return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    const lines = [];
+    const periodLabel = period === "year" ? `Year ${year}` : `${fromDate} to ${toDate}`;
+    lines.push(`Report Period,${escape(periodLabel)}`);
+    lines.push("");
+    lines.push("Summary");
+    lines.push(`Total Revenue (AFN),${report.summary?.totalRevenue ?? 0}`);
+    lines.push(`Total Cost (AFN),${report.summary?.totalCost ?? 0}`);
+    lines.push(`Sales Profit (AFN),${report.summary?.salesProfit ?? 0}`);
+    lines.push(`Delivery Profit (AFN),${report.summary?.deliveryProfit ?? 0}`);
+    lines.push(`Total Profit (AFN),${report.summary?.totalProfit ?? 0}`);
+    lines.push(`Total Sold Items,${report.summary?.totalSoldItems ?? 0}`);
+    lines.push(`Sales Count,${report.breakdown?.sales?.count ?? 0}`);
+    lines.push(`Sales Revenue (AFN),${report.breakdown?.sales?.revenue ?? 0}`);
+    lines.push(`Deliveries Count,${report.breakdown?.deliveries?.count ?? 0}`);
+    lines.push(`Deliveries Revenue (AFN),${report.breakdown?.deliveries?.revenue ?? 0}`);
+    lines.push("");
+    lines.push("Top Products");
+    lines.push("#,Product,Branch,Qty Sold,Revenue (AFN),Cost Price (AFN)");
+    (report.topProducts ?? []).forEach((p, idx) => {
+      lines.push([
+        idx + 1,
+        escape(p.product?.name),
+        escape(p.product?.branch?.name),
+        Number(p.quantity).toFixed(2),
+        p.revenue ?? 0,
+        p.product?.costPrice ?? 0,
+      ].join(","));
+    });
+
+    const csv = lines.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `report-${period}-${period === "year" ? year : fromDate}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 ">
@@ -333,6 +382,10 @@ export default function ReportsPage() {
           <Button onClick={fetchReport} variant="outline">
             <RefreshCcw />
             Refresh
+          </Button>
+          <Button onClick={exportToCSV} variant="outline" disabled={!report}>
+            <Download />
+            Export CSV
           </Button>
 
           {currentUser?.isMain && (

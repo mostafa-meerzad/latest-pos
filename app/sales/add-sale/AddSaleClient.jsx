@@ -72,13 +72,33 @@ export default function AddSaleClient() {
     onReset: resetForm,
   });
 
-  const { products, customers } = useOfflineCache({ isEditMode });
+  const { products, customers, isCacheStale } = useOfflineCache({ isEditMode });
   const { isOffline } = useOfflineStore();
 
   // Focus barcode on mount
   useEffect(() => {
     if (barcodeRef.current && !isEditMode) barcodeRef.current.focus();
   }, [isEditMode]);
+
+  // Keep a stable ref to handleFinalizeSale for the keyboard shortcut listener
+  const handleFinalizeSaleRef = useRef(null);
+  useEffect(() => { handleFinalizeSaleRef.current = handleFinalizeSale; });
+
+  // Global POS keyboard shortcuts: F2 = focus barcode, F9 = finalize sale
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key === "F2") {
+        e.preventDefault();
+        barcodeRef.current?.focus();
+      }
+      if (e.key === "F9") {
+        e.preventDefault();
+        handleFinalizeSaleRef.current?.();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   function buildPayload() {
     return {
@@ -352,6 +372,12 @@ export default function AddSaleClient() {
         onReset={resetForm}
       />
       <OfflineIndicator />
+      {isCacheStale && (
+        <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+          <span className="font-semibold">Warning:</span>
+          Product stock quantities may be outdated — device has been offline for over 24 hours. Cross-check stock physically before completing sales.
+        </div>
+      )}
       <OfflineSaleAlert onRetryPopulate={handleRetryPopulate} />
 
       <AddDeliveryModal
