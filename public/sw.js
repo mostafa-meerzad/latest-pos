@@ -1,8 +1,16 @@
 const STATIC_CACHE = "pos-static-v1";
 const PAGE_CACHE = "pos-pages-v1";
 
+const isDev =
+  self.location.hostname === "localhost" ||
+  self.location.hostname === "127.0.0.1";
+
 // Cache Next.js static chunks on first fetch, serve from cache thereafter
 self.addEventListener("fetch", (event) => {
+  // In development, don't intercept — let requests hit the network so hot
+  // reload works and updated JS is always served fresh.
+  if (isDev) return;
+
   const url = new URL(event.request.url);
 
   // Only handle same-origin requests

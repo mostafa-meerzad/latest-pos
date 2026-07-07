@@ -1,24 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "react-hot-toast";
-import { useSearchParams, usePathname } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export function useEditMode({ onPopulateForm, onReset }) {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [editSaleId, setEditSaleId] = useState(null);
   const [hasFetchedEditData, setHasFetchedEditData] = useState(false);
 
-  const reset = useCallback(() => {
-    setIsEditMode(false);
-    setEditSaleId(null);
-    setHasFetchedEditData(false);
-    onReset?.();
-  }, [onReset]);
+  // Keep latest callbacks in refs so effects never need them as deps
+  const onResetRef = useRef(onReset);
+  const onPopulateFormRef = useRef(onPopulateForm);
+  onResetRef.current = onReset;
+  onPopulateFormRef.current = onPopulateForm;
 
   const resetEditMode = useCallback(() => {
     flushSync(() => {
@@ -28,63 +26,65 @@ export function useEditMode({ onPopulateForm, onReset }) {
     });
   }, []);
 
-  const fetchSaleData = useCallback(
-    async (saleId) => {
-      if (!saleId || hasFetchedEditData) return;
+  // Extract primitive strings — avoids object reference instability from useSearchParams
+  const editParam = searchParams.get("edit");
+  const idParam = searchParams.get("id");
 
-      const loadingToast = toast.loading("Loading sale data...");
-      try {
-        const res = await fetch(`/api/sale/editSale/${saleId}`);
-        const data = await res.json();
+  // Track previous editParam to detect edit→normal transitions
+  const prevEditParamRef = useRef(editParam);
 
+  // Sync internal state with URL params
+  useEffect(() => {
+    if (editParam === "true" && idParam) {
+      setIsEditMode(true);
+      setEditSaleId(idParam);
+      setHasFetchedEditData(false);
+    } else {
+      setIsEditMode(false);
+      setEditSaleId(null);
+      setHasFetchedEditData(false);
+      // Only reset the form when leaving edit mode, not on every non-edit render
+      if (prevEditParamRef.current === "true") {
+        onResetRef.current?.();
+      }
+    }
+    prevEditParamRef.current = editParam;
+  }, [editParam, idParam]);
+
+  // Fetch sale data when edit mode is active and data hasn't been loaded yet
+  useEffect(() => {
+    if (!isEditMode || !editSaleId || hasFetchedEditData) return;
+
+    let cancelled = false;
+    const loadingToast = toast.loading("Loading sale data...");
+
+    fetch(`/api/sale/editSale/${editSaleId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
         if (data.success) {
           setHasFetchedEditData(true);
-          onPopulateForm(data.data);
+          onPopulateFormRef.current(data.data);
           toast.success("Sale loaded for editing", { id: loadingToast });
         } else {
           toast.error("Failed to fetch sale data", { id: loadingToast });
-          reset();
+          setIsEditMode(false);
+          setEditSaleId(null);
+          onResetRef.current?.();
         }
-      } catch {
+      })
+      .catch(() => {
+        if (cancelled) return;
         toast.error("Error loading sale for editing", { id: loadingToast });
-        reset();
-      }
-    },
-    [hasFetchedEditData, onPopulateForm, reset]
-  );
+        setIsEditMode(false);
+        setEditSaleId(null);
+        onResetRef.current?.();
+      });
 
-  // Detect edit mode from URL params
-  useEffect(() => {
-    const edit = searchParams.get("edit");
-    const id = searchParams.get("id");
-
-    if (edit === "true" && id) {
-      setIsEditMode(true);
-      setEditSaleId(id);
-      setHasFetchedEditData(false);
-    } else {
-      reset();
-    }
-  }, [searchParams, isEditMode, reset]);
-
-  // Guard against stale edit state on navigation
-  useEffect(() => {
-    const currentParams = new URLSearchParams(window.location.search);
-    const edit = currentParams.get("edit");
-    const id = currentParams.get("id");
-
-    if (!edit && !id && isEditMode) reset();
-    if (!pathname.includes("/sales/add-sale") && isEditMode) reset();
-  }, [pathname, searchParams, isEditMode, reset]);
-
-  // Trigger fetch when ready
-  useEffect(() => {
-    const edit = searchParams.get("edit");
-    const id = searchParams.get("id");
-    if (edit === "true" && id && !hasFetchedEditData) {
-      fetchSaleData(id);
-    }
-  }, [searchParams, hasFetchedEditData, fetchSaleData]);
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditMode, editSaleId, hasFetchedEditData]);
 
   return { isEditMode, editSaleId, resetEditMode };
 }

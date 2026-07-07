@@ -11,6 +11,7 @@ import Delivery from "@/components/Delivery";
 import AddDeliveryModal from "../components/AddDeliveryModal";
 
 import { useSaleCart } from "./_hooks/useSaleCart";
+import useSaleStore from "@/lib/stores/saleStore";
 import { useEditMode } from "./_hooks/useEditMode";
 import { usePrinting } from "./_hooks/usePrinting";
 import { useNumericKeyboard } from "./_hooks/useNumericKeyboard";
@@ -44,6 +45,7 @@ export default function AddSaleClient() {
   const [saleData, setSaleData] = useState({});
 
   const cart = useSaleCart();
+  const clearCart = useSaleStore((s) => s.clear);
   const printing = usePrinting();
   const keyboard = useNumericKeyboard();
 
@@ -54,17 +56,17 @@ export default function AddSaleClient() {
     setItemDiscount(0);
     setPaymentMethod("Cash");
     setTaxAmount(0);
-    cart.clear();
+    clearCart();
     setTimeout(() => barcodeRef.current?.focus(), 100);
-  }, [cart]);
+  }, [clearCart]);
 
   const { isEditMode, editSaleId, resetEditMode } = useEditMode({
     onPopulateForm: (data) => {
-      resetForm();
+      clearCart();
       if (data.customer) setCustomer(data.customer);
       setPaymentMethod(data.paymentMethod || "Cash");
       setTaxAmount(Number(data.taxAmount) || 0);
-      cart.populateFromSaleData(data, { clear: cart.clear });
+      cart.populateFromSaleData(data, { clear: clearCart });
       setTimeout(() => barcodeRef.current?.focus(), 100);
     },
     onReset: resetForm,
