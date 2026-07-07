@@ -61,7 +61,7 @@ export default function LoginForm() {
       <div className="absolute inset-0" />
 
       {/* Content */}
-      <Card className="relative z-10 max-w-md w-full rounded-2xl border border-orange-500/70 bg-white/10 backdrop-blur-md text-center shadow-xl p-8">
+      <Card className="relative z-10 max-w-md w-full rounded-2xl border border-primary/70 bg-white/10 backdrop-blur-md text-center shadow-xl p-8">
         <div className="flex justify-center -mt-16 mb-4">
           <div className="flex h-20 w-20 items-center justify-center rounded-full shadow-lg">
             <Image
@@ -96,7 +96,7 @@ export default function LoginForm() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoFocus
-                className="w-full p-2 rounded-md border border-gray-300 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="w-full p-2 rounded-md border border-gray-300 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
             </div>
 
@@ -109,13 +109,13 @@ export default function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full p-2 rounded-md border border-gray-300 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="w-full p-2 rounded-md border border-gray-300 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full mt-4 h-13 bg-orange-500/80 hover:bg-orange-600 text-white font-semibold py-2 text-lg rounded-lg  backdrop-blur-md"
+              className="w-full mt-4 h-13 bg-primary/80 font-semibold py-2 text-lg rounded-lg backdrop-blur-md"
             >
               Sign in
             </Button>

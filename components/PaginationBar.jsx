@@ -41,7 +41,6 @@ export default function PaginationBar({ page, totalPages, onPageChange }) {
         <Button
           key={p}
           variant={p === page ? "default" : "outline"}
-          className={p === page ? "bg-orange-500 text-white" : ""}
           size="sm"
           onClick={() => onPageChange(p)}
         >

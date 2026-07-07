@@ -36,7 +36,7 @@ export default function CustomersPage() {
       <div className="absolute inset-0" />
 
       {/* Content */}
-      <Card className="relative z-10 max-w-3xl w-full h-[400] rounded-2xl border border-orange-500/70 bg-white/10 backdrop-blur-md text-center shadow-xl">
+      <Card className="relative z-10 max-w-3xl w-full h-[400] rounded-2xl border border-primary/70 bg-white/10 backdrop-blur-md text-center shadow-xl">
         <div className="flex justify-center -mt-12">
           <div className="flex h-16 w-16 items-center justify-center rounded-full shadow-lg">
             <Image

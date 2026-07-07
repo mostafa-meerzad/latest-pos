@@ -73,7 +73,7 @@ export default function SaleHeader({
         </Button>
         <Button
           onClick={onFinalizeSaleWithDelivery}
-          className="bg-orange-500 text-md hover:bg-orange-400"
+         
           disabled={isSubmitting || isEditMode}
         >
           {isSubmitting ? "Saving..." : "Finalize Sale + Delivery"}

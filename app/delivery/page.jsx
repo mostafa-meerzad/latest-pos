@@ -328,12 +328,10 @@ export default function DeliveryPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/drivers/add?from=deliveries">
-            <Button className="bg-yellow-400 hover:bg-yellow-500 text-md">
-              Add Driver
-            </Button>
+            <Button variant="outline">Add Driver</Button>
           </Link>
           <Link href="/delivery/add?from=deliveries">
-            <Button className="bg-orange-500 hover:bg-orange-600 text-md">
+            <Button>
               Add Delivery
             </Button>
           </Link>
@@ -380,7 +378,7 @@ export default function DeliveryPage() {
         <div className="relative w-[270px]">
           <Input
             placeholder="Search by ID, customer, or address"
-            className="pr-8 focus:!ring-[#f25500] focus:!border-[#f25500]"
+            className="pr-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -708,7 +706,7 @@ export default function DeliveryPage() {
                     <TableCell colSpan={9} className="py-14 text-center">
                       <p className="text-gray-500 mb-3">No deliveries found.</p>
                       <Link href="/delivery/add?from=deliveries">
-                        <Button className="bg-orange-500 hover:bg-orange-600">Add Delivery</Button>
+                        <Button>Add Delivery</Button>
                       </Link>
                     </TableCell>
                   </TableRow>

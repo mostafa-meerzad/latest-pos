@@ -173,7 +173,7 @@ export default function CreateSupplierPage() {
               <div className="mt-6 flex items-center gap-3">
                 <Button
                   type="submit"
-                  className="bg-orange-500"
+                 
                   disabled={submitting}
                 >
                   {submitting ? "Saving..." : "Create Supplier"}

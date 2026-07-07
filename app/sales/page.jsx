@@ -112,7 +112,7 @@ export default function SalesPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/sales/add-sale">
-            <Button className="bg-orange-500 hover:bg-orange-600 text-md">
+            <Button>
               New Sale
             </Button>
           </Link>
@@ -158,7 +158,7 @@ export default function SalesPage() {
         <div className="relative w-[250px]">
           <Input
             placeholder="Search by Sale ID or Customer"
-            className="pr-8 focus:!ring-[#f25500] focus:!border-[#f25500]"
+            className="pr-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -253,7 +253,7 @@ export default function SalesPage() {
                           <Button
                             size="sm"
                             variant="default"
-                            className={"bg-yellow-500 hover:bg-gray-300 hover:text-gray-700 ml-3"}
+                            className="ml-3"
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
@@ -266,7 +266,7 @@ export default function SalesPage() {
                     <TableCell colSpan={6} className="py-14 text-center">
                       <p className="text-gray-500 mb-3">No sales found.</p>
                       <Link href="/sales/add-sale">
-                        <Button className="bg-orange-500 hover:bg-orange-600">New Sale</Button>
+                        <Button>New Sale</Button>
                       </Link>
                     </TableCell>
                   </TableRow>

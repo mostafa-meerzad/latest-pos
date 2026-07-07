@@ -288,7 +288,7 @@ export default function CategoriesPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="bg-orange-500 hover:bg-orange-600 rounded-xl text-white px-6"
+                  className="rounded-xl px-6"
                   disabled={submitting}
                 >
                   {submitting ? "Saving..." : "Add Category"}

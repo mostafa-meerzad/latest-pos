@@ -209,7 +209,7 @@ export default function AddDeliveryModal({
                       }}
                       className={`p-3 border rounded-md cursor-pointer transition ${
                         driverId === d.id
-                          ? "border-orange-500 bg-orange-50"
+                          ? "border-primary bg-primary/5"
                           : "border-gray-300 hover:bg-gray-50"
                       }`}
                     >
@@ -276,7 +276,7 @@ export default function AddDeliveryModal({
             </Button>
             <Button
               type="submit"
-              className="bg-orange-500"
+             
               disabled={submitting}
             >
               {submitting ? "Saving..." : "Create Delivery"}

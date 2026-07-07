@@ -154,7 +154,7 @@ export default function AddCustomerPage() {
               <div className="mt-6 flex items-center gap-3">
                 <Button
                   type="submit"
-                  className="bg-orange-500 hover:bg-orange-400"
+                 
                   disabled={submitting}
                 >
                   {submitting ? "Saving..." : "Create Customer"}

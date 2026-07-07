@@ -185,7 +185,7 @@ export default function SuppliersPage() {
           </Link>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Link href="/suppliers/add-supplier">
-              <Button className="bg-orange-500 hover:bg-orange-600 text-md">Add Supplier</Button>
+              <Button>Add Supplier</Button>
             </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -206,7 +206,7 @@ export default function SuppliersPage() {
             placeholder="Search by supplier name"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-8 focus:!ring-[#f25500] focus:!border-[#f25500]"
+            className="pr-8"
           />
           <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
         </div>
@@ -295,7 +295,7 @@ export default function SuppliersPage() {
                       <TableCell colSpan={7} className="py-14 text-center">
                         <p className="text-gray-500 mb-3">No suppliers found.</p>
                         <Link href="/suppliers/add-supplier">
-                          <Button className="bg-orange-500 hover:bg-orange-600">Add Supplier</Button>
+                          <Button>Add Supplier</Button>
                         </Link>
                       </TableCell>
                     </TableRow>

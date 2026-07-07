@@ -535,7 +535,7 @@ export default function CreateProductPage() {
                 <div className="flex items-center gap-3">
                   <Button
                     type="submit"
-                    className="bg-orange-500"
+                   
                     disabled={submitting}
                   >
                     {submitting ? "Saving..." : "Create Product"}

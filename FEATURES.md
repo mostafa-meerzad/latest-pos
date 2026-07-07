@@ -155,7 +155,7 @@ No need for a universal `<ResponsiveTable />` abstraction — each page has diff
 ## Feature 4: UI Consistency Pass
 
 **Priority:** Medium
-**Status:** In Progress
+**Status:** Done
 
 ### Goal
 Standardize visual language across all pages: colors, page structure, status indicators, empty states, and loading states.

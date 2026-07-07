@@ -42,7 +42,7 @@ export default function RoleSelectionPage() {
       <div className="absolute inset-0" />
 
       {/* Content */}
-      <Card className="relative z-10 max-w-3xl w-full h-[400px] rounded-2xl border border-orange-500/70 bg-white/10 backdrop-blur-md text-center shadow-xl">
+      <Card className="relative z-10 max-w-3xl w-full h-[400px] rounded-2xl border border-primary/70 bg-white/10 backdrop-blur-md text-center shadow-xl">
         <div className="flex justify-center -mt-12">
           <div className="flex h-16 w-16 items-center justify-center rounded-full shadow-lg">
             <Image
@@ -66,13 +66,13 @@ export default function RoleSelectionPage() {
           <div className="flex justify-center gap-6">
             <Button
               onClick={handleAdminClick}
-              className="border-orange-500/70 bg-white/10 backdrop-blur-md text-center w-[150] h-[60] text-lg"
+              className="border-primary/70 bg-white/10 backdrop-blur-md text-center w-[150] h-[60] text-lg"
             >
               Admin
             </Button>
             <Button
               onClick={handleCustomerClick}
-              className="border-orange-500/70 bg-white/10 backdrop-blur-md text-center w-[150] h-[60] text-lg"
+              className="border-primary/70 bg-white/10 backdrop-blur-md text-center w-[150] h-[60] text-lg"
             >
               Customer
             </Button>

@@ -332,7 +332,7 @@ export default function SettingsPage() {
         <div className="relative w-[250px]">
           <Input
             placeholder={currentTab === "users" ? "Search by Name or Username" : "Search by Branch Name"}
-            className="pr-8 focus:!ring-[#f25500] focus:!border-[#f25500]"
+            className="pr-8"
             value={currentTab === "users" ? userSearch : branchSearch}
             onChange={(e) =>
               currentTab === "users"
@@ -463,7 +463,7 @@ export default function SettingsPage() {
                       <Input value={newBranchValues.phone} onChange={(e) => setNewBranchValues({ ...newBranchValues, phone: e.target.value })} placeholder="Phone" />
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={createBranch} disabled={saving} className="bg-orange-500">Save</Button>
+                      <Button onClick={createBranch} disabled={saving}>Save</Button>
                       <Button variant="outline" onClick={() => setIsAddingBranch(false)}>Cancel</Button>
                     </div>
                   </div>

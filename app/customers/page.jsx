@@ -76,7 +76,7 @@ export default function CustomersPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/customers/add">
-            <Button className="bg-orange-500 hover:bg-orange-600 text-md">Add Customer</Button>
+            <Button>Add Customer</Button>
           </Link>
           <BackToDashboardButton />
         </div>
@@ -86,7 +86,7 @@ export default function CustomersPage() {
       <div className="relative w-[300px]">
         <Input
           placeholder="Search customers..."
-          className="pr-8 focus:!ring-[#f25500] focus:!border-[#f25500]"
+          className="pr-8"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -132,7 +132,7 @@ export default function CustomersPage() {
                     <TableCell colSpan={4} className="py-14 text-center">
                       <p className="text-gray-500 mb-3">No customers found.</p>
                       <Link href="/customers/add">
-                        <Button className="bg-orange-500 hover:bg-orange-600">Add Customer</Button>
+                        <Button>Add Customer</Button>
                       </Link>
                     </TableCell>
                   </TableRow>

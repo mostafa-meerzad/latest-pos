@@ -208,7 +208,7 @@ export default function AddUserPage() {
               <div className="mt-6 flex items-center gap-3">
                 <Button
                   type="submit"
-                  className="bg-orange-400 hover:bg-orange-500 text-white"
+                 
                   disabled={submitting}
                 >
                   {submitting ? "Saving..." : "Create User"}

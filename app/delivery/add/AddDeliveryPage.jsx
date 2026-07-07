@@ -320,7 +320,7 @@ export default function AddDeliveryPage() {
                             }}
                             className={`p-3 border rounded-md cursor-pointer ${
                               driverId === d.id
-                                ? "border-orange-500 bg-orange-50"
+                                ? "border-primary bg-primary/5"
                                 : "border-gray-300 hover:bg-gray-50"
                             }`}
                           >
@@ -380,7 +380,7 @@ export default function AddDeliveryPage() {
               <div className="mt-6 flex items-center gap-3">
                 <Button
                   type="submit"
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                 
                   disabled={submitting}
                 >
                   {submitting ? "Saving..." : "Create Delivery"}

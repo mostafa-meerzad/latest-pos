@@ -191,7 +191,7 @@ export default function DashboardPage() {
               <Button
                 variant="destructive"
                 onClick={handleLogout}
-                className="bg-orange-500 hover:bg-orange-600"
+               
               >
                 Logout
               </Button>

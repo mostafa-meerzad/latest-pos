@@ -6,7 +6,7 @@ export default function BackToDashboardButton() {
   return (
     
     <Link href="/home">
-          <Button className="bg-blue-500 hover:bg-blue-600 text-md ">Dashboard</Button>
+          <Button variant="outline">Dashboard</Button>
     </Link>
   );
 }

@@ -291,19 +291,15 @@ export default function ProductsPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/products/add">
-            <Button className="bg-orange-500 hover:bg-orange-600 text-md">
+            <Button>
               Add Product
             </Button>
           </Link>
           <Link href="/products/categories">
-            <Button className="bg-yellow-500 hover:bg-yellow-600 text-md">
-              Categories
-            </Button>
+            <Button variant="outline">Categories</Button>
           </Link>
           <Link href="/suppliers">
-            <Button className="bg-amber-500 hover:bg-amber-600 text-md">
-              Suppliers
-            </Button>
+            <Button variant="outline">Suppliers</Button>
           </Link>
           <BackToDashboardButton />
         </div>
@@ -368,7 +364,7 @@ export default function ProductsPage() {
         <div className="relative w-[250px]">
           <Input
             placeholder="Search by name or barcode"
-            className="pr-8 focus:!ring-[#f25500] focus:!border-[#f25500]"
+            className="pr-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -860,9 +856,6 @@ export default function ProductsPage() {
               <Button
                 key={pageNumber}
                 variant={pageNumber === currentPage ? "default" : "outline"}
-                className={
-                  pageNumber === currentPage ? "bg-orange-500 text-white" : ""
-                }
                 size="sm"
                 onClick={() => goToPage(pageNumber)}
               >
