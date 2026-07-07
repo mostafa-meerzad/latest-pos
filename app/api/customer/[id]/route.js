@@ -1,4 +1,4 @@
-import { updateCustomerSchema } from "@/app/services/customerSchema";
+import { updateCustomerSchema } from "@/lib/schemas/customer";
 import prisma from "@/lib/prisma";
 import { STATUS } from "@/lib/status";
 import { NextResponse } from "next/server";

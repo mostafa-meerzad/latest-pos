@@ -1,4 +1,4 @@
-import { updateCategorySchema } from "@/app/services/categorySchema";
+import { updateCategorySchema } from "@/lib/schemas/category";
 import prisma from "@/lib/prisma";
 import { STATUS } from "@/lib/status";
 import { NextResponse } from "next/server";

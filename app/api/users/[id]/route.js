@@ -1,4 +1,4 @@
-import { updateUserSchema } from "@/app/services/userSchema";
+import { updateUserSchema } from "@/lib/schemas/user";
 import { hashPassword } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { STATUS } from "@/lib/status";

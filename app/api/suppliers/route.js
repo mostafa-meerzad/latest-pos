@@ -1,4 +1,4 @@
-import { createSupplierSchema } from "@/app/services/supplierSchema";
+import { createSupplierSchema } from "@/lib/schemas/supplier";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthFromRequest } from "@/lib/auth";

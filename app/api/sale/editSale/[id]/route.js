@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthFromRequest } from "@/lib/auth";
 import { z } from "zod";
-import { saleSchema } from "@/app/services/saleSchema";
+import { saleSchema } from "@/lib/schemas/sale";
 import { ApiError } from "@/lib/errors";
 
 // ------------------------------

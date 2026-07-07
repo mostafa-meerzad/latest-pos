@@ -30,21 +30,10 @@ export async function middleware(req) {
   const cookie = cookieHeader.split(/;\s*/).find((c) => c.startsWith(`${SESSION_COOKIE}=`));
   const jwtToken = cookie ? decodeURIComponent(cookie.split("=")[1] || "") : null;
   const token = jwtToken ? await verifySessionToken(jwtToken) : null;
-  // const token =  await verifySessionToken(jwtToken) ;
 
-    // console.log("token ", token)
-    // console.log("cookie ", cookie)
-    // console.log("jwt token ", jwtToken)
-    // console.log("pathname ", pathname)
-    // console.log("cookie header ", cookieHeader)
-    // console.log("verified toke ", await verifySessionToken(jwtToken))
-  // Find the rule for the current pathname
   const rule = routePermissions.find((r) => r.match.test(pathname));
 
-   // console.log("rule ", rule)
-  // --- 1. First, handle public or explicitly allowed routes
   if (rule?.allow) {
-   // console.log("is allowed ", rule.allow)
     // If user is already authenticated and trying to view the login page,
     // send them to their intended destination (or home) instead of staying on /login
     if (pathname.startsWith("/login") && token) {
@@ -86,9 +75,7 @@ export async function middleware(req) {
     }
   }
 
-  // --- Default: Allow access for any authenticated user if no specific rule denies it
   return NextResponse.next();
-  // return NextResponse.redirect("/");
 }
 
 export const config = {

@@ -1,4 +1,4 @@
-import { createCustomerSchema } from "@/app/services/customerSchema";
+import { createCustomerSchema } from "@/lib/schemas/customer";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthFromRequest } from "@/lib/auth";

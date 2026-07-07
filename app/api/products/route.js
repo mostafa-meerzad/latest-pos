@@ -1,4 +1,4 @@
-import { createProductSchema } from "@/app/services/productSchema";
+import { createProductSchema } from "@/lib/schemas/product";
 import prisma from "@/lib/prisma";
 import { STATUS } from "@/lib/status";
 import { NextResponse } from "next/server";

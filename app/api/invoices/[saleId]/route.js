@@ -1,4 +1,4 @@
-import { generateInvoice } from "@/app/services/functions/generateInvoice";
+import { generateInvoice } from "@/lib/services/invoice";
 import { NextResponse } from "next/server";
 
 

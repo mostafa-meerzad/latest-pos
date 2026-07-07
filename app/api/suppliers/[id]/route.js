@@ -1,4 +1,4 @@
-import { updateSupplierSchema } from "@/app/services/supplierSchema";
+import { updateSupplierSchema } from "@/lib/schemas/supplier";
 import prisma from "@/lib/prisma";
 import { STATUS } from "@/lib/status";
 import { NextResponse } from "next/server";

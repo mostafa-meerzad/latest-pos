@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 
-import useSaleStore from "@/components/saleStore";
+import useSaleStore from "@/lib/stores/saleStore";
 
 export default function PurchaseDetailPage() {
   const router = useRouter();

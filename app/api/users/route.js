@@ -1,4 +1,4 @@
-import { createUserSchema } from "@/app/services/userSchema";
+import { createUserSchema } from "@/lib/schemas/user";
 import { hashPassword, getAuthFromRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";

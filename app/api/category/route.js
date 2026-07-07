@@ -1,4 +1,4 @@
-import { createCategorySchema } from "@/app/services/categorySchema";
+import { createCategorySchema } from "@/lib/schemas/category";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthFromRequest } from "@/lib/auth";

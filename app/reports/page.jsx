@@ -359,20 +359,6 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/*<label className="flex flex-col">*/}
-          {/*  <Select onValueChange={(v) => setPeriod(v)} value={period}>*/}
-          {/*    <SelectTrigger className="w-36">*/}
-          {/*      <SelectValue placeholder="Select period" />*/}
-          {/*    </SelectTrigger>*/}
-          {/*    <SelectContent>*/}
-          {/*      <SelectItem value="day">Day</SelectItem>*/}
-          {/*      <SelectItem value="week">Week</SelectItem>*/}
-          {/*      <SelectItem value="month">Month</SelectItem>*/}
-          {/*      <SelectItem value="year">Year</SelectItem>*/}
-          {/*    </SelectContent>*/}
-          {/*  </Select>*/}
-          {/*</label>*/}
-
           {period === "year" ? (
             <div className="flex items-center gap-2">
               <label className="flex flex-col">
@@ -490,27 +476,6 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        {/* Total Profit */}
-        {/* <Card>
-          <CardHeader>
-            <CardTitle>Profit</CardTitle>
-            <CardDescription>Net profit for period</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl ${
-                report?.summary?.totalProfit < 0
-                  ? "text-rose-600"
-                  : "text-green-600"
-              }`}
-            >
-              {fmtCurrency(report?.summary?.totalProfit)}
-            </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              Margin: {report?.summary?.profitMargin}%
-            </div>
-          </CardContent>
-        </Card> */}
         {/* Profit Breakdown */}
 <Card>
   <CardHeader>
@@ -602,10 +567,6 @@ export default function ReportsPage() {
               </span>
             </div>
 
-            {/* <div className="space-y-1">
-                 <div className="text-xs text-muted-foreground">Revenue Difference</div>
-                 <div className="text-lg">{fmtCurrency(report?.breakdown?.comparison?.revenueDifference)}</div>
-               </div> */}
           </CardContent>
         </Card>
       </div>

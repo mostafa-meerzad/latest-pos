@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCustomerPurchaseHistory } from "@/app/services/functions/getCustomerPurchaseHistory";
+import { getCustomerPurchaseHistory } from "@/lib/services/customerHistory";
 
 import { getAuthFromRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";

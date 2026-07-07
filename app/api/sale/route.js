@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
-import { getOrCreateWalkInCustomer } from "@/app/services/functions/customerService";
+import { getOrCreateWalkInCustomer } from "@/lib/services/customer";
 import { getAuthFromRequest } from "@/lib/auth";
 import { ApiError } from "@/lib/errors";
-import { saleSchema } from "@/app/services/saleSchema";
+import { saleSchema } from "@/lib/schemas/sale";
 
 export async function POST(req) {
   try {

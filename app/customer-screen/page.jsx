@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import DashboradImage from "@/assets/dashboard_bg.png";
 import LogoImage from "@/assets/logo.png";
 import { useRouter } from "next/navigation";
-import useSaleStore from "@/components/saleStore";
+import useSaleStore from "@/lib/stores/saleStore";
 
 export default function CustomersPage() {
   const router = useRouter();
