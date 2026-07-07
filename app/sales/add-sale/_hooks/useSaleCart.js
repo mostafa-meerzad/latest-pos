@@ -101,6 +101,15 @@ export function useSaleCart() {
     setEditValues(null);
   }
 
+  function populateFromOfflineItems(cartItems, { clear: clearStore }) {
+    clearStore();
+    if (Array.isArray(cartItems)) {
+      cartItems.forEach((item) => {
+        addItem({ ...item, tempId: genTempId() });
+      });
+    }
+  }
+
   function populateFromSaleData(saleData, { clear: clearStore }) {
     clearStore();
     if (saleData.items && Array.isArray(saleData.items)) {
@@ -137,5 +146,6 @@ export function useSaleCart() {
     cancelEdit,
     deleteItem,
     populateFromSaleData,
+    populateFromOfflineItems,
   };
 }

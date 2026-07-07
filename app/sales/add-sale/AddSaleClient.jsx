@@ -14,8 +14,13 @@ import { useSaleCart } from "./_hooks/useSaleCart";
 import { useEditMode } from "./_hooks/useEditMode";
 import { usePrinting } from "./_hooks/usePrinting";
 import { useNumericKeyboard } from "./_hooks/useNumericKeyboard";
+import { useOfflineCache } from "./_hooks/useOfflineCache";
+import useOfflineStore from "@/lib/stores/offlineStore";
+import { queueSale, flushPendingSales, voidFailedSale } from "@/lib/offline/sync";
 
 import SaleHeader from "./_components/SaleHeader";
+import OfflineIndicator from "@/components/OfflineIndicator";
+import OfflineSaleAlert from "@/components/OfflineSaleAlert";
 import CustomerSearch from "./_components/CustomerSearch";
 import ProductSearch from "./_components/ProductSearch";
 import CartTable from "./_components/CartTable";
@@ -28,8 +33,6 @@ export default function AddSaleClient() {
   const router = useRouter();
   const barcodeRef = useRef(null);
 
-  const [customers, setCustomers] = useState([]);
-  const [products, setProducts] = useState([]);
   const [customer, setCustomer] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -67,33 +70,8 @@ export default function AddSaleClient() {
     onReset: resetForm,
   });
 
-  // Fetch customers
-  useEffect(() => {
-    let active = true;
-    fetch("/api/customer/")
-      .then((r) => r.json())
-      .then((d) => { if (d.success && active) setCustomers(d.data); })
-      .catch(() => toast.error("Failed to fetch customers"));
-    return () => { active = false; };
-  }, []);
-
-  // Fetch products (refetch when edit mode changes)
-  useEffect(() => {
-    let active = true;
-    fetch("/api/products/")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success && active) {
-          setProducts(
-            d.data.filter(
-              (p) => p.status === "ACTIVE" && !p.isDeleted && p.stockQuantity > 0
-            )
-          );
-        }
-      })
-      .catch(() => toast.error("Failed to fetch products"));
-    return () => { active = false; };
-  }, [isEditMode]);
+  const { products, customers } = useOfflineCache({ isEditMode });
+  const { isOffline } = useOfflineStore();
 
   // Focus barcode on mount
   useEffect(() => {
@@ -122,6 +100,30 @@ export default function AddSaleClient() {
     if (isSubmitting) return;
 
     setIsSubmitting(true);
+
+    if (!navigator.onLine) {
+      const payload = buildPayload();
+      await queueSale(payload, {
+        customer: customer ?? { id: 0, name: "Walk-in Customer" },
+        items: [...cart.items],
+        totals: { ...cart.totals },
+        paymentMethod,
+        taxAmount: Math.floor(Number(taxAmount || 0)),
+      });
+      const tempId = `Q-${Date.now()}`;
+      printing.triggerInvoicePrint({
+        saleId: tempId,
+        date: new Date().toISOString(),
+        customer: customer ?? { id: 0, name: "Walk-in Customer" },
+        items: [...cart.items],
+        totals: { ...cart.totals },
+      });
+      toast.success("Sale queued — will sync when connection returns.");
+      resetForm();
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const payload = buildPayload();
       const res =
@@ -172,6 +174,7 @@ export default function AddSaleClient() {
       setPaymentMethod("Cash");
       setTaxAmount(0);
       toast.success(`Sale ${isEditMode ? "updated" : "finalized"} successfully!`);
+      flushPendingSales();
 
       if (isEditMode) {
         resetEditMode();
@@ -235,6 +238,16 @@ export default function AddSaleClient() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleRetryPopulate(localSaleData, localId) {
+    resetForm();
+    if (localSaleData.customer?.id) setCustomer(localSaleData.customer);
+    setPaymentMethod(localSaleData.paymentMethod || "Cash");
+    setTaxAmount(localSaleData.taxAmount || 0);
+    cart.populateFromOfflineItems(localSaleData.items, { clear: cart.clear });
+    voidFailedSale(localId);
+    setTimeout(() => barcodeRef.current?.focus(), 100);
   }
 
   function handleDeliverySuccess(delivery) {
@@ -328,6 +341,7 @@ export default function AddSaleClient() {
         isEditMode={isEditMode}
         editSaleId={editSaleId}
         isSubmitting={isSubmitting}
+        isOffline={isOffline}
         onFinalizeSale={handleFinalizeSale}
         onFinalizeSaleWithDelivery={handleFinalizeSaleWithDelivery}
         onPrint={printing.handlePrint}
@@ -335,6 +349,8 @@ export default function AddSaleClient() {
         onClearCart={cart.clear}
         onReset={resetForm}
       />
+      <OfflineIndicator />
+      <OfflineSaleAlert onRetryPopulate={handleRetryPopulate} />
 
       <AddDeliveryModal
         isOpen={isModalOpen}

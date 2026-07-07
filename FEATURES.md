@@ -9,7 +9,7 @@ Status values: **Planned** | **In Progress** | **Done**
 ## Feature 1: Offline Sales Support
 
 **Priority:** High
-**Status:** Planned
+**Status:** In Progress
 
 ### Goal
 Allow cashiers to continue making sales during short internet outages (up to 2–3 days). Only the sale creation flow needs to work offline. Everything else (reports, settings, delivery management) can degrade gracefully.

@@ -10,6 +10,7 @@ export default function SaleHeader({
   isEditMode,
   editSaleId,
   isSubmitting,
+  isOffline,
   onFinalizeSale,
   onFinalizeSaleWithDelivery,
   onPrint,
@@ -74,7 +75,8 @@ export default function SaleHeader({
         <Button
           onClick={onFinalizeSaleWithDelivery}
          
-          disabled={isSubmitting || isEditMode}
+          disabled={isSubmitting || isEditMode || isOffline}
+          title={isOffline ? "Delivery requires a connection" : undefined}
         >
           {isSubmitting ? "Saving..." : "Finalize Sale + Delivery"}
         </Button>
