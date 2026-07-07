@@ -28,7 +28,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import ReportsImg from "@/assets/reports_img.png";
-import { Switch } from "@/components/ui/switch";
 import {
   LineChart,
   Line,
@@ -40,6 +39,7 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  ComposedChart,
   PieChart,
   Pie,
   Cell,
@@ -180,7 +180,6 @@ export default function ReportsPage() {
       if (!res.ok) throw new Error("Failed to fetch report");
       
       const json = await res.json();
-      console.log(json);
       setReport(json);
 
       toast.success("Report data loaded successfully!", { id: toastId });
@@ -379,6 +378,23 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex flex-wrap-reverse gap-3 items-center justify-end self-center">
+          {/* Period selector */}
+          <div className="flex rounded-md border overflow-hidden">
+            {["day", "week", "month", "year"].map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
+                  period === p
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
           <Button onClick={fetchReport} variant="outline">
             <RefreshCcw />
             Refresh
@@ -715,7 +731,7 @@ export default function ReportsPage() {
 
                 {period === "year" && (
                   <ResponsiveContainer width="100%" height={280}>
-                    <BarChart
+                    <ComposedChart
                       data={monthlySeries}
                       margin={{ top: 10, right: 20, left: 0, bottom: 50 }}
                     >
@@ -745,11 +761,12 @@ export default function ReportsPage() {
                       <Line
                         type="monotone"
                         dataKey="profit"
+                        name="Profit"
                         stroke={COLORS[2]}
                         strokeWidth={2}
                         dot={false}
                       />
-                    </BarChart>
+                    </ComposedChart>
                   </ResponsiveContainer>
                 )}
               </CardContent>
