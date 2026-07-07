@@ -129,8 +129,11 @@ export default function CustomersPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-gray-500 py-10">
-                      No customers found.
+                    <TableCell colSpan={4} className="py-14 text-center">
+                      <p className="text-gray-500 mb-3">No customers found.</p>
+                      <Link href="/customers/add">
+                        <Button className="bg-orange-500 hover:bg-orange-600">Add Customer</Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 )}
@@ -147,17 +150,29 @@ export default function CustomersPage() {
 
 function CustomersSkeleton() {
   return (
-    <div className="border rounded-lg p-6 py-10 flex items-center justify-between">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="w-full px-2 flex flex-col gap-6">
-          <Skeleton className="w-40 h-8 mb-4" />
-          <Skeleton className="w-30 h-6" />
-          <Skeleton className="w-48 h-6" />
-          <Skeleton className="w-40 h-6" />
-          <Skeleton className="w-30 h-6" />
-          <Skeleton className="w-40 h-6" />
-        </div>
-      ))}
-    </div>
+    <Card>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow className="text-lg">
+              <TableHead>Customer Name</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[...Array(6)].map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-44" /></TableCell>
+                <TableCell><Skeleton className="h-8 w-24 rounded-md" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

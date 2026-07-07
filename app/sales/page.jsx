@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil, Search } from "lucide-react";
+import PaginationBar from "@/components/PaginationBar";
 import {
   Table,
   TableBody,
@@ -43,9 +44,6 @@ export default function SalesPage() {
 
   const itemsPerPage = 6;
 
-  // ----------------------------
-  // 🔹 Fetch sales from API (with all filters)
-  // ----------------------------
   useEffect(() => {
     async function fetchSales() {
       try {
@@ -59,12 +57,8 @@ export default function SalesPage() {
           toDate: toDate,
         });
 
-        // console.log("Fetching sales with params:", params.toString()); // Debug log
-
         const res = await fetch(`/api/sale?${params.toString()}`);
         const data = await res.json();
-
-        // console.log("API Response:", data); // Debug log
 
         if (res.ok && data.success) {
           const formatted = data.data.map((s) => ({
@@ -98,113 +92,9 @@ export default function SalesPage() {
     fetchSales();
   }, [currentPage, searchQuery, paymentFilter, fromDate, toDate]);
 
-  // ----------------------------
-  // 🔹 Reset to page 1 when filters change
-  // ----------------------------
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, paymentFilter, fromDate, toDate]);
-
-  // ----------------------------
-  // 🔹 Handlers
-  // ----------------------------
-  const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
-
-  // Generate pagination buttons
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    const maxVisiblePages = 3;
-
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    // Adjust start page if we're near the end
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    // Previous button
-    buttons.push(
-      <Button
-        key="prev"
-        variant="outline"
-        size="sm"
-        onClick={() => goToPage(currentPage - 1)}
-        disabled={currentPage === 1}
-      >
-        Prev
-      </Button>
-    );
-
-    // First page and ellipsis if needed
-    if (startPage > 1) {
-      buttons.push(
-        <Button key={1} variant="outline" size="sm" onClick={() => goToPage(1)}>
-          1
-        </Button>
-      );
-      if (startPage > 2) {
-        buttons.push(
-          <Button key="ellipsis1" variant="outline" size="sm" disabled>
-            ...
-          </Button>
-        );
-      }
-    }
-
-    // Page numbers
-    for (let i = startPage; i <= endPage; i++) {
-      buttons.push(
-        <Button
-          key={i}
-          variant={i === currentPage ? "default" : "outline"}
-          className={i === currentPage ? "bg-orange-500 text-white" : ""}
-          size="sm"
-          onClick={() => goToPage(i)}
-        >
-          {i}
-        </Button>
-      );
-    }
-
-    // Last page and ellipsis if needed
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        buttons.push(
-          <Button key="ellipsis2" variant="outline" size="sm" disabled>
-            ...
-          </Button>
-        );
-      }
-      buttons.push(
-        <Button
-          key={totalPages}
-          variant="outline"
-          size="sm"
-          onClick={() => goToPage(totalPages)}
-        >
-          {totalPages}
-        </Button>
-      );
-    }
-
-    // Next button
-    buttons.push(
-      <Button
-        key="next"
-        variant="outline"
-        size="sm"
-        onClick={() => goToPage(currentPage + 1)}
-        disabled={currentPage === totalPages}
-      >
-        Next
-      </Button>
-    );
-
-    return buttons;
-  };
 
   return (
     <div className="p-6 space-y-6">
@@ -222,7 +112,7 @@ export default function SalesPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link href="/sales/add-sale">
-            <Button className={"bg-green-500 text-md hover:bg-green-400 "}>
+            <Button className="bg-orange-500 hover:bg-orange-600 text-md">
               New Sale
             </Button>
           </Link>
@@ -276,16 +166,7 @@ export default function SalesPage() {
         </div>
       </div>
 
-      {/* ----------------- Info Text ----------------- */}
-      {/* {!loading && (
-        <div className="text-sm text-gray-600">
-          Showing {salesData.length} of {totalCount} sales
-          {(searchQuery || paymentFilter !== "all" || fromDate || toDate) && 
-            " (filtered)"}
-        </div>
-      )} */}
-
-      {/* ----------------- Table ----------------- */}
+      {/* Table */}
       <Card className={loading ? "p-0" : ""}>
         <CardContent className={loading ? "p-0" : ""}>
           {loading ? (
@@ -382,11 +263,11 @@ export default function SalesPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center text-gray-500"
-                    >
-                      No sales found.
+                    <TableCell colSpan={6} className="py-14 text-center">
+                      <p className="text-gray-500 mb-3">No sales found.</p>
+                      <Link href="/sales/add-sale">
+                        <Button className="bg-orange-500 hover:bg-orange-600">New Sale</Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 )}
@@ -396,12 +277,7 @@ export default function SalesPage() {
         </CardContent>
       </Card>
 
-      {/* ----------------- Pagination ----------------- */}
-      {totalPages > 1 && (
-        <div className="flex gap-2 items-center flex-wrap">
-          {renderPaginationButtons()}
-        </div>
-      )}
+      <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
     </div>
   );
 }

@@ -225,8 +225,11 @@ export default function DriversPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500 py-10">
-                      No drivers found.
+                    <TableCell colSpan={5} className="py-14 text-center">
+                      <p className="text-gray-500 mb-3">No drivers found.</p>
+                      <Link href="/drivers/add?from=drivers">
+                        <Button className="bg-orange-500 hover:bg-orange-600">Add Driver</Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 )}

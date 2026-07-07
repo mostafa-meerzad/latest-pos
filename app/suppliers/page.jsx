@@ -185,7 +185,7 @@ export default function SuppliersPage() {
           </Link>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Link href="/suppliers/add-supplier">
-              <Button className="bg-amber-500 hover:bg-amber-600 text-md">Add Supplier</Button>
+              <Button className="bg-orange-500 hover:bg-orange-600 text-md">Add Supplier</Button>
             </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -292,8 +292,11 @@ export default function SuppliersPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-gray-500 py-10">
-                        No suppliers found.
+                      <TableCell colSpan={7} className="py-14 text-center">
+                        <p className="text-gray-500 mb-3">No suppliers found.</p>
+                        <Link href="/suppliers/add-supplier">
+                          <Button className="bg-orange-500 hover:bg-orange-600">Add Supplier</Button>
+                        </Link>
                       </TableCell>
                     </TableRow>
                   )}

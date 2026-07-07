@@ -2,6 +2,8 @@
 
 import DeliveryImg from "@/assets/delivery_img.png";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
+import PaginationBar from "@/components/PaginationBar";
+import StatusBadge from "@/components/StatusBadge";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -23,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pencil, Save, Search, Trash2 } from "lucide-react";
-import { toast } from "react-hot-toast"; // ✅ Added Toaster import
+import { toast } from "react-hot-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,12 +55,10 @@ export default function DeliveryPage() {
 
   const itemsPerPage = 6;
 
-  // Fetch user data
-
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const res = await fetch("/api/me"); // Adjust the endpoint as needed
+        const res = await fetch("/api/me");
         const json = await res.json();
 
         if (json.success) {
@@ -73,14 +73,10 @@ export default function DeliveryPage() {
     fetchUserData();
   }, []);
 
-  // ----------------------------
-  // 🔹 Fetch deliveries with filters
-  // ----------------------------
   useEffect(() => {
     const fetchDeliveries = async () => {
       setLoading(true);
       try {
-        setLoading(true);
         const params = new URLSearchParams({
           page: currentPage.toString(),
           limit: itemsPerPage.toString(),
@@ -114,7 +110,6 @@ export default function DeliveryPage() {
     fetchDeliveries();
   }, [currentPage, searchQuery, statusFilter, driverFilter]);
 
-  // ---------------- Fetch Drivers ----------------
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
@@ -132,16 +127,10 @@ export default function DeliveryPage() {
     fetchDrivers();
   }, []);
 
-  // ----------------------------
-  // 🔹 Reset to page 1 when filters change
-  // ----------------------------
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, driverFilter]);
 
-  // ----------------------------
-  // 🔹 Inline Editing Functions
-  // ----------------------------
   function startEdit(row) {
     setEditingId(row.id);
     setEditValues({
@@ -311,119 +300,6 @@ export default function DeliveryPage() {
     }
   }, [lastPrintedDelivery, handlePrintDelivery]);
 
-  // ----------------------------
-  // 🔹 Pagination
-  // ----------------------------
-  const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
-
-  // Generate pagination buttons
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    const maxVisiblePages = 3;
-
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    // Adjust start page if we're near the end
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    // Previous button
-    buttons.push(
-      <Button
-        key="prev"
-        variant="outline"
-        size="sm"
-        onClick={() => goToPage(currentPage - 1)}
-        disabled={currentPage === 1}
-      >
-        Prev
-      </Button>
-    );
-
-    // First page and ellipsis if needed
-    if (startPage > 1) {
-      buttons.push(
-        <Button key={1} variant="outline" size="sm" onClick={() => goToPage(1)}>
-          1
-        </Button>
-      );
-      if (startPage > 2) {
-        buttons.push(
-          <Button key="ellipsis1" variant="outline" size="sm" disabled>
-            ...
-          </Button>
-        );
-      }
-    }
-
-    // Page numbers
-    for (let i = startPage; i <= endPage; i++) {
-      buttons.push(
-        <Button
-          key={i}
-          variant={i === currentPage ? "default" : "outline"}
-          className={i === currentPage ? "bg-orange-500 text-white" : ""}
-          size="sm"
-          onClick={() => goToPage(i)}
-        >
-          {i}
-        </Button>
-      );
-    }
-
-    // Last page and ellipsis if needed
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        buttons.push(
-          <Button key="ellipsis2" variant="outline" size="sm" disabled>
-            ...
-          </Button>
-        );
-      }
-      buttons.push(
-        <Button
-          key={totalPages}
-          variant="outline"
-          size="sm"
-          onClick={() => goToPage(totalPages)}
-        >
-          {totalPages}
-        </Button>
-      );
-    }
-
-    // Next button
-    buttons.push(
-      <Button
-        key="next"
-        variant="outline"
-        size="sm"
-        onClick={() => goToPage(currentPage + 1)}
-        disabled={currentPage === totalPages}
-      >
-        Next
-      </Button>
-    );
-
-    return buttons;
-  };
-
-  const StatusBadge = ({ status }) => {
-    let style = "";
-    if (status === "delivered") style = "bg-green-500 text-white";
-    if (status === "pending") style = "bg-yellow-500 text-white";
-    // if (status === "dispatched") style = "bg-blue-500 text-white";
-    if (status === "canceled") style = "bg-red-500 text-white";
-    return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium ${style}`}>
-        {status}
-      </span>
-    );
-  };
   function formatDateTime(dateString) {
     if (!dateString) return "—";
     const date = new Date(dateString);
@@ -457,7 +333,7 @@ export default function DeliveryPage() {
             </Button>
           </Link>
           <Link href="/delivery/add?from=deliveries">
-            <Button className="bg-orange-400 hover:bg-orange-500 text-md">
+            <Button className="bg-orange-500 hover:bg-orange-600 text-md">
               Add Delivery
             </Button>
           </Link>
@@ -469,10 +345,7 @@ export default function DeliveryPage() {
       <div className="flex flex-wrap items-center gap-4 mb-4">
         <Select
           value={statusFilter}
-          onValueChange={(v) => {
-            setStatusFilter(v);
-            toast.success(`Filtered by ${v === "all" ? "all statuses" : v}`);
-          }}
+          onValueChange={setStatusFilter}
         >
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Status" />
@@ -488,12 +361,7 @@ export default function DeliveryPage() {
 
         <Select
           value={driverFilter}
-          onValueChange={(v) => {
-            setDriverFilter(v);
-            toast.success(
-              v === "all" ? "Showing all drivers" : "Filtered by driver"
-            );
-          }}
+          onValueChange={setDriverFilter}
         >
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Driver" />
@@ -515,24 +383,12 @@ export default function DeliveryPage() {
             className="pr-8 focus:!ring-[#f25500] focus:!border-[#f25500]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onBlur={() => {
-              if (searchQuery) toast(`Searching for "${searchQuery}"`);
-            }}
           />
           <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
         </div>
       </div>
 
-      {/* ----------------- Info Text ----------------- */}
-      {/* {!loading && (
-        <div className="text-sm text-gray-600">
-          Showing {deliveries.length} of {totalCount} deliveries
-          {(searchQuery || statusFilter !== "all" || driverFilter !== "all") &&
-            " (filtered)"}
-        </div>
-      )} */}
-
-      {/* ----------------- Table ----------------- */}
+      {/* Table */}
       <Card className={loading ? "p-0" : ""}>
         <CardContent className={loading ? "p-0" : ""}>
           {loading ? (
@@ -615,7 +471,6 @@ export default function DeliveryPage() {
                     <TableRow key={d.id}>
                       <TableCell>#{d.id}</TableCell>
                       <TableCell>{d.customer?.name}</TableCell>
-                      {/* Phone number */}
                       <TableCell>
                         {editingId === d.id ? (
                           <Input
@@ -633,8 +488,7 @@ export default function DeliveryPage() {
                           d.customerPhone || "—"
                         )}
                       </TableCell>
-                      {/* Address */}
-                      <TableCell className={"whitespace-normal "}>
+                      <TableCell className="whitespace-normal">
                         {editingId === d.id ? (
                           <Textarea
                             value={editValues?.deliveryAddress || ""}
@@ -652,7 +506,6 @@ export default function DeliveryPage() {
                         )}
                       </TableCell>
 
-                      {/* Driver */}
                       <TableCell>
                         {editingId === d.id ? (
                           <div className="relative w-[200px]">
@@ -706,7 +559,6 @@ export default function DeliveryPage() {
                         )}
                       </TableCell>
 
-                      {/* Status */}
                       <TableCell>
                         {editingId === d.id ? (
                           <Select
@@ -734,7 +586,6 @@ export default function DeliveryPage() {
                         )}
                       </TableCell>
 
-                      {/* Delivery Date */}
                       <TableCell>
                         {editingId === d.id ? (
                           <div className="flex flex-col gap-1">
@@ -764,7 +615,6 @@ export default function DeliveryPage() {
                         )}
                       </TableCell>
 
-                      {/* Delivery Fee */}
                       <TableCell>
                         {editingId === d.id ? (
                           <Input
@@ -774,7 +624,6 @@ export default function DeliveryPage() {
                             value={editValues?.deliveryFee || ""}
                             onChange={(e) => {
                               const value = e.target.value;
-                              // ✅ Prevent negative or decimal values
                               if (!/^\d*$/.test(value)) return;
                               setEditValues((s) => ({
                                 ...s,
@@ -789,7 +638,6 @@ export default function DeliveryPage() {
                         )}
                       </TableCell>
 
-                      {/* Actions */}
                       <TableCell>
                         <div className="flex gap-2 ml-2">
                           {editingId === d.id ? (
@@ -857,11 +705,11 @@ export default function DeliveryPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={9}
-                      className="text-center text-gray-500"
-                    >
-                      No deliveries found.
+                    <TableCell colSpan={9} className="py-14 text-center">
+                      <p className="text-gray-500 mb-3">No deliveries found.</p>
+                      <Link href="/delivery/add?from=deliveries">
+                        <Button className="bg-orange-500 hover:bg-orange-600">Add Delivery</Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 )}
@@ -871,12 +719,7 @@ export default function DeliveryPage() {
         </CardContent>
       </Card>
 
-      {/* ----------------- Pagination ----------------- */}
-      {totalPages > 1 && (
-        <div className="flex gap-2 items-center flex-wrap">
-          {renderPaginationButtons()}
-        </div>
-      )}
+      <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
 
       {/* Hidden delivery print area */}
       <div className="hidden">

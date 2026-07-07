@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 import PaginationBar from "@/components/PaginationBar";
+import StatusBadge from "@/components/StatusBadge";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -517,9 +518,7 @@ export default function ProductsPage() {
                               </SelectContent>
                             </Select>
                           ) : (
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${p.status === "ACTIVE" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
-                              {p.status}
-                            </span>
+                            <StatusBadge status={p.status} />
                           )}
                         </TableCell>
                         <TableCell className={editValues ? "flex gap-2" : "flex gap-2 pl-8"}>
@@ -550,8 +549,11 @@ export default function ProductsPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center text-gray-500 py-10">
-                        No products found.
+                      <TableCell colSpan={11} className="py-14 text-center">
+                        <p className="text-gray-500 mb-3">No products found.</p>
+                        <Link href="/products/add">
+                          <Button className="bg-orange-500 hover:bg-orange-600">Add Product</Button>
+                        </Link>
                       </TableCell>
                     </TableRow>
                   )}
