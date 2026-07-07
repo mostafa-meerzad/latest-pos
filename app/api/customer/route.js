@@ -8,30 +8,43 @@ export const GET = async (request) => {
     const auth = await getAuthFromRequest(request);
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25")));
+    const search = searchParams.get("search") || "";
+
     const where = { status: "ACTIVE", branchId: auth.branchId };
 
-    const customers = await prisma.customer.findMany({
-      where,
-      include: {
-        sales: true, // include all sales for this customer
-      },
-    });
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { phone: { contains: search } },
+        { email: { contains: search } },
+      ];
+    }
 
-    // Map customers to include totalPurchases
-    const customersWithTotals = customers.map((c) => {
-      const totalPurchases = c.sales?.reduce(
-        (sum, sale) => sum + Number(sale.finalAmount),
-        0
-      ) || 0;
-      return {
-        ...c,
-        totalPurchases,
-        sales: undefined, // optional: remove sales array if not needed in list
-      };
-    });
+    const skip = (page - 1) * limit;
+    const [customers, total] = await Promise.all([
+      prisma.customer.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { id: "desc" },
+      }),
+      prisma.customer.count({ where }),
+    ]);
 
     return NextResponse.json(
-      { success: true, data: customersWithTotals },
+      {
+        success: true,
+        data: customers,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
       { status: 200 }
     );
   } catch (error) {
@@ -62,7 +75,6 @@ export const POST = async (request) => {
       );
     }
 
-    // ✅ Validate input with Zod
     const validation = createCustomerSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
@@ -76,7 +88,6 @@ export const POST = async (request) => {
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const branchId = auth.branchId || 1;
 
-    // ✅ Ensure name is provided
     if (!name || name.trim() === "") {
       return NextResponse.json(
         { success: false, error: "Customer name is required" },
@@ -84,7 +95,6 @@ export const POST = async (request) => {
       );
     }
 
-    // ✅ Handle "Walk-in" customers (case-insensitive)
     if (name.toLowerCase() === "walk-in") {
       const count = await prisma.customer.count({
         where: {
@@ -97,10 +107,9 @@ export const POST = async (request) => {
       name = `Walk-in #${count + 1}`;
     }
 
-    // ✅ Check duplicates for email & phone within branch
     if (email) {
-      const existing = await prisma.customer.findFirst({ 
-        where: { email, branchId } 
+      const existing = await prisma.customer.findFirst({
+        where: { email, branchId }
       });
       if (existing) {
         return NextResponse.json(
@@ -111,8 +120,8 @@ export const POST = async (request) => {
     }
 
     if (phone) {
-      const existing = await prisma.customer.findFirst({ 
-        where: { phone, branchId } 
+      const existing = await prisma.customer.findFirst({
+        where: { phone, branchId }
       });
       if (existing) {
         return NextResponse.json(
@@ -125,7 +134,6 @@ export const POST = async (request) => {
       }
     }
 
-    // ✅ Create customer
     const newCustomer = await prisma.customer.create({
       data: { name, email, address, phone, branchId },
     });

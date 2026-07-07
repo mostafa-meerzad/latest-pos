@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -24,92 +24,103 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search, Pencil, Trash2, Save } from "lucide-react";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 import SettingsImg from "@/assets/settings_img.png";
+import PaginationBar from "@/components/PaginationBar";
 import { toast } from "react-hot-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const LIMIT = 25;
 
 export default function SettingsPage() {
   const [users, setUsers] = useState([]);
   const [branches, setBranches] = useState([]);
   const [currentTab, setCurrentTab] = useState("users");
   const [currentUser, setCurrentUser] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+
+  // Users pagination state
+  const [userSearch, setUserSearch] = useState("");
+  const [debouncedUserSearch, setDebouncedUserSearch] = useState("");
+  const [userPage, setUserPage] = useState(1);
+  const [userTotalPages, setUserTotalPages] = useState(1);
+
+  // Branch search (client-side, small list)
+  const [branchSearch, setBranchSearch] = useState("");
+
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+
   // Branch management state
   const [editingBranchId, setEditingBranchId] = useState(null);
   const [editBranchValues, setEditBranchValues] = useState(null);
   const [newBranchValues, setNewBranchValues] = useState({ name: "", location: "", phone: "" });
   const [isAddingBranch, setIsAddingBranch] = useState(false);
 
-  const itemsPerPage = 5;
-
-  // ----------------------------
-  // 🔹 Fetch Current User
-  // ----------------------------
   useEffect(() => {
-    const fetchMe = async () => {
-      try {
-        const res = await fetch("/api/me");
-        const json = await res.json();
-        if (json.success) {
-          // We need more info about current user like isMain branch
-          // Let's fetch the full user record or adjust /api/me
-          const userRes = await fetch(`/api/users`); // This returns users list, maybe not efficient
-          // Alternatively, we can use the /api/me but it needs to include isMain
-          // For now let's assume if they can see all branches from /api/branches they are main admin
-          setCurrentUser(json.data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch me:", err);
-      }
-    };
-    fetchMe();
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((json) => { if (json.success) setCurrentUser(json.data); })
+      .catch(() => {});
   }, []);
 
-  // ----------------------------
-  // 🔹 Fetch Users & Branches
-  // ----------------------------
+  // Fetch branches once
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const toastId = toast.loading("Loading data...");
-      try {
-        const [usersRes, branchesRes] = await Promise.all([
-          fetch("/api/users"),
-          fetch("/api/branches")
-        ]);
-        
-        const usersJson = await usersRes.json();
-        const branchesJson = await branchesRes.json();
-
-        if (usersJson.success) {
-          setUsers(usersJson.data);
-        }
-        if (branchesJson.success) {
-          setBranches(branchesJson.data);
-        }
-        
-        toast.success("Data loaded successfully!", { id: toastId });
-      } catch (err) {
-        console.error("Failed to fetch data:", err);
-        toast.error("Error fetching data.", { id: toastId });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    fetch("/api/branches")
+      .then((r) => r.json())
+      .then((json) => { if (json.success) setBranches(json.data); })
+      .catch(() => {});
   }, []);
+
+  // Debounce user search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedUserSearch(userSearch), 300);
+    return () => clearTimeout(t);
+  }, [userSearch]);
+
+  useEffect(() => {
+    setUserPage(1);
+  }, [debouncedUserSearch]);
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: userPage.toString(),
+        limit: LIMIT.toString(),
+        search: debouncedUserSearch,
+      });
+      const res = await fetch(`/api/users?${params}`);
+      const json = await res.json();
+      if (json.success) {
+        setUsers(json.data);
+        setUserTotalPages(json.pagination?.totalPages || 1);
+      }
+    } catch {
+      toast.error("Error fetching users.");
+    } finally {
+      setLoading(false);
+    }
+  }, [userPage, debouncedUserSearch]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const isMainAdmin = useMemo(() => {
-    return branches.length > 1 || branches.some(b => b.isMain);
+    return branches.length > 1 || branches.some((b) => b.isMain);
   }, [branches]);
 
+  const filteredBranches = useMemo(() => {
+    if (!branchSearch) return branches;
+    return branches.filter(
+      (b) =>
+        b.name?.toLowerCase().includes(branchSearch.toLowerCase()) ||
+        b.location?.toLowerCase().includes(branchSearch.toLowerCase())
+    );
+  }, [branches, branchSearch]);
+
   // ----------------------------
-  // 🔹 Inline Editing
+  // User inline editing
   // ----------------------------
   function startEdit(row) {
     setEditingId(row.id);
@@ -131,30 +142,16 @@ export default function SettingsPage() {
     if (!editingId || !editValues) return;
     if (saving) return toast("Already saving...");
 
-    // 🔸 Validate fields before saving
     const { username, fullName, password, role } = editValues;
 
-    if (!username.trim()) {
-      toast.error("Username is required.");
-      return;
-    }
-    if (!fullName.trim()) {
-      toast.error("Full name is required.");
-      return;
-    }
+    if (!username.trim()) { toast.error("Username is required."); return; }
+    if (!fullName.trim()) { toast.error("Full name is required."); return; }
     if (password.length > 0 && password.length < 6) {
-
-      if(password.match(/" "/ig)){
-        toast.error("' ' white space character cannot be included in the password!")
-        return 
-      }
-      toast.error("Password is required and must be at least 6 characters.");
+      if (password.match(/" "/ig)) { toast.error("White space character cannot be included in the password!"); return; }
+      toast.error("Password must be at least 6 characters.");
       return;
     }
-    if (!role || role === "") {
-      toast.error("Role is required.");
-      return;
-    }
+    if (!role || role === "") { toast.error("Role is required."); return; }
 
     setSaving(true);
     const toastId = toast.loading("Saving changes...");
@@ -174,33 +171,23 @@ export default function SettingsPage() {
       }
 
       if (data && data.id) {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === editingId ? { ...u, ...data } : u))
-        );
+        setUsers((prev) => prev.map((u) => (u.id === editingId ? { ...u, ...data } : u)));
         cancelEdit();
         toast.success("User updated successfully!", { id: toastId });
       } else {
         toast.error("Invalid backend response.", { id: toastId });
       }
-    } catch (err) {
-      console.error("Error saving user:", err);
-      toast.error("Something went wrong. Check console for details.", {
-        id: toastId,
-      });
+    } catch {
+      toast.error("Something went wrong.", { id: toastId });
     } finally {
       setSaving(false);
     }
   }
 
-  // ----------------------------
-  // 🔹 Delete User (with confirm + toast.promise)
-  // ----------------------------
   async function deleteUser(id) {
     toast.custom((t) => (
       <div className="bg-white shadow-lg rounded-lg p-4 flex flex-col gap-3 border border-gray-200">
-        <p className="text-gray-800 font-medium">
-          Are you sure you want to delete this user?
-        </p>
+        <p className="text-gray-800 font-medium">Are you sure you want to delete this user?</p>
         <div className="flex justify-end gap-2">
           <Button
             size="sm"
@@ -209,43 +196,30 @@ export default function SettingsPage() {
               toast.dismiss(t.id);
               toast.promise(
                 (async () => {
-                  const res = await fetch(`/api/users/${id}`, {
-                    method: "DELETE",
-                  });
+                  const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
                   const data = await res.json();
-
-                  if (!res.ok || !data.deletedUser) {
-                    throw new Error("Failed to delete user.");
-                  }
-
-                  setUsers((prev) => prev.filter((u) => u.id !== id));
+                  if (!res.ok || !data.deletedUser) throw new Error("Failed to delete user.");
+                  fetchUsers();
                   return "User deleted successfully.";
                 })(),
                 {
                   loading: "Deleting user...",
                   success: "User deleted successfully!",
-                  error: (err) =>
-                    err.message || "Something went wrong while deleting.",
+                  error: (err) => err.message || "Something went wrong while deleting.",
                 }
               );
             }}
           >
             Yes
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toast.dismiss(t.id)}
-          >
-            No
-          </Button>
+          <Button variant="outline" size="sm" onClick={() => toast.dismiss(t.id)}>No</Button>
         </div>
       </div>
     ));
   }
 
   // ----------------------------
-  // 🔹 Branch Operations
+  // Branch operations
   // ----------------------------
   async function createBranch() {
     if (!newBranchValues.name.trim()) return toast.error("Branch name is required");
@@ -265,7 +239,7 @@ export default function SettingsPage() {
       } else {
         toast.error(data.error || "Failed to create branch");
       }
-    } catch (err) {
+    } catch {
       toast.error("Error creating branch");
     } finally {
       setSaving(false);
@@ -283,14 +257,14 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setBranches(branches.map(b => b.id === editingBranchId ? data.data : b));
+        setBranches(branches.map((b) => (b.id === editingBranchId ? data.data : b)));
         setEditingBranchId(null);
         setEditBranchValues(null);
         toast.success("Branch updated successfully!");
       } else {
         toast.error(data.error || "Failed to update branch");
       }
-    } catch (err) {
+    } catch {
       toast.error("Error updating branch");
     } finally {
       setSaving(false);
@@ -303,78 +277,31 @@ export default function SettingsPage() {
       const res = await fetch(`/api/branches/${id}`, { method: "DELETE" });
       const data = await res.json();
       if (res.ok) {
-        setBranches(branches.filter(b => b.id !== id));
+        setBranches(branches.filter((b) => b.id !== id));
         toast.success("Branch deleted successfully!");
       } else {
         toast.error(data.error || "Failed to delete branch");
       }
-    } catch (err) {
+    } catch {
       toast.error("Error deleting branch");
     }
   }
 
-  // ----------------------------
-  // 🔹 Search + Pagination
-  // ----------------------------
-  const filteredData = useMemo(() => {
-    let result = [...users];
-    if (searchQuery) {
-      result = result.filter((u) =>
-        u.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.username?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    return result;
-  }, [users, searchQuery]);
-
-  const filteredBranches = useMemo(() => {
-    let result = [...branches];
-    if (searchQuery && currentTab === "branches") {
-      result = result.filter((b) =>
-        b.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.location?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    return result;
-  }, [branches, searchQuery, currentTab]);
-
-  const totalPages = Math.ceil((currentTab === "users" ? filteredData.length : filteredBranches.length) / itemsPerPage);
-  
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const data = currentTab === "users" ? filteredData : filteredBranches;
-    return data.slice(start, start + itemsPerPage);
-  }, [filteredData, filteredBranches, currentPage, itemsPerPage, currentTab]);
-
-  const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
-
   return (
     <div className="p-6 space-y-6">
-      {/* ----------------- Header ----------------- */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Image
-            src={SettingsImg}
-            width={70}
-            height={70}
-            alt="settings page logo"
-          />
+          <Image src={SettingsImg} width={70} height={70} alt="settings page logo" />
           Settings
         </h1>
         <div className="flex items-center gap-3">
           {currentTab === "users" ? (
             <Link href="/settings/add-user">
-              <Button className="bg-green-400 hover:bg-green-500 text-md">
-                New User
-              </Button>
+              <Button className="bg-green-400 hover:bg-green-500 text-md">New User</Button>
             </Link>
           ) : (
-            <Button 
-              onClick={() => setIsAddingBranch(true)}
-              className="bg-green-400 hover:bg-green-500 text-md"
-            >
+            <Button onClick={() => setIsAddingBranch(true)} className="bg-green-400 hover:bg-green-500 text-md">
               New Branch
             </Button>
           )}
@@ -382,39 +309,43 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ----------------- Tabs ----------------- */}
+      {/* Tabs */}
       {isMainAdmin && (
         <div className="flex gap-4 border-b">
           <button
             className={`pb-2 px-4 font-medium ${currentTab === "users" ? "border-b-2 border-orange-500 text-orange-500" : "text-gray-500"}`}
-            onClick={() => { setCurrentTab("users"); setCurrentPage(1); }}
+            onClick={() => setCurrentTab("users")}
           >
             Users
           </button>
           <button
             className={`pb-2 px-4 font-medium ${currentTab === "branches" ? "border-b-2 border-orange-500 text-orange-500" : "text-gray-500"}`}
-            onClick={() => { setCurrentTab("branches"); setCurrentPage(1); }}
+            onClick={() => setCurrentTab("branches")}
           >
             Branches
           </button>
         </div>
       )}
 
-      {/* ----------------- Search ----------------- */}
+      {/* Search */}
       <div className="flex flex-wrap items-center gap-4 mb-4">
         <div className="relative w-[250px]">
           <Input
             placeholder={currentTab === "users" ? "Search by Name or Username" : "Search by Branch Name"}
             className="pr-8 focus:!ring-[#f25500] focus:!border-[#f25500]"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={currentTab === "users" ? userSearch : branchSearch}
+            onChange={(e) =>
+              currentTab === "users"
+                ? setUserSearch(e.target.value)
+                : setBranchSearch(e.target.value)
+            }
           />
           <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
         </div>
       </div>
 
-      {/* ----------------- Content ----------------- */}
-      {loading ? (
+      {/* Content */}
+      {loading && currentTab === "users" ? (
         <UsersTableSkeleton />
       ) : (
         <>
@@ -434,165 +365,82 @@ export default function SettingsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedData.length > 0
-                      ? paginatedData.map((u) => (
-                          <TableRow key={u.id}>
-                            <TableCell>#{u.id}</TableCell>
+                    {users.length > 0 ? (
+                      users.map((u) => (
+                        <TableRow key={u.id}>
+                          <TableCell>#{u.id}</TableCell>
+                          <TableCell>
+                            {editingId === u.id ? (
+                              <Input required value={editValues?.username || ""} onChange={(e) => setEditValues((s) => ({ ...s, username: e.target.value }))} className="w-[160px]" />
+                            ) : u.username}
+                          </TableCell>
+                          <TableCell>
+                            {editingId === u.id ? (
+                              <Input required value={editValues?.fullName || ""} onChange={(e) => setEditValues((s) => ({ ...s, fullName: e.target.value }))} className="w-[220px]" />
+                            ) : u.fullName}
+                          </TableCell>
+                          <TableCell>
+                            {editingId === u.id ? (
+                              <Input required minLength={6} type="text" placeholder="Enter new password" value={editValues?.password || ""} onChange={(e) => setEditValues((s) => ({ ...s, password: e.target.value }))} className="w-[200px]" />
+                            ) : (
+                              <Input type="password" value="********" readOnly className="w-[160px] bg-transparent border-none shadow-none cursor-default" />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {editingId === u.id ? (
+                              <Select value={editValues?.role || ""} onValueChange={(v) => setEditValues((s) => ({ ...s, role: v }))}>
+                                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Select role" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="ADMIN">ADMIN</SelectItem>
+                                  <SelectItem value="CASHIER">CASHIER</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (u.role?.name || "—")}
+                          </TableCell>
+                          {isMainAdmin && (
                             <TableCell>
                               {editingId === u.id ? (
-                                <Input
-                                  required
-                                  value={editValues?.username || ""}
-                                  onChange={(e) =>
-                                    setEditValues((s) => ({
-                                      ...s,
-                                      username: e.target.value,
-                                    }))
-                                  }
-                                  className="w-[160px]"
-                                />
-                              ) : (
-                                u.username
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingId === u.id ? (
-                                <Input
-                                  required
-                                  value={editValues?.fullName || ""}
-                                  onChange={(e) =>
-                                    setEditValues((s) => ({
-                                      ...s,
-                                      fullName: e.target.value,
-                                    }))
-                                  }
-                                  className="w-[220px]"
-                                />
-                              ) : (
-                                u.fullName
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingId === u.id ? (
-                                <Input
-                                  required
-                                  minLength={6}
-                                  type="text"
-                                  placeholder="Enter new password"
-                                  value={editValues?.password || ""}
-                                  onChange={(e) =>
-                                    setEditValues((s) => ({
-                                      ...s,
-                                      password: e.target.value,
-                                    }))
-                                  }
-                                  className="w-[200px]"
-                                />
-                              ) : (
-                                <Input
-                                  type="password"
-                                  value="********"
-                                  readOnly
-                                  className="w-[160px] bg-transparent border-none shadow-none cursor-default"
-                                />
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingId === u.id ? (
-                                <Select
-                                  value={editValues?.role || ""}
-                                  onValueChange={(v) =>
-                                    setEditValues((s) => ({
-                                      ...s,
-                                      role: v,
-                                    }))
-                                  }
-                                >
-                                  <SelectTrigger className="w-[150px]">
-                                    <SelectValue placeholder="Select role" />
-                                  </SelectTrigger>
+                                <Select value={editValues?.branchId?.toString() || ""} onValueChange={(v) => setEditValues((s) => ({ ...s, branchId: parseInt(v) }))}>
+                                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Select Branch" /></SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="ADMIN">ADMIN</SelectItem>
-                                    <SelectItem value="CASHIER">CASHIER</SelectItem>
+                                    {branches.map((b) => (
+                                      <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
-                              ) : (
-                                u.role?.name || "—"
-                              )}
+                              ) : (u.branch?.name || "—")}
                             </TableCell>
-                            {isMainAdmin && (
-                              <TableCell>
-                                {editingId === u.id ? (
-                                  <Select
-                                    value={editValues?.branchId?.toString() || ""}
-                                    onValueChange={(v) =>
-                                      setEditValues((s) => ({
-                                        ...s,
-                                        branchId: parseInt(v),
-                                      }))
-                                    }
-                                  >
-                                    <SelectTrigger className="w-[150px]">
-                                      <SelectValue placeholder="Select Branch" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {branches.map(b => (
-                                        <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  u.branch?.name || "—"
-                                )}
-                              </TableCell>
+                          )}
+                          <TableCell className="flex gap-2 ml-2">
+                            {editingId === u.id ? (
+                              <>
+                                <Button disabled={saving} size="sm" onClick={saveEdit} className="bg-green-400 hover:bg-green-300 hover:text-green-800">
+                                  <Save className="w-4 h-4" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => { toast("Edit canceled."); cancelEdit(); }} className="hover:bg-gray-300 hover:text-gray-700">
+                                  Cancel
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button size="sm" variant="secondary" onClick={() => startEdit(u)} className="hover:bg-gray-300 hover:text-gray-700">
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => deleteUser(u.id)} className="hover:bg-red-300 hover:text-red-800">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </>
                             )}
-                            <TableCell className="flex gap-2 ml-2">
-                              {editingId === u.id ? (
-                                <>
-                                  <Button
-                                    disabled={saving}
-                                    size="sm"
-                                    onClick={saveEdit}
-                                    className="bg-green-400 hover:bg-green-300 hover:text-green-800"
-                                  >
-                                    <Save className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      toast("Edit canceled.");
-                                      cancelEdit();
-                                    }}
-                                    className="hover:bg-gray-300 hover:text-gray-700"
-                                  >
-                                    Cancel
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    onClick={() => startEdit(u)}
-                                    className="hover:bg-gray-300 hover:text-gray-700"
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => deleteUser(u.id)}
-                                    className="hover:bg-red-300 hover:text-red-800"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      : null}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={isMainAdmin ? 7 : 6} className="text-center text-gray-500 py-10">
+                          No users found.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -604,27 +452,15 @@ export default function SettingsPage() {
                   <div className="mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
                       <label className="text-xs font-bold mb-1 block">Name</label>
-                      <Input 
-                        value={newBranchValues.name} 
-                        onChange={e => setNewBranchValues({...newBranchValues, name: e.target.value})}
-                        placeholder="Branch Name"
-                      />
+                      <Input value={newBranchValues.name} onChange={(e) => setNewBranchValues({ ...newBranchValues, name: e.target.value })} placeholder="Branch Name" />
                     </div>
                     <div>
                       <label className="text-xs font-bold mb-1 block">Location</label>
-                      <Input 
-                        value={newBranchValues.location} 
-                        onChange={e => setNewBranchValues({...newBranchValues, location: e.target.value})}
-                        placeholder="Location"
-                      />
+                      <Input value={newBranchValues.location} onChange={(e) => setNewBranchValues({ ...newBranchValues, location: e.target.value })} placeholder="Location" />
                     </div>
                     <div>
                       <label className="text-xs font-bold mb-1 block">Phone</label>
-                      <Input 
-                        value={newBranchValues.phone} 
-                        onChange={e => setNewBranchValues({...newBranchValues, phone: e.target.value})}
-                        placeholder="Phone"
-                      />
+                      <Input value={newBranchValues.phone} onChange={(e) => setNewBranchValues({ ...newBranchValues, phone: e.target.value })} placeholder="Phone" />
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={createBranch} disabled={saving} className="bg-orange-500">Save</Button>
@@ -644,31 +480,22 @@ export default function SettingsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedData.map((b) => (
+                    {filteredBranches.map((b) => (
                       <TableRow key={b.id}>
                         <TableCell>#{b.id}</TableCell>
                         <TableCell>
                           {editingBranchId === b.id ? (
-                            <Input 
-                              value={editBranchValues.name} 
-                              onChange={e => setEditBranchValues({...editBranchValues, name: e.target.value})}
-                            />
+                            <Input value={editBranchValues.name} onChange={(e) => setEditBranchValues({ ...editBranchValues, name: e.target.value })} />
                           ) : b.name}
                         </TableCell>
                         <TableCell>
                           {editingBranchId === b.id ? (
-                            <Input 
-                              value={editBranchValues.location} 
-                              onChange={e => setEditBranchValues({...editBranchValues, location: e.target.value})}
-                            />
+                            <Input value={editBranchValues.location} onChange={(e) => setEditBranchValues({ ...editBranchValues, location: e.target.value })} />
                           ) : b.location}
                         </TableCell>
                         <TableCell>
                           {editingBranchId === b.id ? (
-                            <Input 
-                              value={editBranchValues.phone} 
-                              onChange={e => setEditBranchValues({...editBranchValues, phone: e.target.value})}
-                            />
+                            <Input value={editBranchValues.phone} onChange={(e) => setEditBranchValues({ ...editBranchValues, phone: e.target.value })} />
                           ) : b.phone}
                         </TableCell>
                         <TableCell>{b.status}</TableCell>
@@ -682,10 +509,7 @@ export default function SettingsPage() {
                             </>
                           ) : (
                             <>
-                              <Button size="sm" variant="secondary" onClick={() => {
-                                setEditingBranchId(b.id);
-                                setEditBranchValues({...b});
-                              }}>
+                              <Button size="sm" variant="secondary" onClick={() => { setEditingBranchId(b.id); setEditBranchValues({ ...b }); }}>
                                 <Pencil className="w-4 h-4" />
                               </Button>
                               {!b.isMain && (
@@ -706,49 +530,8 @@ export default function SettingsPage() {
         </>
       )}
 
-      {/* ----------------- Pagination ----------------- */}
-      {totalPages > 1 && (
-        <div className="flex gap-2 items-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Prev
-          </Button>
-          {[...Array(3)].map((_, i) => {
-            let pageNumber;
-            if (currentPage === 1) pageNumber = i + 1;
-            else if (currentPage === totalPages)
-              pageNumber = totalPages - 2 + i;
-            else pageNumber = currentPage - 1 + i;
-
-            if (pageNumber < 1 || pageNumber > totalPages) return null;
-
-            return (
-              <Button
-                key={pageNumber}
-                variant={pageNumber === currentPage ? "default" : "outline"}
-                className={
-                  pageNumber === currentPage ? "bg-orange-500 text-white" : ""
-                }
-                size="sm"
-                onClick={() => goToPage(pageNumber)}
-              >
-                {pageNumber}
-              </Button>
-            );
-          })}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
+      {currentTab === "users" && (
+        <PaginationBar page={userPage} totalPages={userTotalPages} onPageChange={setUserPage} />
       )}
     </div>
   );
@@ -761,39 +544,19 @@ function UsersTableSkeleton() {
         <Table className="min-w-full">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[150px]">
-                <Skeleton className="h-4 w-24" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-24" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-24" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-24" />
-              </TableHead>
-              <TableHead className="text-right">
-                <Skeleton className="h-4 w-16 ml-auto" />
-              </TableHead>
+              {[...Array(5)].map((_, i) => (
+                <TableHead key={i}><Skeleton className="h-4 w-24" /></TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {[...Array(5)].map((_, i) => (
               <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                 <TableCell>
-                  <Skeleton className="h-4 w-28" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-32" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-24" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-20" />
-                </TableCell>
-                <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Skeleton className="h-8 w-8 rounded-md" />
                     <Skeleton className="h-8 w-8 rounded-md" />

@@ -8,15 +8,43 @@ export const GET = async (request) => {
     const auth = await getAuthFromRequest(request);
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25")));
+    const search = searchParams.get("search") || "";
+
     const where = { status: "ACTIVE", branchId: auth.branchId };
 
-    const suppliers = await prisma.supplier.findMany({
-      where,
-      include: { products: true },
-    });
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { contactPerson: { contains: search } },
+        { phone: { contains: search } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const [suppliers, total] = await Promise.all([
+      prisma.supplier.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { id: "asc" },
+      }),
+      prisma.supplier.count({ where }),
+    ]);
 
     return NextResponse.json(
-      { message: "success", data: suppliers },
+      {
+        success: true,
+        data: suppliers,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
       { status: 200 }
     );
   } catch (error) {
@@ -45,7 +73,7 @@ export const POST = async (request) => {
         { status: 400 }
       );
     }
-    
+
     const validation = createSupplierSchema.safeParse(body);
 
     if (!validation.success)

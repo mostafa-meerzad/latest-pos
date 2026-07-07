@@ -8,23 +8,53 @@ export const GET = async (request) => {
     const auth = await getAuthFromRequest(request);
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const where = { status: "ACTIVE" };
-    
-    // Check if user belongs to main branch
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25")));
+    const search = searchParams.get("search") || "";
+
     const currentUser = await prisma.user.findUnique({
       where: { id: auth.id },
-      include: { branch: true }
+      include: { branch: true },
     });
 
+    const where = { status: "ACTIVE" };
     if (auth.role !== "ADMIN" || !currentUser?.branch?.isMain) {
       where.branchId = auth.branchId;
     }
 
-    const users = await prisma.user.findMany({
-      where,
-      include: { role: true, branch: true },
-    });
-    return NextResponse.json({ success: true, data: users }, { status: 200 });
+    if (search) {
+      where.OR = [
+        { username: { contains: search } },
+        { fullName: { contains: search } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        include: { role: true, branch: true },
+        skip,
+        take: limit,
+        orderBy: { id: "asc" },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: users,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json(
       { success: false, error: error.message || "Internal server error" },
@@ -52,16 +82,10 @@ export const POST = async (request) => {
       );
     }
 
-    // ✅ Validate with Zod
-
-    // console.log("Body before validation:", body);
     const validation = createUserSchema.safeParse(body);
-    // console.log("Validation result:", validation);
 
     if (!validation.success) {
       const errors = validation.error?.errors;
-
-      // Handle case if errors array doesn't exist
       const errorMessages = Array.isArray(errors)
         ? errors.map((err) => `${err.path.join(".")}: ${err.message}`)
         : ["Invalid input data"];
@@ -70,7 +94,7 @@ export const POST = async (request) => {
         {
           success: false,
           error: errorMessages.join(", "),
-          details: errors || validation.error, // optional full info
+          details: errors || validation.error,
         },
         { status: 400 }
       );
@@ -81,15 +105,12 @@ export const POST = async (request) => {
     const auth = await getAuthFromRequest(request);
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // Check if user belongs to main branch
     const currentUser = await prisma.user.findUnique({
       where: { id: auth.id },
-      include: { branch: true }
+      include: { branch: true },
     });
 
     const isMainBranchAdmin = auth.role === "ADMIN" && currentUser?.branch?.isMain;
-
-    // Use branchId from body if provided and user is main branch ADMIN, otherwise use auth.branchId
     const targetBranchId = isMainBranchAdmin && branchId ? branchId : (auth.branchId || 1);
 
     const user = await prisma.user.findFirst({ where: { username } });

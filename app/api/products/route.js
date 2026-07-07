@@ -11,33 +11,65 @@ export const GET = async (request) => {
 
     const { searchParams } = new URL(request.url);
     const branchIdParam = searchParams.get("branchId");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25")));
+    const search = searchParams.get("search") || "";
+    const categoryId = searchParams.get("categoryId") || "";
+    const status = searchParams.get("status") || "";
+    const stock = searchParams.get("stock") || "";
+    const sortBy = searchParams.get("sortBy") || "id";
 
-    // Check if user is main branch
     const branch = await prisma.branch.findUnique({
       where: { id: auth.branchId },
-      select: { isMain: true }
+      select: { isMain: true },
     });
     const isMain = branch?.isMain || false;
 
-    let where = { isDeleted: false };
+    const where = { isDeleted: false };
 
     if (isMain && branchIdParam) {
-      if (branchIdParam === "all") {
-        // No branch filter, show all products
-      } else {
-        where.branchId = parseInt(branchIdParam);
-      }
+      if (branchIdParam !== "all") where.branchId = parseInt(branchIdParam);
     } else {
-      // Non-main users or no param, filter by their branch
       where.branchId = auth.branchId;
     }
 
-    const products = await prisma.product.findMany({
-      where,
-      include: { category: true, supplier: true },
-    });
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { barcode: { contains: search } },
+      ];
+    }
+
+    if (categoryId) where.categoryId = parseInt(categoryId);
+    if (status === "ACTIVE" || status === "INACTIVE") where.status = status;
+    if (stock === "in") where.stockQuantity = { gt: 0 };
+    if (stock === "out") where.stockQuantity = { lte: 0 };
+
+    const orderBy = sortBy === "stock" ? { stockQuantity: "desc" } : { id: "asc" };
+
+    const skip = (page - 1) * limit;
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: { category: true, supplier: true },
+        skip,
+        take: limit,
+        orderBy,
+      }),
+      prisma.product.count({ where }),
+    ]);
+
     return NextResponse.json(
-      { success: true, data: products },
+      {
+        success: true,
+        data: products,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
       { status: 200 }
     );
   } catch (error) {
@@ -50,7 +82,6 @@ export const GET = async (request) => {
 
 export const POST = async (request) => {
   try {
-    // ✅ Parse and validate body
     let body;
     try {
       body = await request.json();
@@ -89,7 +120,6 @@ export const POST = async (request) => {
       unit,
     } = validation.data;
 
-    // ✅ Validate allowed unit values
     const validUnits = ["pcs", "kg"];
     if (!validUnits.includes(unit)) {
       return NextResponse.json(
@@ -101,7 +131,6 @@ export const POST = async (request) => {
       );
     }
 
-    // Ensure category exists and belongs to the same branch
     const category = await prisma.category.findUnique({
       where: { id: categoryId },
     });
@@ -134,7 +163,6 @@ export const POST = async (request) => {
       data: { status: STATUS.ACTIVE },
     });
 
-    // ✅ Ensure supplier exists and belongs to the same branch (if provided)
     if (supplierId) {
       const supplier = await prisma.supplier.findUnique({
         where: { id: supplierId },
@@ -165,7 +193,6 @@ export const POST = async (request) => {
       });
     }
 
-    // ✅ Prevent duplicate product (by name or barcode)
     const existingProduct = await prisma.product.findFirst({
       where: {
         branchId: branchId,
@@ -180,7 +207,6 @@ export const POST = async (request) => {
       );
     }
 
-    // ✅ Create new product
     const newProduct = await prisma.product.create({
       data: {
         name,
@@ -202,7 +228,6 @@ export const POST = async (request) => {
       { status: 201 }
     );
   } catch (error) {
-    // ✅ Handle Prisma unique constraint or other internal errors
     if (error.code === "P2002") {
       return NextResponse.json(
         {

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthFromRequest } from "@/lib/auth";
 
-// Create a new driver
 export async function POST(request) {
   try {
     const auth = await getAuthFromRequest(request);
@@ -19,7 +18,6 @@ export async function POST(request) {
       );
     }
 
-    // ✅ Validate phone (only numbers allowed)
     if (!/^[0-9]+$/.test(phone)) {
       return NextResponse.json(
         { success: false, error: "Phone number must contain only digits" },
@@ -52,22 +50,46 @@ export async function POST(request) {
   }
 }
 
-
-// Get all drivers
 export async function GET(request) {
   try {
     const auth = await getAuthFromRequest(request);
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25")));
+    const search = searchParams.get("search") || "";
+
     const where = { isDeleted: false, branchId: auth.branchId };
 
-    const drivers = await prisma.deliveryDriver.findMany({
-      where,
-      include: { deliveries: true },
-      orderBy: { id: "desc" },
-    });
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { phone: { contains: search } },
+      ];
+    }
 
-    return NextResponse.json({ success: true, data: drivers });
+    const skip = (page - 1) * limit;
+    const [drivers, total] = await Promise.all([
+      prisma.deliveryDriver.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { id: "desc" },
+      }),
+      prisma.deliveryDriver.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      data: drivers,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching drivers:", error);
     return NextResponse.json(

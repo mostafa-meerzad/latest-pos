@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Search, Pencil, Trash2, Save } from "lucide-react";
 import Link from "next/link";
@@ -18,42 +17,59 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 import SupplierImg from "@/assets/suppliers_img.png";
+import PaginationBar from "@/components/PaginationBar";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
-
 import { Skeleton } from "@/components/ui/skeleton";
+
+const LIMIT = 25;
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState(null);
   const [saving, setSaving] = useState(false);
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const itemsPerPage = 6;
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   useEffect(() => {
-    async function fetchSuppliers() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/suppliers");
-        const json = await res.json();
-        setLoading(false);
-        if (json?.data) {
-          setSuppliers(json.data);
-        } else {
-          toast.error("Failed to fetch suppliers.");
-        }
-      } catch (err) {
-        console.error("Error fetching suppliers:", err);
-        toast.error("Error fetching suppliers. Check console for details.");
+    setCurrentPage(1);
+  }, [debouncedSearch]);
+
+  const fetchSuppliers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: LIMIT.toString(),
+        search: debouncedSearch,
+      });
+      const res = await fetch(`/api/suppliers?${params}`);
+      const json = await res.json();
+      if (json?.success) {
+        setSuppliers(json.data || []);
+        setTotalPages(json.pagination?.totalPages || 1);
+      } else {
+        toast.error("Failed to fetch suppliers.");
       }
+    } catch {
+      toast.error("Error fetching suppliers.");
+    } finally {
+      setLoading(false);
     }
+  }, [currentPage, debouncedSearch]);
+
+  useEffect(() => {
     fetchSuppliers();
-  }, []);
+  }, [fetchSuppliers]);
 
   function startEdit(row) {
     setEditingId(row.id);
@@ -95,32 +111,26 @@ export default function SuppliersPage() {
         toast.dismiss();
         toast.success("Supplier updated successfully!");
       } else {
-        // 🔹 Extract readable error message
         let errMsg = "Update failed";
-        if (data.error?.message) {
-          errMsg = data.error.message;
-        } else if (data.error?.fieldErrors) {
+        if (data.error?.message) errMsg = data.error.message;
+        else if (data.error?.fieldErrors) {
           const firstKey = Object.keys(data.error.fieldErrors)[0];
           errMsg = data.error.fieldErrors[firstKey][0];
         }
         toast.error(errMsg);
       }
-    } catch (err) {
-      console.error("Network error saving supplier:", err);
+    } catch {
       toast.error("Network error while saving supplier.");
     } finally {
       setSaving(false);
     }
   }
 
-  // ✅ Updated to use react-hot-toast confirmation
   async function deleteSupplier(id) {
     toast(
       (t) => (
         <div className="flex flex-col gap-3">
-          <p className="text-sm">
-            Are you sure you want to deactivate this supplier?
-          </p>
+          <p className="text-sm">Are you sure you want to deactivate this supplier?</p>
           <div className="flex justify-end gap-2">
             <Button
               size="sm"
@@ -128,56 +138,28 @@ export default function SuppliersPage() {
               onClick={async () => {
                 toast.dismiss(t.id);
                 try {
-                  const res = await fetch(`/api/suppliers/${id}`, {
-                    method: "DELETE",
-                  });
+                  const res = await fetch(`/api/suppliers/${id}`, { method: "DELETE" });
                   const data = await res.json();
                   if (data.success) {
-                    setSuppliers((prev) => prev.filter((s) => s.id !== id));
                     toast.success("Supplier deactivated successfully.");
+                    fetchSuppliers();
                   } else {
                     toast.error("Failed to deactivate supplier.");
                   }
-                } catch (err) {
-                  console.error("Error deleting supplier:", err);
+                } catch {
                   toast.error("Error occurred while deactivating supplier.");
                 }
               }}
             >
               Yes
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => toast.dismiss(t.id)}
-            >
-              No
-            </Button>
+            <Button variant="outline" size="sm" onClick={() => toast.dismiss(t.id)}>No</Button>
           </div>
         </div>
       ),
-      {
-        duration: 5000,
-        position: "top-center",
-      }
+      { duration: 5000, position: "top-center" }
     );
   }
-
-  const filteredData = useMemo(() => {
-    return suppliers.filter((s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [suppliers, searchQuery]);
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredData.slice(start, start + itemsPerPage);
-  }, [filteredData, currentPage, itemsPerPage]);
-
-  const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
 
   return (
     <motion.div
@@ -201,15 +183,11 @@ export default function SuppliersPage() {
           <Link href="/products">
             <Button variant="outline">Back to Products</Button>
           </Link>
-
-          <Link href="/suppliers/add-supplier">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button className="bg-amber-500 hover:bg-amber-600 text-md ">
-                Add Supplier
-              </Button>
-            </motion.div>
-          </Link>
-
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link href="/suppliers/add-supplier">
+              <Button className="bg-amber-500 hover:bg-amber-600 text-md">Add Supplier</Button>
+            </Link>
+          </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <BackToDashboardButton />
           </motion.div>
@@ -236,7 +214,7 @@ export default function SuppliersPage() {
 
       {/* Table */}
       {loading ? (
-        SuppliersTableSkeleton()
+        <SuppliersTableSkeleton />
       ) : (
         <Card>
           <CardContent>
@@ -252,11 +230,10 @@ export default function SuppliersPage() {
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
-
               <TableBody>
                 <AnimatePresence>
-                  {paginatedData.length > 0 ? (
-                    paginatedData.map((s) => (
+                  {suppliers.length > 0 ? (
+                    suppliers.map((s) => (
                       <motion.tr
                         key={s.id}
                         initial={{ opacity: 0 }}
@@ -265,141 +242,47 @@ export default function SuppliersPage() {
                         transition={{ duration: 0.2 }}
                       >
                         <TableCell>{s.id}</TableCell>
-
-                        {/* Name */}
                         <TableCell>
                           {editingId === s.id ? (
-                            <Input
-                              value={editValues?.name || ""}
-                              onChange={(e) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  name: e.target.value,
-                                }))
-                              }
-                            />
-                          ) : (
-                            s.name
-                          )}
+                            <Input value={editValues?.name || ""} onChange={(e) => setEditValues((p) => ({ ...p, name: e.target.value }))} />
+                          ) : s.name}
                         </TableCell>
-
-                        {/* Contact Person */}
                         <TableCell>
                           {editingId === s.id ? (
-                            <Input
-                              value={editValues?.contactPerson || ""}
-                              onChange={(e) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  contactPerson: e.target.value,
-                                }))
-                              }
-                            />
-                          ) : (
-                            s.contactPerson
-                          )}
+                            <Input value={editValues?.contactPerson || ""} onChange={(e) => setEditValues((p) => ({ ...p, contactPerson: e.target.value }))} />
+                          ) : s.contactPerson}
                         </TableCell>
-
-                        {/* Phone */}
                         <TableCell>
                           {editingId === s.id ? (
-                            <Input
-                              value={editValues?.phone || ""}
-                              onChange={(e) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  phone: e.target.value,
-                                }))
-                              }
-                            />
-                          ) : (
-                            s.phone
-                          )}
+                            <Input value={editValues?.phone || ""} onChange={(e) => setEditValues((p) => ({ ...p, phone: e.target.value }))} />
+                          ) : s.phone}
                         </TableCell>
-
-                        {/* Email */}
                         <TableCell>
                           {editingId === s.id ? (
-                            <Input
-                              type="email"
-                              value={editValues?.email || ""}
-                              onChange={(e) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  email: e.target.value,
-                                }))
-                              }
-                            />
-                          ) : (
-                            s.email
-                          )}
+                            <Input type="email" value={editValues?.email || ""} onChange={(e) => setEditValues((p) => ({ ...p, email: e.target.value }))} />
+                          ) : s.email}
                         </TableCell>
-
-                        {/* Address */}
                         <TableCell>
                           {editingId === s.id ? (
-                            <Input
-                              value={editValues?.address || ""}
-                              onChange={(e) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  address: e.target.value,
-                                }))
-                              }
-                            />
-                          ) : (
-                            s.address
-                          )}
+                            <Input value={editValues?.address || ""} onChange={(e) => setEditValues((p) => ({ ...p, address: e.target.value }))} />
+                          ) : s.address}
                         </TableCell>
-
-                        {/* Actions */}
                         <TableCell className="flex gap-2">
                           {editingId === s.id ? (
                             <>
-                              <Button
-                                size="sm"
-                                disabled={saving}
-                                onClick={saveEdit}
-                                className={
-                                  "bg-green-400 hover:bg-green-300 hover:text-green-800"
-                                }
-                              >
+                              <Button size="sm" disabled={saving} onClick={saveEdit} className="bg-green-400 hover:bg-green-300 hover:text-green-800">
                                 <Save className="w-4 h-4" /> Save
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                  toast("Edit canceled.");
-                                  cancelEdit();
-                                }}
-                                className={
-                                  "hover:bg-gray-300 hover:text-gray-700"
-                                }
-                              >
+                              <Button size="sm" variant="ghost" onClick={() => { toast("Edit canceled."); cancelEdit(); }} className="hover:bg-gray-300 hover:text-gray-700">
                                 Cancel
                               </Button>
                             </>
                           ) : (
                             <>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => startEdit(s)}
-                                className={
-                                  "hover:bg-gray-300 hover:text-gray-700"
-                                }
-                              >
+                              <Button size="sm" variant="secondary" onClick={() => startEdit(s)} className="hover:bg-gray-300 hover:text-gray-700">
                                 <Pencil className="w-4 h-4" />
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => deleteSupplier(s.id)}
-                                className={
-                                  "hover:bg-red-300 hover:text-red-800"
-                                }
-                              >
+                              <Button size="sm" variant="destructive" onClick={() => deleteSupplier(s.id)} className="hover:bg-red-300 hover:text-red-800">
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </>
@@ -409,10 +292,7 @@ export default function SuppliersPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell
-                        colSpan={8}
-                        className="text-center text-gray-500 py-6"
-                      >
+                      <TableCell colSpan={7} className="text-center text-gray-500 py-10">
                         No suppliers found.
                       </TableCell>
                     </TableRow>
@@ -423,72 +303,16 @@ export default function SuppliersPage() {
           </CardContent>
         </Card>
       )}
-      {/* ----------------- Pagination ----------------- */}
-      {totalPages > 1 && (
-        <div className="flex gap-2 items-center">
-          {/* Prev Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Prev
-          </Button>
 
-          {/* Page Numbers */}
-          {[...Array(3)].map((_, i) => {
-            let pageNumber;
-            if (currentPage === 1) {
-              pageNumber = i + 1;
-            } else if (currentPage === totalPages) {
-              pageNumber = totalPages - 2 + i;
-            } else {
-              pageNumber = currentPage - 1 + i;
-            }
-
-            if (pageNumber < 1 || pageNumber > totalPages) return null;
-
-            return (
-              <Button
-                key={pageNumber}
-                variant={pageNumber === currentPage ? "default" : "outline"}
-                className={
-                  pageNumber === currentPage ? "bg-orange-500 text-white" : ""
-                }
-                size="sm"
-                onClick={() => goToPage(pageNumber)}
-              >
-                {pageNumber}
-              </Button>
-            );
-          })}
-
-          {/* Next Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
     </motion.div>
   );
 }
 
 function SuppliersTableSkeleton() {
-  // number of placeholder rows
   const rows = Array.from({ length: 6 });
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       <Card>
         <CardContent>
           <Table>
@@ -505,30 +329,13 @@ function SuppliersTableSkeleton() {
             </TableHeader>
             <TableBody>
               {rows.map((_, i) => (
-                <motion.tr
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <TableCell>
-                    <Skeleton className="h-5 w-8" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-5 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-5 w-28" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-5 w-40" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-5 w-48" />
-                  </TableCell>
+                <motion.tr key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                  <TableCell><Skeleton className="h-5 w-8" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                   <TableCell className="flex gap-2">
                     <Skeleton className="h-8 w-8 rounded-md" />
                     <Skeleton className="h-8 w-8 rounded-md" />
