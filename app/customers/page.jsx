@@ -6,15 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Search, Eye } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 import CustomerImg from "@/assets/customer_img.png";
@@ -71,163 +63,122 @@ export default function CustomersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Image src={CustomerImg} width={70} height={70} alt="customers page logo" />
+          <Image src={CustomerImg} width={60} height={60} alt="customers" />
           Customers
         </h1>
-        <div className="flex items-center gap-3">
-          <Link href="/customers/add">
-            <Button>Add Customer</Button>
-          </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/customers/add"><Button>Add Customer</Button></Link>
           <BackToDashboardButton />
         </div>
       </div>
 
       {/* Search */}
-      <div className="relative w-[300px]">
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
           placeholder="Search customers..."
-          className="pr-8"
+          className="pl-9"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
       </div>
 
       {/* Desktop table */}
-      {isLoading ? (
-        <CustomersSkeleton />
-      ) : (
-        <Card className="hidden md:block">
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="text-lg">
-                  <TableHead>Customer Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customers.length > 0 ? (
-                  customers.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell>{c.name || "Walk in"}</TableCell>
-                      <TableCell>{c.phone || "-"}</TableCell>
-                      <TableCell>{c.email || "-"}</TableCell>
-                      <TableCell>
-                        <Button
-                          className="hover:bg-gray-300 hover:text-gray-700"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push(`/customers/${c.id}`)}
-                        >
-                          <Eye className="w-4 h-4 mr-1" /> View Details
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="py-14 text-center">
-                      <p className="text-gray-500 mb-3">No customers found.</p>
-                      <Link href="/customers/add">
-                        <Button>Add Customer</Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+      <Card className="hidden md:block overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-5 py-3 text-left">Customer</th>
+                <th className="px-5 py-3 text-left">Contact</th>
+                <th className="px-5 py-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-5 py-4"><Skeleton className="h-4 w-36" /></td>
+                    <td className="px-5 py-4">
+                      <Skeleton className="h-4 w-28 mb-1.5" />
+                      <Skeleton className="h-3 w-44" />
+                    </td>
+                    <td className="px-5 py-4"><Skeleton className="h-8 w-24 rounded-md" /></td>
+                  </tr>
+                ))
+              ) : customers.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="py-16 text-center text-gray-500">
+                    <p className="mb-3">No customers found.</p>
+                    <Link href="/customers/add"><Button size="sm">Add Customer</Button></Link>
+                  </td>
+                </tr>
+              ) : (
+                customers.map((c) => (
+                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-4">
+                      <span className="font-medium text-gray-900">{c.name || "Walk-in"}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="text-gray-700">{c.phone || <span className="text-gray-300">—</span>}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{c.email || <span className="text-gray-300">—</span>}</p>
+                    </td>
+                    <td className="px-5 py-4">
+                      <Button variant="ghost" size="sm" onClick={() => router.push(`/customers/${c.id}`)}>
+                        <Eye className="w-4 h-4 text-gray-600 mr-1" /> View
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
-      {/* Mobile card list */}
+      {/* Mobile cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
-          <CustomersMobileSkeleton />
-        ) : customers.length > 0 ? (
+          [...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-4 w-36" />
+                <div className="flex gap-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-36" />
+                </div>
+                <Skeleton className="h-8 w-20 rounded-md" />
+              </div>
+            </Card>
+          ))
+        ) : customers.length === 0 ? (
+          <Card>
+            <div className="py-14 text-center">
+              <p className="text-gray-500 mb-3">No customers found.</p>
+              <Link href="/customers/add"><Button>Add Customer</Button></Link>
+            </div>
+          </Card>
+        ) : (
           customers.map((c) => (
             <Card key={c.id}>
-              <CardContent className="p-4">
-                <p className="font-semibold">{c.name || "Walk in"}</p>
-                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+              <div className="p-4">
+                <p className="font-semibold text-gray-900">{c.name || "Walk-in"}</p>
+                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                   <span>{c.phone || "—"}</span>
                   <span>{c.email || "—"}</span>
                 </div>
                 <div className="mt-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="hover:bg-gray-300 hover:text-gray-700"
-                    onClick={() => router.push(`/customers/${c.id}`)}
-                  >
-                    <Eye className="w-4 h-4 mr-1" /> View Details
+                  <Button variant="ghost" size="sm" onClick={() => router.push(`/customers/${c.id}`)}>
+                    <Eye className="w-4 h-4 text-gray-600 mr-1" /> View
                   </Button>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           ))
-        ) : (
-          <Card>
-            <CardContent className="py-14 text-center">
-              <p className="text-gray-500 mb-3">No customers found.</p>
-              <Link href="/customers/add"><Button>Add Customer</Button></Link>
-            </CardContent>
-          </Card>
         )}
       </div>
 
       <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-    </div>
-  );
-}
-
-function CustomersSkeleton() {
-  return (
-    <Card className="hidden md:block">
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow className="text-lg">
-              <TableHead>Customer Name</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {[...Array(6)].map((_, i) => (
-              <TableRow key={i}>
-                <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-44" /></TableCell>
-                <TableCell><Skeleton className="h-8 w-24 rounded-md" /></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
-
-function CustomersMobileSkeleton() {
-  return (
-    <div className="space-y-3">
-      {[...Array(4)].map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-4 space-y-2">
-            <Skeleton className="h-4 w-36" />
-            <div className="flex gap-4">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-36" />
-            </div>
-            <Skeleton className="h-8 w-28 rounded-md" />
-          </CardContent>
-        </Card>
-      ))}
     </div>
   );
 }

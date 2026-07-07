@@ -1,21 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import DriverImg from "@/assets/product_img.png";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
-import { Search, Pencil, Trash2, Save } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Search, Pencil, Trash2, Save, X } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 import PaginationBar from "@/components/PaginationBar";
@@ -77,11 +67,11 @@ export default function DriversPage() {
   function cancelEdit() {
     setEditingId(null);
     setEditValues(null);
+    toast("Edit canceled.", { icon: "🚫" });
   }
 
   async function saveEdit() {
     if (!editingId || !editValues) return;
-
     const toastId = toast.loading("Saving changes...");
     try {
       const res = await fetch(`/api/drivers/${editingId}`, {
@@ -92,7 +82,8 @@ export default function DriversPage() {
       const data = await res.json();
       if (data.success) {
         setDrivers((prev) => prev.map((d) => (d.id === editingId ? { ...d, ...editValues } : d)));
-        cancelEdit();
+        setEditingId(null);
+        setEditValues(null);
         toast.success("Driver updated successfully!", { id: toastId });
       } else {
         toast.error("Failed to update driver.", { id: toastId });
@@ -108,9 +99,7 @@ export default function DriversPage() {
         <div className="flex flex-col space-y-2">
           <span>Are you sure you want to delete this driver?</span>
           <div className="flex gap-2 justify-end">
-            <Button
-              size="sm"
-              className="bg-red-500 hover:bg-red-600 text-white"
+            <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white"
               onClick={async () => {
                 toast.dismiss(t.id);
                 const toastId = toast.loading("Deleting driver...");
@@ -118,7 +107,7 @@ export default function DriversPage() {
                   const res = await fetch(`/api/drivers/${id}`, { method: "DELETE" });
                   const data = await res.json();
                   if (data.success) {
-                    if (editingId === id) cancelEdit();
+                    if (editingId === id) { setEditingId(null); setEditValues(null); }
                     toast.success("Driver deleted successfully.", { id: toastId });
                     fetchDrivers();
                   } else {
@@ -127,10 +116,7 @@ export default function DriversPage() {
                 } catch {
                   toast.error("Error deleting driver.", { id: toastId });
                 }
-              }}
-            >
-              Yes
-            </Button>
+              }}>Yes</Button>
             <Button size="sm" variant="outline" onClick={() => toast.dismiss(t.id)}>No</Button>
           </div>
         </div>
@@ -143,129 +129,175 @@ export default function DriversPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Image src={DriverImg} width={100} height={100} alt="drivers logo" />
-          Driver Management
-        </h1>
-        <div className="flex items-center gap-3">
-          <Link href="/drivers/add?from=drivers">
-            <Button>Add Driver</Button>
-          </Link>
+        <h1 className="text-3xl font-bold">Driver Management</h1>
+        <div className="flex items-center gap-2">
+          <Link href="/drivers/add?from=drivers"><Button>Add Driver</Button></Link>
           <BackToDashboardButton />
         </div>
       </div>
 
       {/* Search */}
-      <div className="relative w-[250px]">
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
           placeholder="Search by full name"
-          className="pr-8"
+          className="pl-9"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
       </div>
 
       {/* Table */}
-      {isLoading ? (
-        <DriversTableSkeleton />
-      ) : (
-        <Card>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="text-lg">
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Join Date</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {drivers.length > 0 ? (
-                  drivers.map((d) => (
-                    <TableRow key={d.id}>
-                      <TableCell>{d.id}</TableCell>
-                      <TableCell>
-                        {editingId === d.id ? (
-                          <Input value={editValues?.name || ""} onChange={(e) => setEditValues((s) => ({ ...s, name: e.target.value }))} />
-                        ) : d.name}
-                      </TableCell>
-                      <TableCell>
-                        {editingId === d.id ? (
-                          <Input value={editValues?.phone || ""} onChange={(e) => setEditValues((s) => ({ ...s, phone: e.target.value }))} />
-                        ) : d.phone}
-                      </TableCell>
-                      <TableCell>
-                        {d.joinDate ? new Date(d.joinDate).toLocaleDateString("default", { year: "numeric", month: "short", day: "numeric" }) : ""}
-                      </TableCell>
-                      <TableCell className="flex gap-2">
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-5 py-3 text-left">Driver</th>
+                <th className="px-5 py-3 text-left">Phone</th>
+                <th className="px-5 py-3 text-left">Joined</th>
+                <th className="px-5 py-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-5 py-4"><Skeleton className="h-4 w-32" /></td>
+                    <td className="px-5 py-4"><Skeleton className="h-4 w-28" /></td>
+                    <td className="px-5 py-4"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-5 py-4 flex gap-2">
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                    </td>
+                  </tr>
+                ))
+              ) : drivers.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-16 text-center text-gray-500">
+                    <p className="mb-3">No drivers found.</p>
+                    <Link href="/drivers/add?from=drivers"><Button size="sm">Add Driver</Button></Link>
+                  </td>
+                </tr>
+              ) : (
+                drivers.map((d) => (
+                  <tr key={d.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-4">
+                      {editingId === d.id ? (
+                        <Input value={editValues?.name || ""} onChange={(e) => setEditValues((s) => ({ ...s, name: e.target.value }))} className="max-w-[200px]" />
+                      ) : (
+                        <span className="font-medium text-gray-900">{d.name}</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4">
+                      {editingId === d.id ? (
+                        <Input value={editValues?.phone || ""} onChange={(e) => setEditValues((s) => ({ ...s, phone: e.target.value }))} className="max-w-[160px]" />
+                      ) : (
+                        <span className="text-gray-600">{d.phone || <span className="text-gray-300">—</span>}</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-gray-500">
+                      {d.joinDate ? new Date(d.joinDate).toLocaleDateString("default", { year: "numeric", month: "short", day: "numeric" }) : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-1.5">
                         {editingId === d.id ? (
                           <>
-                            <Button size="sm" onClick={saveEdit} className="bg-green-400 hover:bg-green-300 hover:text-green-800">
-                              <Save className="w-4 h-4" /> Save
+                            <Button size="sm" onClick={saveEdit} className="bg-green-500 hover:bg-green-600 text-white gap-1">
+                              <Save className="w-3.5 h-3.5" /> Save
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => { cancelEdit(); toast("Edit canceled.", { icon: "🚫" }); }} className="hover:bg-gray-300 hover:text-gray-700">
-                              Cancel
+                            <Button size="sm" variant="outline" onClick={cancelEdit} className="gap-1">
+                              <X className="w-3.5 h-3.5" /> Cancel
                             </Button>
                           </>
                         ) : (
                           <>
-                            <Button size="sm" variant="secondary" onClick={() => startEdit(d)} className="hover:bg-gray-300 hover:text-gray-700">
-                              <Pencil className="w-4 h-4" />
+                            <Button size="sm" variant="ghost" onClick={() => startEdit(d)} title="Edit">
+                              <Pencil className="w-4 h-4 text-gray-600" />
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => deleteDriver(d.id)} className="hover:bg-red-300 hover:text-red-800">
-                              <Trash2 className="w-4 h-4" />
+                            <Button size="sm" variant="ghost" onClick={() => deleteDriver(d.id)} title="Delete">
+                              <Trash2 className="w-4 h-4 text-red-500" />
                             </Button>
                           </>
                         )}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          [...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <div className="flex gap-4">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              </div>
+            </Card>
+          ))
+        ) : drivers.length === 0 ? (
+          <Card>
+            <div className="py-14 text-center">
+              <p className="text-gray-500 mb-3">No drivers found.</p>
+              <Link href="/drivers/add?from=drivers"><Button>Add Driver</Button></Link>
+            </div>
+          </Card>
+        ) : (
+          drivers.map((d) => (
+            <Card key={d.id}>
+              <div className="p-4">
+                {editingId === d.id ? (
+                  <div className="space-y-3">
+                    <div><label className="text-xs text-muted-foreground mb-1 block">Name</label>
+                      <Input value={editValues?.name || ""} onChange={(e) => setEditValues((s) => ({ ...s, name: e.target.value }))} /></div>
+                    <div><label className="text-xs text-muted-foreground mb-1 block">Phone</label>
+                      <Input value={editValues?.phone || ""} onChange={(e) => setEditValues((s) => ({ ...s, phone: e.target.value }))} /></div>
+                    <div className="flex gap-2 pt-1">
+                      <Button size="sm" onClick={saveEdit} className="bg-green-500 hover:bg-green-600 text-white gap-1">
+                        <Save className="w-3.5 h-3.5" /> Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={cancelEdit} className="gap-1">
+                        <X className="w-3.5 h-3.5" /> Cancel
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="py-14 text-center">
-                      <p className="text-gray-500 mb-3">No drivers found.</p>
-                      <Link href="/drivers/add?from=drivers">
-                        <Button>Add Driver</Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    <p className="font-semibold text-gray-900">{d.name}</p>
+                    <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                      <span>{d.phone || "—"}</span>
+                      {d.joinDate && <span>Joined {new Date(d.joinDate).toLocaleDateString("default", { year: "numeric", month: "short" })}</span>}
+                    </div>
+                    <div className="flex gap-1.5 mt-3">
+                      <Button size="sm" variant="ghost" onClick={() => startEdit(d)}>
+                        <Pencil className="w-4 h-4 text-gray-600" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => deleteDriver(d.id)}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </>
                 )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
 
       <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
     </div>
-  );
-}
-
-function DriversTableSkeleton() {
-  return (
-    <Card className="p-4 overflow-x-auto">
-      <CardContent className="p-0">
-        <div className="grid grid-cols-5 gap-4 border-b pb-3 px-4 text-sm font-medium text-muted-foreground">
-          <div>ID</div><div>Name</div><div>Phone</div><div>Join Date</div><div>Actions</div>
-        </div>
-        <div className="divide-y">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="grid grid-cols-5 gap-4 items-center px-4 py-3">
-              <Skeleton className="h-4 w-6" />
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-4 w-24" />
-              <div className="flex gap-2">
-                <Skeleton className="h-8 w-8 rounded-md" />
-                <Skeleton className="h-8 w-8 rounded-md" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
   );
 }

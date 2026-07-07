@@ -6,15 +6,7 @@ import ProductImg from "@/assets/product_img.png";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Pencil, Trash2, Eye, Save, Minus } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Search, Pencil, Trash2, Eye, Save, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,11 +26,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 const LIMIT = 25;
 const LOW_STOCK_THRESHOLD = 10;
 
-function StockBadge({ quantity }) {
+function StockDisplay({ quantity, unit }) {
   const num = Number(quantity);
-  if (num === 0) return <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">Out</span>;
-  if (num <= LOW_STOCK_THRESHOLD) return <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">Low</span>;
-  return null;
+  const label = unit === "kg" ? `${num.toFixed(2)} kg` : `${num} pcs`;
+  if (num === 0)
+    return (
+      <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+        Out of stock
+      </span>
+    );
+  if (num <= LOW_STOCK_THRESHOLD)
+    return (
+      <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+        {label} · Low
+      </span>
+    );
+  return <span className="text-sm text-gray-700">{label}</span>;
 }
 
 export default function ProductsPage() {
@@ -102,7 +105,14 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, debouncedSearch, categoryFilter, statusFilter, stockFilter, sortBy]);
+  }, [
+    currentPage,
+    debouncedSearch,
+    categoryFilter,
+    statusFilter,
+    stockFilter,
+    sortBy,
+  ]);
 
   useEffect(() => {
     fetchProducts();
@@ -139,22 +149,20 @@ export default function ProductsPage() {
       toast.error("Price cannot be empty or negative or an invalid value.");
       return;
     }
-
     if (isNaN(stockNum) || editValues.stockQuantity === "" || stockNum < 0) {
       toast.error("Stock cannot be empty or negative.");
       return;
     }
-
     if (isNaN(costNum) || editValues.costPrice === "" || costNum < 0) {
       toast.error("Cost price cannot be empty or negative.");
       return;
     }
-
     if (unit === "pcs" && !Number.isInteger(stockNum)) {
-      toast.error("Stock quantity must be a whole number for items sold by piece (pcs).");
+      toast.error(
+        "Stock quantity must be a whole number for items sold by piece (pcs).",
+      );
       return;
     }
-
     if (priceNum < costNum) {
       toast.error("Price cannot be less than the product's cost price.");
       return;
@@ -182,7 +190,7 @@ export default function ProductsPage() {
       if (data.success) {
         toast.dismiss();
         setProducts((prev) =>
-          prev.map((p) => (p.id === editingId ? { ...p, ...data.data } : p))
+          prev.map((p) => (p.id === editingId ? { ...p, ...data.data } : p)),
         );
         resetEditState();
         toast.success("Product updated successfully.");
@@ -204,14 +212,20 @@ export default function ProductsPage() {
             <Button
               size="sm"
               className="bg-red-500 hover:bg-red-600 text-white"
-              onClick={() => { resolve(true); toast.dismiss(t.id); }}
+              onClick={() => {
+                resolve(true);
+                toast.dismiss(t.id);
+              }}
             >
               Yes
             </Button>
             <Button
               size="sm"
               variant="outline"
-              onClick={() => { resolve(false); toast.dismiss(t.id); }}
+              onClick={() => {
+                resolve(false);
+                toast.dismiss(t.id);
+              }}
             >
               No
             </Button>
@@ -246,14 +260,14 @@ export default function ProductsPage() {
       transition={{ duration: 0.4 }}
     >
       {/* Header */}
-      <motion.div
-        className="flex items-center justify-between"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-      >
+      <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Image src={ProductImg} width={100} height={100} alt="products page logo" />
+          <Image
+            src={ProductImg}
+            width={60}
+            height={60}
+            alt="products page logo"
+          />
           Product Management
         </h1>
         <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -268,39 +282,44 @@ export default function ProductsPage() {
           </Link>
           <BackToDashboardButton />
         </div>
-      </motion.div>
+      </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4">
-        <Select value={String(categoryFilter)} onValueChange={(v) => setCategoryFilter(v)}>
+      <div className="flex flex-wrap items-center gap-3">
+        <Select
+          value={String(categoryFilter)}
+          onValueChange={(v) => setCategoryFilter(v)}
+        >
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Categories</SelectItem>
+            <SelectItem value="all">All Categories</SelectItem>
             {categories.map((c) => (
-              <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+              <SelectItem key={c.id} value={String(c.id)}>
+                {c.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v)}>
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-[130px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Status</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="ACTIVE">Active</SelectItem>
             <SelectItem value="INACTIVE">Inactive</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={stockFilter} onValueChange={(v) => setStockFilter(v)}>
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-[130px]">
             <SelectValue placeholder="Stock" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Stock</SelectItem>
+            <SelectItem value="all">All Stock</SelectItem>
             <SelectItem value="in">In Stock</SelectItem>
             <SelectItem value="out">Out of Stock</SelectItem>
           </SelectContent>
@@ -308,7 +327,7 @@ export default function ProductsPage() {
 
         <Select value={sortBy} onValueChange={(v) => setSortBy(v)}>
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Sort (ID)" />
+            <SelectValue placeholder="Sort" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="id">Sort by ID</SelectItem>
@@ -316,263 +335,404 @@ export default function ProductsPage() {
           </SelectContent>
         </Select>
 
-        <div className="relative w-[250px]">
+        <div className="relative flex-1 min-w-[220px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search by name or barcode"
-            className="pr-8"
+            className="pl-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
         </div>
       </div>
 
       {/* Desktop table */}
-      <Card className="hidden md:block">
-        <CardContent>
-          {loading ? (
-            <motion.div
-              className="-m-6"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <Card className="overflow-hidden rounded-2xl border-none">
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full text-sm text-left text-gray-700">
-                    <thead className="border-b text-gray-600 font-semibold text-lg">
-                      <tr>
-                        <th className="px-6 py-3">ID</th>
-                        <th className="px-6 py-3">Product</th>
-                        <th className="px-6 py-3">Barcode</th>
-                        <th className="px-4 py-2">Cost Price</th>
-                        <th className="px-6 py-3">Category</th>
-                        <th className="px-6 py-3">Price</th>
-                        <th className="px-6 py-3">Stock</th>
-                        <th className="px-6 py-3">Unit</th>
-                        <th className="px-6 py-3">Expiry</th>
-                        <th className="px-6 py-3">Status</th>
-                        <th className="px-6 py-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 animate-pulse">
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <tr key={i} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-3"><Skeleton className="h-6 w-8 rounded-md" /></td>
-                          <td className="px-6 py-3"><Skeleton className="h-6 w-24 rounded-md" /></td>
-                          <td className="px-6 py-3"><Skeleton className="h-6 w-20 rounded-md" /></td>
-                          <td className="px-6 py-3"><Skeleton className="h-6 w-16 rounded-md" /></td>
-                          <td className="px-6 py-3"><Skeleton className="h-6 w-20 rounded-md" /></td>
-                          <td className="px-6 py-3"><Skeleton className="h-6 w-20 rounded-md" /></td>
-                          <td className="px-6 py-3"><Skeleton className="h-6 w-10 rounded-md" /></td>
-                          <td className="px-6 py-3"><Skeleton className="h-6 w-10 rounded-md" /></td>
-                          <td className="px-6 py-3"><Skeleton className="h-6 w-24 rounded-md" /></td>
-                          <td className="px-6 py-3"><Skeleton className="h-6 w-16 rounded-full" /></td>
-                          <td className="px-6 py-3 flex items-center gap-2">
-                            <Skeleton className="h-7 w-8 rounded-md" />
-                            <Skeleton className="h-7 w-8 rounded-md" />
-                            <Skeleton className="h-7 w-8 rounded-md" />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </motion.div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="text-lg">
-                  <TableHead>ID</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Barcode</TableHead>
-                  <TableHead>Cost Price</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>Expiry</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className={editValues ? "" : "pl-8"}>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+      <Card className="hidden md:block overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-5 py-3 text-left">Product</th>
+                <th className="px-5 py-3 text-left">Category</th>
+                <th className="px-5 py-3 text-left">Price</th>
+                <th className="px-5 py-3 text-left">Stock</th>
+                <th className="px-5 py-3 text-left">Expiry</th>
+                <th className="px-5 py-3 text-left">Status</th>
+                <th className="px-5 py-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-5 py-4">
+                      <Skeleton className="h-4 w-36 mb-1.5" />
+                      <Skeleton className="h-3 w-24" />
+                    </td>
+                    <td className="px-5 py-4">
+                      <Skeleton className="h-4 w-24" />
+                    </td>
+                    <td className="px-5 py-4">
+                      <Skeleton className="h-4 w-20 mb-1.5" />
+                      <Skeleton className="h-3 w-16" />
+                    </td>
+                    <td className="px-5 py-4">
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                    </td>
+                    <td className="px-5 py-4">
+                      <Skeleton className="h-4 w-20" />
+                    </td>
+                    <td className="px-5 py-4">
+                      <Skeleton className="h-6 w-16 rounded-full" />
+                    </td>
+                    <td className="px-5 py-4 flex gap-2">
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                    </td>
+                  </tr>
+                ))
+              ) : products.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-16 text-center text-gray-500">
+                    <p className="mb-3">No products found.</p>
+                    <Link href="/products/add">
+                      <Button size="sm">Add Product</Button>
+                    </Link>
+                  </td>
+                </tr>
+              ) : (
                 <AnimatePresence>
-                  {products.length > 0 ? (
-                    products.map((p) => (
-                      <motion.tr
-                        key={p.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="border-b"
-                      >
-                        <TableCell>{p.id}</TableCell>
-                        <TableCell>
-                          {editingId === p.id ? (
+                  {products.map((p) => (
+                    <motion.tr
+                      key={p.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      {/* Product: name + barcode */}
+                      <td className="px-5 py-4 max-w-[220px]">
+                        {editingId === p.id ? (
+                          <div className="space-y-1.5">
                             <Input
+                              placeholder="Name"
                               value={editValues?.name || ""}
-                              onChange={(e) => setEditValues((s) => ({ ...s, name: e.target.value }))}
+                              onChange={(e) =>
+                                setEditValues((s) => ({
+                                  ...s,
+                                  name: e.target.value,
+                                }))
+                              }
                             />
-                          ) : p.name}
-                        </TableCell>
-                        <TableCell>
-                          {editingId === p.id ? (
                             <Input
+                              placeholder="Barcode"
                               value={editValues?.barcode || ""}
-                              onChange={(e) => setEditValues((s) => ({ ...s, barcode: e.target.value }))}
+                              onChange={(e) =>
+                                setEditValues((s) => ({
+                                  ...s,
+                                  barcode: e.target.value,
+                                }))
+                              }
                             />
-                          ) : (p.barcode || <Minus />)}
-                        </TableCell>
-                        <TableCell>
-                          {editingId === p.id ? (
-                            <Input
-                              type="number"
-                              min="0"
-                              value={editValues?.costPrice || 0}
-                              onChange={(e) => setEditValues((s) => ({ ...s, costPrice: Number(e.target.value) }))}
-                            />
-                          ) : ("AFN " + (p.costPrice || 0))}
-                        </TableCell>
-                        <TableCell>
-                          {editingId === p.id ? (
-                            <Select
-                              value={editValues.categoryId ? String(editValues.categoryId) : "no-category"}
-                              onValueChange={(v) => setEditValues((s) => ({ ...s, categoryId: v === "no-category" ? null : Number(v) }))}
-                            >
-                              <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Select category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {categories.map((c) => (
-                                  <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (p.category?.name || <span className="text-gray-400">No category</span>)}
-                        </TableCell>
-                        <TableCell>
-                          {editingId === p.id ? (
-                            <Input
-                              type="number"
-                              min="0"
-                              value={editValues?.price || ""}
-                              onChange={(e) => setEditValues((s) => ({ ...s, price: Number(e.target.value) }))}
-                            />
-                          ) : ("AFN " + p.price)}
-                        </TableCell>
-                        <TableCell>
-                          {editingId === p.id ? (
-                            <Input
-                              type="number"
-                              step={editValues?.unit === "kg" ? "0.01" : "1"}
-                              value={editValues?.stockQuantity || 0}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                const unit = editValues?.unit || p.unit;
-                                if (val === "") { setEditValues((s) => ({ ...s, stockQuantity: 0 })); return; }
-                                const num = Number(val);
-                                if (unit === "pcs") {
-                                  if (Number.isInteger(num) && num >= 0) setEditValues((s) => ({ ...s, stockQuantity: num }));
-                                } else {
-                                  if (num >= 0) setEditValues((s) => ({ ...s, stockQuantity: num }));
+                          </div>
+                        ) : (
+                          <>
+                            <p className="font-medium text-gray-900 leading-tight">
+                              {p.name}
+                            </p>
+                            {p.barcode ? (
+                              <p className="text-xs text-gray-400 mt-0.5 font-mono">
+                                {p.barcode}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-300 mt-0.5">
+                                No barcode
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </td>
+
+                      {/* Category */}
+                      <td className="px-5 py-4">
+                        {editingId === p.id ? (
+                          <Select
+                            value={
+                              editValues.categoryId
+                                ? String(editValues.categoryId)
+                                : "no-category"
+                            }
+                            onValueChange={(v) =>
+                              setEditValues((s) => ({
+                                ...s,
+                                categoryId:
+                                  v === "no-category" ? null : Number(v),
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="w-[160px]">
+                              <SelectValue placeholder="Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="no-category">
+                                No category
+                              </SelectItem>
+                              {categories.map((c) => (
+                                <SelectItem key={c.id} value={String(c.id)}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="text-gray-700">
+                            {p.category?.name || (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Price: sell + cost */}
+                      <td className="px-5 py-4">
+                        {editingId === p.id ? (
+                          <div className="space-y-1.5">
+                            <div>
+                              <label className="text-xs text-gray-400 mb-0.5 block">
+                                Sell
+                              </label>
+                              <Input
+                                type="number"
+                                min="0"
+                                placeholder="Sell price"
+                                value={editValues?.price || ""}
+                                onChange={(e) =>
+                                  setEditValues((s) => ({
+                                    ...s,
+                                    price: Number(e.target.value),
+                                  }))
                                 }
-                              }}
-                              onKeyDown={(e) => {
-                                const unit = editValues?.unit || p.unit;
-                                if (unit === "pcs") { if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault(); }
-                                else { if (["-", "e", "E"].includes(e.key)) e.preventDefault(); }
-                              }}
-                            />
-                          ) : (
-                            <span className="flex items-center gap-1">
-                              {p.unit === "kg" ? Number(p.stockQuantity).toFixed(2) : p.stockQuantity}
-                              <StockBadge quantity={p.stockQuantity} />
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {editingId === p.id ? (
+                                className="w-28"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400 mb-0.5 block">
+                                Cost
+                              </label>
+                              <Input
+                                type="number"
+                                min="0"
+                                placeholder="Cost price"
+                                value={editValues?.costPrice || 0}
+                                onChange={(e) =>
+                                  setEditValues((s) => ({
+                                    ...s,
+                                    costPrice: Number(e.target.value),
+                                  }))
+                                }
+                                className="w-28"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="font-semibold text-gray-900">
+                              AFN {p.price}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              Cost: AFN {p.costPrice || 0}
+                            </p>
+                          </>
+                        )}
+                      </td>
+
+                      {/* Stock */}
+                      <td className="px-5 py-4">
+                        {editingId === p.id ? (
+                          <div className="flex items-end gap-1.5">
+                            <div>
+                              <label className="text-xs text-gray-400 mb-0.5 block">
+                                Qty
+                              </label>
+                              <Input
+                                type="number"
+                                step={editValues?.unit === "kg" ? "0.01" : "1"}
+                                value={editValues?.stockQuantity || 0}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const unit = editValues?.unit || p.unit;
+                                  if (val === "") {
+                                    setEditValues((s) => ({
+                                      ...s,
+                                      stockQuantity: 0,
+                                    }));
+                                    return;
+                                  }
+                                  const num = Number(val);
+                                  if (unit === "pcs") {
+                                    if (Number.isInteger(num) && num >= 0)
+                                      setEditValues((s) => ({
+                                        ...s,
+                                        stockQuantity: num,
+                                      }));
+                                  } else {
+                                    if (num >= 0)
+                                      setEditValues((s) => ({
+                                        ...s,
+                                        stockQuantity: num,
+                                      }));
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  const unit = editValues?.unit || p.unit;
+                                  if (unit === "pcs") {
+                                    if (["-", ".", "e", "E"].includes(e.key))
+                                      e.preventDefault();
+                                  } else {
+                                    if (["-", "e", "E"].includes(e.key))
+                                      e.preventDefault();
+                                  }
+                                }}
+                                className="w-20"
+                              />
+                            </div>
                             <Select
                               value={editValues?.unit || "pcs"}
-                              onValueChange={(v) => setEditValues((s) => ({ ...s, unit: v }))}
+                              onValueChange={(v) =>
+                                setEditValues((s) => ({ ...s, unit: v }))
+                              }
                             >
-                              <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="w-[72px]">
+                                <SelectValue />
+                              </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="pcs">pcs</SelectItem>
                                 <SelectItem value="kg">kg</SelectItem>
                               </SelectContent>
                             </Select>
-                          ) : (p.unit || "-")}
-                        </TableCell>
-                        <TableCell>
-                          {editingId === p.id ? (
-                            <Input
-                              type="date"
-                              value={editValues?.expiryDate || ""}
-                              onChange={(e) => setEditValues((s) => ({ ...s, expiryDate: e.target.value || null }))}
-                            />
-                          ) : (p.expiryDate ? new Date(p.expiryDate).toLocaleDateString("default", { year: "numeric", month: "short", day: "numeric" }) : <Minus />)}
-                        </TableCell>
-                        <TableCell className={editValues ? "" : "pr-8"}>
-                          {editingId === p.id ? (
-                            <Select
-                              value={editValues?.status || "ACTIVE"}
-                              onValueChange={(v) => setEditValues((s) => ({ ...s, status: v }))}
-                            >
-                              <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="ACTIVE">Active</SelectItem>
-                                <SelectItem value="INACTIVE">Inactive</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <StatusBadge status={p.status} />
-                          )}
-                        </TableCell>
-                        <TableCell className={editValues ? "flex gap-2" : "flex gap-2 pl-8"}>
+                          </div>
+                        ) : (
+                          <StockDisplay
+                            quantity={p.stockQuantity}
+                            unit={p.unit}
+                          />
+                        )}
+                      </td>
+
+                      {/* Expiry */}
+                      <td className="px-5 py-4">
+                        {editingId === p.id ? (
+                          <Input
+                            type="date"
+                            value={editValues?.expiryDate || ""}
+                            onChange={(e) =>
+                              setEditValues((s) => ({
+                                ...s,
+                                expiryDate: e.target.value || null,
+                              }))
+                            }
+                            className="w-36"
+                          />
+                        ) : (
+                          <span className="text-gray-600">
+                            {p.expiryDate ? (
+                              new Date(p.expiryDate).toLocaleDateString(
+                                "default",
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )
+                            ) : (
+                              <span className="text-gray-300">—</span>
+                            )}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-5 py-4">
+                        {editingId === p.id ? (
+                          <Select
+                            value={editValues?.status || "ACTIVE"}
+                            onValueChange={(v) =>
+                              setEditValues((s) => ({ ...s, status: v }))
+                            }
+                          >
+                            <SelectTrigger className="w-[120px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ACTIVE">Active</SelectItem>
+                              <SelectItem value="INACTIVE">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <StatusBadge status={p.status} />
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-1.5">
                           {editingId === p.id ? (
                             <>
-                              <Button size="sm" onClick={saveEdit} className="bg-green-400 hover:bg-green-300 hover:text-green-800">
-                                <Save className="w-4 h-4" /> Save
+                              <Button
+                                size="sm"
+                                onClick={saveEdit}
+                                className="bg-green-500 hover:bg-green-600 text-white gap-1"
+                              >
+                                <Save className="w-3.5 h-3.5" /> Save
                               </Button>
-                              <Button size="sm" variant="outline" onClick={cancelEdit} className="hover:bg-gray-300 hover:text-gray-700">
-                                Cancel
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={cancelEdit}
+                                className="gap-1"
+                              >
+                                <X className="w-3.5 h-3.5" /> Cancel
                               </Button>
                             </>
                           ) : (
                             <>
-                              <Button size="sm" variant="secondary" onClick={() => startEdit(p)} className="hover:bg-gray-300 hover:text-gray-700">
-                                <Pencil className="w-4 h-4" />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => startEdit(p)}
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4 text-gray-600" />
                               </Button>
-                              <Button size="sm" variant="destructive" onClick={() => deleteProduct(p.id)} className="hover:bg-red-300 hover:text-red-800">
-                                <Trash2 className="w-4 h-4" />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => deleteProduct(p.id)}
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
                               </Button>
-                              <Button size="sm" variant="outline" onClick={() => router.push(`/products/${p.id}`)} className="hover:bg-gray-300 hover:text-gray-700">
-                                <Eye className="w-4 h-4" />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => router.push(`/products/${p.id}`)}
+                                title="View"
+                              >
+                                <Eye className="w-4 h-4 text-gray-600" />
                               </Button>
                             </>
                           )}
-                        </TableCell>
-                      </motion.tr>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={11} className="py-14 text-center">
-                        <p className="text-gray-500 mb-3">No products found.</p>
-                        <Link href="/products/add">
-                          <Button>Add Product</Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  )}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
                 </AnimatePresence>
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       {/* Mobile card list */}
@@ -585,14 +745,12 @@ export default function ProductsPage() {
                   <Skeleton className="h-4 w-36" />
                   <Skeleton className="h-5 w-16 rounded-full" />
                 </div>
-                <div className="flex gap-4">
+                <Skeleton className="h-3 w-24" />
+                <div className="flex gap-4 mt-2">
                   <Skeleton className="h-4 w-20" />
                   <Skeleton className="h-4 w-20" />
                 </div>
-                <div className="flex gap-4">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
+                <Skeleton className="h-6 w-28 rounded-full mt-1" />
                 <div className="flex gap-2 pt-1">
                   <Skeleton className="h-8 w-8 rounded-md" />
                   <Skeleton className="h-8 w-8 rounded-md" />
@@ -601,44 +759,114 @@ export default function ProductsPage() {
               </CardContent>
             </Card>
           ))
-        ) : products.length > 0 ? (
+        ) : products.length === 0 ? (
+          <Card>
+            <CardContent className="py-14 text-center">
+              <p className="text-gray-500 mb-3">No products found.</p>
+              <Link href="/products/add">
+                <Button>Add Product</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : (
           products.map((p) => (
             <Card key={p.id}>
               <CardContent className="p-4">
                 {editingId === p.id ? (
                   <div className="space-y-3">
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Name</label>
-                      <Input value={editValues?.name || ""} onChange={(e) => setEditValues((s) => ({ ...s, name: e.target.value }))} />
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Name
+                      </label>
+                      <Input
+                        value={editValues?.name || ""}
+                        onChange={(e) =>
+                          setEditValues((s) => ({ ...s, name: e.target.value }))
+                        }
+                      />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Barcode</label>
-                      <Input value={editValues?.barcode || ""} onChange={(e) => setEditValues((s) => ({ ...s, barcode: e.target.value }))} />
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Barcode
+                      </label>
+                      <Input
+                        value={editValues?.barcode || ""}
+                        onChange={(e) =>
+                          setEditValues((s) => ({
+                            ...s,
+                            barcode: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Cost Price</label>
-                      <Input type="number" min="0" value={editValues?.costPrice || 0} onChange={(e) => setEditValues((s) => ({ ...s, costPrice: Number(e.target.value) }))} />
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Cost Price
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={editValues?.costPrice || 0}
+                        onChange={(e) =>
+                          setEditValues((s) => ({
+                            ...s,
+                            costPrice: Number(e.target.value),
+                          }))
+                        }
+                      />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Category</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Category
+                      </label>
                       <Select
-                        value={editValues.categoryId ? String(editValues.categoryId) : "no-category"}
-                        onValueChange={(v) => setEditValues((s) => ({ ...s, categoryId: v === "no-category" ? null : Number(v) }))}
+                        value={
+                          editValues.categoryId
+                            ? String(editValues.categoryId)
+                            : "no-category"
+                        }
+                        onValueChange={(v) =>
+                          setEditValues((s) => ({
+                            ...s,
+                            categoryId: v === "no-category" ? null : Number(v),
+                          }))
+                        }
                       >
-                        <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Category" />
+                        </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="no-category">
+                            No category
+                          </SelectItem>
                           {categories.map((c) => (
-                            <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                            <SelectItem key={c.id} value={String(c.id)}>
+                              {c.name}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Price</label>
-                      <Input type="number" min="0" value={editValues?.price || ""} onChange={(e) => setEditValues((s) => ({ ...s, price: Number(e.target.value) }))} />
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Sell Price
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={editValues?.price || ""}
+                        onChange={(e) =>
+                          setEditValues((s) => ({
+                            ...s,
+                            price: Number(e.target.value),
+                          }))
+                        }
+                      />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Stock</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Stock
+                      </label>
                       <Input
                         type="number"
                         step={editValues?.unit === "kg" ? "0.01" : "1"}
@@ -646,25 +874,50 @@ export default function ProductsPage() {
                         onChange={(e) => {
                           const val = e.target.value;
                           const unit = editValues?.unit || p.unit;
-                          if (val === "") { setEditValues((s) => ({ ...s, stockQuantity: 0 })); return; }
+                          if (val === "") {
+                            setEditValues((s) => ({ ...s, stockQuantity: 0 }));
+                            return;
+                          }
                           const num = Number(val);
                           if (unit === "pcs") {
-                            if (Number.isInteger(num) && num >= 0) setEditValues((s) => ({ ...s, stockQuantity: num }));
+                            if (Number.isInteger(num) && num >= 0)
+                              setEditValues((s) => ({
+                                ...s,
+                                stockQuantity: num,
+                              }));
                           } else {
-                            if (num >= 0) setEditValues((s) => ({ ...s, stockQuantity: num }));
+                            if (num >= 0)
+                              setEditValues((s) => ({
+                                ...s,
+                                stockQuantity: num,
+                              }));
                           }
                         }}
                         onKeyDown={(e) => {
                           const unit = editValues?.unit || p.unit;
-                          if (unit === "pcs") { if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault(); }
-                          else { if (["-", "e", "E"].includes(e.key)) e.preventDefault(); }
+                          if (unit === "pcs") {
+                            if (["-", ".", "e", "E"].includes(e.key))
+                              e.preventDefault();
+                          } else {
+                            if (["-", "e", "E"].includes(e.key))
+                              e.preventDefault();
+                          }
                         }}
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Unit</label>
-                      <Select value={editValues?.unit || "pcs"} onValueChange={(v) => setEditValues((s) => ({ ...s, unit: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Unit
+                      </label>
+                      <Select
+                        value={editValues?.unit || "pcs"}
+                        onValueChange={(v) =>
+                          setEditValues((s) => ({ ...s, unit: v }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pcs">pcs</SelectItem>
                           <SelectItem value="kg">kg</SelectItem>
@@ -672,13 +925,33 @@ export default function ProductsPage() {
                       </Select>
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Expiry Date</label>
-                      <Input type="date" value={editValues?.expiryDate || ""} onChange={(e) => setEditValues((s) => ({ ...s, expiryDate: e.target.value || null }))} />
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Expiry Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={editValues?.expiryDate || ""}
+                        onChange={(e) =>
+                          setEditValues((s) => ({
+                            ...s,
+                            expiryDate: e.target.value || null,
+                          }))
+                        }
+                      />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Status</label>
-                      <Select value={editValues?.status || "ACTIVE"} onValueChange={(v) => setEditValues((s) => ({ ...s, status: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Status
+                      </label>
+                      <Select
+                        value={editValues?.status || "ACTIVE"}
+                        onValueChange={(v) =>
+                          setEditValues((s) => ({ ...s, status: v }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="ACTIVE">Active</SelectItem>
                           <SelectItem value="INACTIVE">Inactive</SelectItem>
@@ -686,46 +959,78 @@ export default function ProductsPage() {
                       </Select>
                     </div>
                     <div className="flex gap-2 pt-1">
-                      <Button size="sm" onClick={saveEdit} className="bg-green-400 hover:bg-green-300 hover:text-green-800">
-                        <Save className="w-4 h-4 mr-1" /> Save
+                      <Button
+                        size="sm"
+                        onClick={saveEdit}
+                        className="bg-green-500 hover:bg-green-600 text-white gap-1"
+                      >
+                        <Save className="w-3.5 h-3.5" /> Save
                       </Button>
-                      <Button size="sm" variant="outline" onClick={cancelEdit} className="hover:bg-gray-300 hover:text-gray-700">
-                        Cancel
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={cancelEdit}
+                        className="gap-1"
+                      >
+                        <X className="w-3.5 h-3.5" /> Cancel
                       </Button>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold">{p.name}</p>
+                      <div>
+                        <p className="font-semibold text-gray-900">{p.name}</p>
+                        {p.barcode && (
+                          <p className="text-xs text-gray-400 font-mono mt-0.5">
+                            {p.barcode}
+                          </p>
+                        )}
+                      </div>
                       <StatusBadge status={p.status} />
                     </div>
-                    <div className="flex items-center gap-4 mt-1 text-sm">
-                      <span>AFN {p.price}</span>
-                      <span className="text-muted-foreground">Cost: AFN {p.costPrice || 0}</span>
-                    </div>
-                    <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        Stock: {p.unit === "kg" ? Number(p.stockQuantity).toFixed(2) : p.stockQuantity} {p.unit}
-                        <StockBadge quantity={p.stockQuantity} />
+                    <div className="flex items-center gap-4 mt-2 text-sm">
+                      <span className="font-semibold">AFN {p.price}</span>
+                      <span className="text-gray-400">
+                        Cost: AFN {p.costPrice || 0}
                       </span>
-                      <span>{p.category?.name || "No category"}</span>
                     </div>
-                    {(p.barcode || p.expiryDate) && (
-                      <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                        {p.barcode && <span>#{p.barcode}</span>}
-                        {p.expiryDate && <span>Exp: {new Date(p.expiryDate).toLocaleDateString("default", { year: "numeric", month: "short", day: "numeric" })}</span>}
-                      </div>
-                    )}
-                    <div className="flex gap-2 mt-3">
-                      <Button size="sm" variant="secondary" onClick={() => startEdit(p)} className="hover:bg-gray-300 hover:text-gray-700">
-                        <Pencil className="w-4 h-4" />
+                    <div className="mt-2">
+                      <StockDisplay quantity={p.stockQuantity} unit={p.unit} />
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+                      <span>{p.category?.name || "No category"}</span>
+                      {p.expiryDate && (
+                        <span>
+                          Exp:{" "}
+                          {new Date(p.expiryDate).toLocaleDateString(
+                            "default",
+                            { year: "numeric", month: "short", day: "numeric" },
+                          )}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-1.5 mt-3">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEdit(p)}
+                      >
+                        <Pencil className="w-4 h-4 text-gray-600" />
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => deleteProduct(p.id)} className="hover:bg-red-300 hover:text-red-800">
-                        <Trash2 className="w-4 h-4" />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteProduct(p.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => router.push(`/products/${p.id}`)} className="hover:bg-gray-300 hover:text-gray-700">
-                        <Eye className="w-4 h-4" />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => router.push(`/products/${p.id}`)}
+                      >
+                        <Eye className="w-4 h-4 text-gray-600" />
                       </Button>
                     </div>
                   </>
@@ -733,17 +1038,14 @@ export default function ProductsPage() {
               </CardContent>
             </Card>
           ))
-        ) : (
-          <Card>
-            <CardContent className="py-14 text-center">
-              <p className="text-gray-500 mb-3">No products found.</p>
-              <Link href="/products/add"><Button>Add Product</Button></Link>
-            </CardContent>
-          </Card>
         )}
       </div>
 
-      <PaginationBar page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+      <PaginationBar
+        page={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </motion.div>
   );
 }
