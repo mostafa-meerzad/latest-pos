@@ -283,6 +283,19 @@ export default function AddSaleClient() {
     const { activeInput } = keyboard;
     if (!activeInput) return;
 
+    if (value === "clear") {
+      if (activeInput === "quantity") setQuantity("");
+      if (activeInput === "discount") setItemDiscount(0);
+      if (activeInput === "tax") setTaxAmount(0);
+      if (activeInput === "unitPrice" && cart.editValues)
+        cart.setEditValues((p) => ({ ...p, unitPrice: "" }));
+      if (activeInput === "editQuantity" && cart.editValues)
+        cart.setEditValues((p) => ({ ...p, quantity: "" }));
+      if (activeInput === "editDiscount" && cart.editValues)
+        cart.setEditValues((p) => ({ ...p, discount: "" }));
+      return;
+    }
+
     if (value === "backspace") {
       if (activeInput === "quantity")
         setQuantity((p) => String(p).slice(0, -1) || "");
@@ -475,11 +488,12 @@ export default function AddSaleClient() {
       </div>
 
       {keyboard.keyboardVisible && (
-        <div
-          ref={keyboard.keyboardRef}
-          style={{ position: "fixed", bottom: "40px", right: "40px", zIndex: 9999 }}
-        >
-          <NumericKeyboard onInput={handleKeyboardInput} />
+        <div ref={keyboard.keyboardRef}>
+          <NumericKeyboard
+            onInput={handleKeyboardInput}
+            activeInput={keyboard.activeInput}
+            onClose={keyboard.closeKeyboard}
+          />
         </div>
       )}
     </div>
